@@ -1,96 +1,157 @@
 import { createServerSupabaseClient } from '@/lib/supabaseServer'
 
 export async function POST(req: Request) {
-  const body = await req.json()
-  const userMessage = body.message as string
+  try {
+    const body = await req.json()
+    const userMessage = body.message as string
 
-  const supabase = createServerSupabaseClient()
+    const supabase = createServerSupabaseClient()
 
-  // TEMP: fake user id for now
-  const fakeUserId = '00000000-0000-0000-0000-000000000001'
+    // TEMP: fake user id just for dev
+    const fakeUserId = '00000000-0000-0000-0000-000000000001'
 
-  // 1. Try to load signup_state for this user
-  const { data: existingState, error } = await supabase
-    .from('signup_states')
-    .select('*')
-    .eq('user_id', fakeUserId)
-    .single()
+    // 1. Try to load signup_state for this user
+    const { data: existingState, error: selectError } = await supabase
+      .from('signup_states')
+      .select('*')
+      .eq('user_id', fakeUserId)
+      .single()
 
-  let signupState = existingState
+    if (selectError && selectError.code !== 'PGRST116') {
+      // PGRST116 is "No rows found"
+      console.error('Error selecting signup_state:', selectError)
 
-  if (!signupState) {
+      return new Response(
+        JSON.stringify({
+          error: 'Error selecting signup state',
+          details: selectError.message ?? selectError,
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    let signupState = existingState
     // 2. If none exists, create initial state
-    const { data: newState, error: insertError } = await supabase
-      .from('signup_states')
-      .insert({
-        user_id: fakeUserId,
-        current_phase: 'welcome',
-        user_profile: {},
-        founder_profile: {},
-        idea_profile: {},
-        constraints: {},
-        preferences: {},
-        scores: {},
-      })
-      .select('*')
-      .single()
+    if (!signupState) {
+      const { data: newState, error: insertError } = await supabase
+        .from('signup_states')
+        .insert({
+          user_id: fakeUserId,
+          current_phase: 'welcome',
+          user_profile: {},
+          founder_profile: {},
+          idea_profile: {},
+          constraints: {},
+          preferences: {},
+          scores: {},
+        })
+        .select('*')
+        .single()
 
-    if (insertError) {
-      console.error(insertError)
-      return new Response('Error creating signup state', { status: 500 })
+      if (insertError) {
+        console.error('Error creating signup state:', insertError)
+
+        return new Response(
+          JSON.stringify({
+            error: 'Error creating signup state',
+            details: insertError.message ?? insertError,
+          }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
+      signupState = newState
     }
 
-    signupState = newState
-  }
+    // 3. Decide what to do based on current_phase
+    let reply: string
 
-  // 3. VERY SIMPLE logic:
-  //    If current_phase is welcome, store name and move to userProfile
-  //    Otherwise just echo for now
+    if (signupState.current_phase === 'welcome') {
+      // Treat the userMessage as their name
+      const name = userMessage.trim()
 
-  let reply = ''
+      const newUserProfile = {
+        ...(signupState.user_profile || {}),
+        name,
+      }
 
-  if (signupState.current_phase === 'welcome') {
-    // userMessage will be treated as their name
-    const newUserProfile = {
-      ...(signupState.user_profile || {}),
-      name: userMessage,
+      // Update row: set name + advance phase
+      const { data: updatedState, error: updateError } = await supabase
+        .from('signup_states')
+        .update({
+          user_profile: newUserProfile,
+          current_phase: 'userProfile',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', signupState.id)
+        .select('*')
+        .single()
+
+      if (updateError) {
+        console.error('Error updating signup state:', updateError)
+
+        return new Response(
+          JSON.stringify({
+            error: 'Error updating signup state',
+            details: updateError.message ?? updateError,
+          }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
+      reply = `Nice to meet you, ${name}! Are you a student, working, or something else?`
+
+      return new Response(
+        JSON.stringify({
+          reply,
+          signupState: updatedState,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    } else {
+      // For now, other phases just echo
+      reply = `Got your message: "${userMessage}". Current phase: ${signupState.current_phase}`
+
+      return new Response(
+        JSON.stringify({
+          reply,
+          signupState,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
     }
-
-    const { data: updated, error: updateError } = await supabase
-      .from('signup_states')
-      .update({
-        user_profile: newUserProfile,
-        current_phase: 'userProfile',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', signupState.id)
-      .select('*')
-      .single()
-
-    if (updateError) {
-      console.error(updateError)
-      return new Response('Error updating signup state', { status: 500 })
-    }
-
-    reply = `Nice to meet you, ${userMessage}! Are you a student, working, or something else?`
+  } catch (error) {
+    console.error('Unexpected error handling signup:', error)
 
     return new Response(
       JSON.stringify({
-        reply,
-        signupState: updated,
+        error: 'Unexpected error processing signup',
+        details:
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error',
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
-  } else {
-    // Later you'll add more logic or the LLM here.
-    reply = `Got it: "${userMessage}". (Signup phase: ${signupState.current_phase})`
-
-    return new Response(
-      JSON.stringify({
-        reply,
-        signupState,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
     )
   }
 }

@@ -18,42 +18,60 @@ export default function SignupPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSend() {
-    if (!input.trim()) return
+async function handleSend() {
+  if (!input.trim()) return
 
-    const userText = input.trim()
-    setInput('')
+  const userText = input.trim()
+  setInput('')
 
-    // Add user message to UI
-    setMessages((prev) => [...prev, { role: 'user', content: userText }])
-    setLoading(true)
+  // Add user message to UI
+  setMessages((prev) => [...prev, { role: 'user', content: userText }])
+  setLoading(true)
 
-    try {
-      const res = await fetch('/api/signup/next', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText }),
-      })
+  try {
+    const res = await fetch('/api/signup/next', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userText }),
+    })
 
-      const data = await res.json()
+    // 🟡 1) If the response is not ok, don't call res.json()
+    if (!res.ok) {
+      const errorText = await res.text() // raw text from server
+      console.error('Signup API error:', errorText)
 
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: data.reply as string },
-      ])
-    } catch (err) {
-      console.error(err)
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Oops, something went wrong calling the signup API.',
+          content:
+            'Something went wrong on the server. Check the console for details.',
         },
       ])
-    } finally {
-      setLoading(false)
+      return
     }
+
+    // 🟢 2) Only parse JSON if res.ok === true
+    const data = await res.json()
+
+    setMessages((prev) => [
+      ...prev,
+      { role: 'assistant', content: data.reply as string },
+    ])
+  } catch (err) {
+    console.error('Network or parsing error:', err)
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: 'Network error talking to the signup API.',
+      },
+    ])
+  } finally {
+    setLoading(false)
   }
+}
+
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
