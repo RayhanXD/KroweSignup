@@ -1,4 +1,5 @@
 ﻿import { createServerSupabaseClient } from '@/lib/supabaseServer'
+import { sign } from 'crypto'
 
 const PHASE = {
   WELCOME: 'welcome',
@@ -19,6 +20,13 @@ const PHASE = {
   HOURS_CONFIRM: 'hours_confirm',
   FINISHED: 'finished'
 } as const 
+
+function phaseForSkill (skill: 'dev' | 'mkt' | 'lead' | 'other') {
+  if (skill === 'dev') return PHASE.SKILLS_DEV
+  if (skill === 'mkt') return PHASE.SKILLS_MKT
+  if (skill === 'lead') return PHASE.SKILLS_LEAD
+  return PHASE.SKILLS_OTHER
+}
 
 export async function POST(req: Request) {
   try {
@@ -430,7 +438,7 @@ export async function POST(req: Request) {
 
     const reply = 
     "got it. \n\n" +
-    "Q7) Do you have any prior experience in this industry? If so, please briefly describe."
+    "Q7) Do you have any prior experience in this industry? If so, please briefly describe." +
     "You can mention: work experience, projects, startups (success or failure), field of study, certificates, or awards."
 
     return Response.json({ reply, signupState: updated })
@@ -442,7 +450,7 @@ export async function POST(req: Request) {
 
     const newFounderProfile = {
       ...(signupState.founder_profile || {}),
-      industry_experince: exp,
+      industry_experience: exp,
     }
 
     const { data: updated, error: updateError } = await supabase
@@ -477,7 +485,7 @@ export async function POST(req: Request) {
     const raw = userMessage.trim()
     const upper = raw.toUpperCase()
 
-    const selected = {
+    const picked = {
       dev: upper.includes('A'),
       mkt: upper.includes('B'),
       lead: upper.includes('C'),
@@ -485,23 +493,35 @@ export async function POST(req: Request) {
     }
 
     //If they typed a free response instead of letters, treat it as "other"
-    const pickedAny = selected.dev || selected.mkt || selected.lead || selected.other
+    const pickedAny = picked.dev || picked.mkt || picked.lead || picked.other
 
-    const newFounderProfile = {
-      ...(signupState.founder_profile || {}),
-      skills_path_selection: pickedAny ? selected : {other: true},
-      skills_freeform_if_any: pickedAny ? null : raw,
-    }
+    //Build a queue in a fixed oreder
+    const queue: Array<'dev' | 'mkt' | 'lead' | 'other'> = []
+    if (picked.dev) queue.push('dev')
+    if (picked.mkt) queue.push('mkt')
+    if (picked.lead) queue.push('lead')
+    if (picked.other || !pickedAny) queue.push('other') //if none picked, force other
 
     //Decide next phase; dev first, then mkt, then lead, then else other 
     type PhaseValue = (typeof PHASE)[keyof typeof PHASE]
 
-    let nextPhase: PhaseValue = PHASE.SKILLS_OTHER
-    if (selected.dev) nextPhase = PHASE.SKILLS_DEV
-    else if (selected.mkt) nextPhase = PHASE.SKILLS_MKT
-    else if (selected.lead) nextPhase = PHASE.SKILLS_LEAD
-    else nextPhase = PHASE.SKILLS_OTHER
+    const first = queue[0]
+    const nextPhase = 
+    first === 'dev'
+    ? PHASE.SKILLS_DEV
+    : first === 'mkt'
+    ? PHASE.SKILLS_MKT
+    : first === 'lead'
+    ? PHASE.SKILLS_LEAD
+    : PHASE.SKILLS_OTHER
 
+    const newFounderProfile = {
+      ...(signupState.founder_profile || {}),
+      skills_queue: queue,
+      skills_details: (signupState.founder_profile?.skills_details) ?? {},
+      skills_freeform_if_any: pickedAny ? null : raw, //store freeform only if they didnt pick any
+    }
+    
     const { data: updated, error: updateError } = await supabase
       .from('signup_states')
       .update({
@@ -527,10 +547,310 @@ export async function POST(req: Request) {
     ? 'Leadership skills: What roles have you had, team size, and what did you ship/achieve?'
     : 'Tell me what you’re good at with specific examples (projects, jobs, tools).'
 
-    return Response.json({ reply, signupState: updated })
+    return Response.json(
+      { reply, signupState: updated },
+      {status: 200, }
+   )
+    //dev skills still q8
+  } else if (signupState.current_phase === PHASE.SKILLS_DEV ){
+      const answer = userMessage.trim()
+
+      const fp = signupState.founder_profile || {}
+      const queue: Array<'dev' | 'mkt' | 'lead' | 'other'> = fp.skills_queue || []
+
+      const remaining = queue.slice(1) //remove first
+      const nextSkill = remaining[0]
+      const nextPhase = nextSkill ? phaseForSkill (nextSkill) : PHASE.TEAM_SIZE
+
+      const newFounderProfile = {
+        ...fp,
+        skills_queue: remaining,
+        skills_deatails: {
+          ...(fp.skills_details || {}),
+          dev: answer,
+        },
+      }
+
+      const { data: updated, error: updateError } = await supabase
+      .from('signup_states')
+      .update({
+        founder_profile: newFounderProfile,
+        current_phase: nextPhase,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', signupState.id)
+      .select('*')
+      .single()
+
+      if (updateError) return new Response ('Error updating dev skills', { status: 500})
+
+      const reply = //! if there is an error reorder to first team size then mkt then lead 
+      nextPhase === PHASE.SKILLS_MKT
+      ? 'Marketing skills: What channels/tools have you used, and any results/links?'
+     : nextPhase === PHASE.SKILLS_LEAD
+    ? 'Leadership skills: What roles have you had, team size, and what did you ship/achieve?'
+    : nextPhase === PHASE.TEAM_SIZE
+    ? 'Thanks. \n\n Q9) How many people are on your founding team (including you)? Please answer with a number.'
+    : 'Thanks for sharing your skills.'
+
+    return new Response(
+      JSON.stringify({
+        reply,
+        signupState: updated,
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
+  } else if (signupState.current_phase === PHASE.SKILLS_MKT ){
+      const answer = userMessage.trim()
+
+      const fp = signupState.founder_profile || {}
+      const queue: Array<'dev' | 'mkt' | 'lead' | 'other'> = fp.skills_queue || []
+
+      const remaining = queue.slice(1) //remove first
+      const nextSkill = remaining[0]
+      const nextPhase = nextSkill ? phaseForSkill (nextSkill) : PHASE.TEAM_SIZE
+
+      const newFounderProfile = {
+        ...fp,
+        skills_queue: remaining,
+        skills_deatails: {
+          ...(fp.skills_details || {}),
+          mkt: answer,
+        },
+      }
+
+      const { data: updated, error: updateError } = await supabase
+      .from('signup_states')
+      .update({
+        founder_profile: newFounderProfile,
+        current_phase: nextPhase,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', signupState.id)
+      .select('*')
+      .single()
+
+      if (updateError) return new Response ('Error updating mkt skills', { status: 500})
+
+      const reply = //! if there is an error reorder to first team size then mkt then lead 
+     nextPhase === PHASE.SKILLS_LEAD
+    ? 'Leadership skills: What roles have you had, team size, and what did you ship/achieve?'
+    : nextPhase === PHASE.TEAM_SIZE
+    ? 'Thanks. \n\n Q9) How many people are on your founding team (including you)? Please answer with a number.'
+    : 'Thanks for sharing your skills.'
+
+    return new Response(
+      JSON.stringify({
+        reply,
+        signupState: updated,
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    ) 
+  } else if (signupState.current_phase === PHASE.SKILLS_LEAD ){
+    const answer = userMessage.trim()
+
+      const fp = signupState.founder_profile || {}
+      const queue: Array<'dev' | 'mkt' | 'lead' | 'other'> = fp.skills_queue || []
+
+      const remaining = queue.slice(1) //remove first
+      const nextSkill = remaining[0]
+      const nextPhase = nextSkill ? phaseForSkill (nextSkill) : PHASE.TEAM_SIZE
+
+      const newFounderProfile = {
+        ...fp,
+        skills_queue: remaining,
+        skills_deatails: {
+          ...(fp.skills_details || {}),
+          lead: answer,
+        },
+      }
+
+      const { data: updated, error: updateError } = await supabase
+      .from('signup_states')
+      .update({
+        founder_profile: newFounderProfile,
+        current_phase: nextPhase,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', signupState.id)
+      .select('*')
+      .single()
+
+      if (updateError) return new Response ('Error updating lead skills', { status: 500})
+
+      const reply = //! if there is an error reorder to first team size then mkt then lead 
+     nextPhase === PHASE.TEAM_SIZE
+    ? 'Thanks. \n\n Q9) How many people are on your founding team (including you)? Please answer with a number.'
+    : 'Thanks for sharing your skills.'
+
+    return new Response(
+      JSON.stringify({
+        reply,
+        signupState: updated,
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    ) 
+  } else if (signupState.current_phase === PHASE.TEAM_SIZE) {{
+    const n = parseInt(userMessage.trim(), 10)
+
+    if (Number.isNaN(n) || n < 1 || n > 100) {
+      const reply = "please answer with a realistic number for your team size."
+      return new Response (JSON.stringify({ reply, signupState}),{
+        status: 200,
+        headers: {'Content-type': 'application/json'}
+      })
+    }
+
+    const newConstraints = {
+      ...(signupState.constraints || {}),
+      team_size: n,
+    }
+
+    const { data: updated, error: updateError } = await supabase
+    .from('signup_states')
+    .update({
+      constraints: newConstraints,
+      current_phase: PHASE.HOURS, //move to q10
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', signupState.id)
+    .select('*')
+    .single()
+
+    if (updateError) return new Response ('Error updating team size', { status: 500})
+
+    const reply =
+      "Thanks.\n\n" +
+      "Q10) How many hours per week can you commit to your startup? (number only)"
+
+      return new Response(JSON.stringify({ reply, signupState: updated}), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+
   }
-  
-    
+  // startup Q10: hours commitment
+} else if (signupState.current_phase === PHASE.HOURS) {
+  const hours = parseInt (userMessage.trim(), 10)
+
+  if (Number.isNaN(hours) || hours < 1 || hours > 120) {
+    const reply = "please answer with a realistic number of hours per week (1-120)."
+    return new Response (JSON.stringify({ reply, signupState}),{
+      status: 200,
+      headers: {'Content-type': 'application/json'},
+    })
+  }
+
+  const age = signupState.user_profile?.age
+  const needsConfirm = typeof age === 'number' && age <= 21 && hours >= 19
+
+  const newConstraints = {
+    ...(signupState.constraints || {}),
+    hours_per_week: hours,
+  }
+
+  const { data: updated, error: updateError } = await supabase
+  .from('signup_states')
+  .update({
+    constraints: newConstraints,
+    current_phase: needsConfirm ? PHASE.HOURS_CONFIRM : PHASE.FINISHED, //move to finished or confirm
+    updated_at: new Date().toISOString(),
+  })
+  .eq('id', signupState.id)
+  .select('*')
+  .single()
+
+  if (updateError) return new Response ('Error updating hours commitment', { status: 500})
+
+  const reply = needsConfirm
+    ? `Just checking — ${hours} hours/week can be pretty intense (especially with school/work).\n` +
+       `Reply "confirm" to keep ${hours}, or send a lower number to adjust it.`
+      : "Awesome — that completes the intake. (Analysis will run next.)"
+
+    return new Response(JSON.stringify({ reply, signupState: updated}), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+    })
+
+    // confirm phase
+} else if (signupState.current_phase === PHASE.HOURS_CONFIRM) {
+  const text = userMessage.trim().toLowerCase()
+
+  //If they type a new number, use it 
+  const maybeNumber = parseInt(userMessage.trim(), 10)
+  if (!Number.isNaN(maybeNumber) && maybeNumber >= 1 && maybeNumber <= 120) {
+    const newConstraints = {
+      ...(signupState.constraints || {}),
+      hours_per_week: maybeNumber,
+    }
+
+    const { data: updated, error: updateError } = await supabase
+    .from('signup_states')
+    .update({
+      constraints: newConstraints,
+      current_phase: PHASE.FINISHED, //move to finished
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', signupState.id)
+    .select('*')
+    .single()
+
+    if (updateError) return new Response ('Error updating hours commitment', { status: 500})
+
+    const reply = "Great, thanks — that completes the intake. (Analysis will run next.)"
+    return new Response(JSON.stringify({ reply, signupState: updated}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // if they confirm proceed 
+  const confirmed = 
+  text === 'confirm' || text === 'yes' || text === 'y' || text.includes('keep')
+
+  if (!confirmed){
+        const reply = 'Reply "confirm" to keep your hours, or send a new number like 10 or 12.'
+        return new Response (JSON.stringify({ reply, signupState}),{
+          status: 200,
+          headers: {'Content-type': 'application/json'},
+        })
+  }
+
+  const { data: updated, error: updateError } = await supabase
+    .from('signup_states')
+    .update({
+      currrent_phase: PHASE.FINISHED, //move to finished
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', signupState.id)
+    .select('*')
+    .single()
+
+    if (updateError) return new Response ('Error updating hours confirmation', { status: 500})
+    const reply = "Great, thanks — that completes the intake. (Analysis will run next.)"
+    return new Response(JSON.stringify({ reply, signupState: updated }),{
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+} else if (signupState.current_phase === PHASE.FINISHED) {
+  const reply = 
+      "You’ve completed the signup questions ✅\n\n" +
+    "Next step: we’ll run the analysis module and generate your results."
+
+    return new Response(JSON.stringify({ reply, signupState}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+}
     else {
       // For now, other phases just echo
       reply = `Got your message: "${userMessage}". Current phase: ${signupState.current_phase}`
