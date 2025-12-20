@@ -50,7 +50,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue }: AgeStep
           </div>
         </div>
 
-        <div className="flex gap-4 mt-16 w-full">
+        <div className="flex justify-between gap-4 mt-16 w-full">
           <button
             type="button"
             onClick={onBack}
@@ -63,7 +63,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue }: AgeStep
           <button
             type="button"
             onClick={onContinue}
-            className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
+            className="flex items-center justify-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
           >
             Continue
           </button>
