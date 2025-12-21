@@ -6,15 +6,29 @@ import IdeaStep from './Steps/IdeaStep'
 import ProductTypeStep from './Steps/ProductTypeStep'
 import ProblemStep from './Steps/ProblemStep'
 import TargetCustomerStep from './Steps/TargetCustomerStep'
+import IndustryStep from './Steps/IndustryStep'
 
 export default function SignupPage() {
   const [age, setAge] = useState(18)
-  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer'>('age')
+  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer' | 'industry'>('age')
   const [idea, setIdea] = useState('')
   const [productType, setProductType] = useState<'mobile' | 'web' | 'both' | 'other' | null>(null)
   const [problem, setProblem] = useState('')
   const [targetCustomer, setTargetCustomer] = useState('')
+  const [industry, setIndustry] = useState<string | null>(null)
+  const [industryOther, setIndustryOther] = useState('')
 
+  async function handleIndustryContinue () {
+    if (!industry) return
+
+    const payload =  
+    industry === 'Other' ? industryOther.trim() : industry
+
+    const data = await sendToApi(payload)
+    const next = data.signupState?.current_phase
+    console.log('Next phase:', next)
+    if (next) setCurrentPhase(next)
+  }
 
   async function handleTargetCustomerContinue() {
     const data = await sendToApi(targetCustomer)
@@ -116,6 +130,22 @@ export default function SignupPage() {
         onBack={() => setCurrentPhase('problem')}
         onContinue = {handleTargetCustomerContinue}
         progressPercent={55}
+        />
+      )
+    }
+
+    if (currentPhase === 'industry'){
+      return(
+        <IndustryStep
+         value = {industry}
+         otherValue = {industryOther}
+         onChange = {(v) => {
+          setIndustry (v)
+          if (v !== 'Other') setIndustryOther('')
+         }} 
+        onOtherChange = {setIndustryOther}
+        onBack = {() => setCurrentPhase('target_customer')}
+        onContinue={handleIndustryContinue}
         />
       )
     }
