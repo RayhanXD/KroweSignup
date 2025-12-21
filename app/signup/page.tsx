@@ -5,14 +5,23 @@ import AgeStep from './Steps/AgeStep'
 import IdeaStep from './Steps/IdeaStep'
 import ProductTypeStep from './Steps/ProductTypeStep'
 import ProblemStep from './Steps/ProblemStep'
+import TargetCustomerStep from './Steps/TargetCustomerStep'
 
 export default function SignupPage() {
   const [age, setAge] = useState(18)
-  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem'>('age')
+  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer'>('age')
   const [idea, setIdea] = useState('')
   const [productType, setProductType] = useState<'mobile' | 'web' | 'both' | 'other' | null>(null)
   const [problem, setProblem] = useState('')
+  const [targetCustomer, setTargetCustomer] = useState('')
 
+
+  async function handleTargetCustomerContinue() {
+    const data = await sendToApi(targetCustomer)
+    const next = data.signupState?.current_phase 
+    console.log('Next phase:', next)
+    if (next) setCurrentPhase(next)
+  }
 
   async function handleProblemContinue() {
     const data = await sendToApi(problem)
@@ -95,6 +104,18 @@ export default function SignupPage() {
         onChange={setProblem}
         onBack={() => setCurrentPhase('product_type')}
         onContinue={handleProblemContinue}
+        />
+      )
+    }
+
+    if (currentPhase === 'target_customer'){
+      return (
+        <TargetCustomerStep
+        value={targetCustomer}
+        onChange={setTargetCustomer}
+        onBack={() => setCurrentPhase('problem')}
+        onContinue = {handleTargetCustomerContinue}
+        progressPercent={55}
         />
       )
     }
