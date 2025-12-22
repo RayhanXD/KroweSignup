@@ -7,6 +7,7 @@ import ProductTypeStep from './Steps/ProductTypeStep'
 import ProblemStep from './Steps/ProblemStep'
 import TargetCustomerStep from './Steps/TargetCustomerStep'
 import IndustryStep from './Steps/IndustryStep'
+import IndustryExperienceStep from './Steps/IndustryExperienceStep'
 
 export default function SignupPage() {
   const [age, setAge] = useState(18)
@@ -17,6 +18,15 @@ export default function SignupPage() {
   const [targetCustomer, setTargetCustomer] = useState('')
   const [industry, setIndustry] = useState<string | null>(null)
   const [industryOther, setIndustryOther] = useState('')
+  const [industryExperience, setIndustryExperience] = useState('')
+
+  async function handleIndustryExperienceContinue () {
+    const data = await sendToApi (industryExperience)
+    const next = data.signupState?.current_phase
+    console.log('Next Phase: ', next)
+    if (next) setCurrentPhase(next)
+  }
+
 
   async function handleIndustryContinue () {
     if (!industry) return
@@ -146,6 +156,17 @@ export default function SignupPage() {
         onOtherChange = {setIndustryOther}
         onBack = {() => setCurrentPhase('target_customer')}
         onContinue={handleIndustryContinue}
+        />
+      )
+    }
+
+    if(currentPhase === 'industry_experience'){
+      return (
+        <IndustryExperienceStep
+        value = {industryExperience}
+        onChange = {setIndustryExperience}
+        onBack={() => setCurrentPhase('industry')}
+        onContinue={handleIndustryExperienceContinue}
         />
       )
     }
