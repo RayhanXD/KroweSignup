@@ -8,10 +8,11 @@ import ProblemStep from './Steps/ProblemStep'
 import TargetCustomerStep from './Steps/TargetCustomerStep'
 import IndustryStep from './Steps/IndustryStep'
 import IndustryExperienceStep from './Steps/IndustryExperienceStep'
+import SkillsStep from './Steps/SkillsStep'
 
 export default function SignupPage() {
   const [age, setAge] = useState(18)
-  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer' | 'industry'>('age')
+  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer' | 'industry' | 'industry_experience'>('age')
   const [idea, setIdea] = useState('')
   const [productType, setProductType] = useState<'mobile' | 'web' | 'both' | 'other' | null>(null)
   const [problem, setProblem] = useState('')
@@ -19,6 +20,16 @@ export default function SignupPage() {
   const [industry, setIndustry] = useState<string | null>(null)
   const [industryOther, setIndustryOther] = useState('')
   const [industryExperience, setIndustryExperience] = useState('')
+  const [skills, setSkills] = useState<Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>>([])
+
+
+  async function handleSkillsContinue () {
+    const payload = skills.join(',') // ex: dev,marketing or none
+    const data = await sendToApi(payload)
+    const next = data.signupState?.current_phase
+    console.log('Next Phase: ', next)
+    if(next) setCurrentPhase(next)
+  }
 
   async function handleIndustryExperienceContinue () {
     const data = await sendToApi (industryExperience)
@@ -167,6 +178,18 @@ export default function SignupPage() {
         onChange = {setIndustryExperience}
         onBack={() => setCurrentPhase('industry')}
         onContinue={handleIndustryExperienceContinue}
+        />
+      )
+    }
+
+    if (currentPhase === 'skills_start'){
+      return (
+        <SkillsStep
+          value = {skills}
+          onChange={setSkills}
+          onBack={() => setCurrentPhase('industry_experience')}
+          onContinue={handleSkillsContinue}
+          progressPercent={78}
         />
       )
     }
