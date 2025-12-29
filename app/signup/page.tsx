@@ -1,5 +1,6 @@
 'use client'
 
+import type React from "react"
 import { useState } from 'react'
 import AgeStep from './Steps/AgeStep'
 import IdeaStep from './Steps/IdeaStep'
@@ -25,8 +26,13 @@ function safeJson<T = any>(s: string): T | null {
   }
 }
 
+
+
 export default function SignupPage() {
   const {loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer } = useSignupSession();
+  const [issues, setIssues] = useState<{ code: string; message: string; severity?: string }[]>([]);
+  const [canContinueAnyway, setCanContinueAnyway] = useState(false);
+  const [saving, setSaving] = useState(false);
 
 //Slice 1: Optional client only back nav (NOT persisted if user refreshes)
 const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
@@ -34,20 +40,39 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
   if (loading) return <div className='p-6'>Loading...</div>;
   if (error) return <div className='p-6 text-red-600'>{error}</div>
     
-  const progressPercent = getProgressPercent(currentStepKey);
-  const raw = answersByStepKey[currentStepKey] ?? "";
-  const stepKey = (overrideStepKey ?? currentStepKey) as StepKey
+  
+  const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
+  const progressPercent = getProgressPercent(stepKey);
+  const raw = answersByStepKey[stepKey] ?? "";
+  const value = raw
+
 
   function setLocal(step: StepKey, v: unknown) {
     const serialized = typeof v === 'string' ? v : JSON.stringify(v)
     setAnswerLocal(step, serialized)
   }
 
-  async function saveAndNext(step: StepKey, v:unknown){
-    const serialized = typeof v === 'string' ? v : JSON.stringify(v)
-    await submitAnswer(step, serialized)
-    //once we succesfully save/advance, clear any client only back override
-    setOverrideStepKey(null)
+  async function saveAndNext(step: StepKey, v:unknown, force = false){
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      const serialized = typeof v === "string" ? v: JSON.stringify(v);
+      const res = await submitAnswer(step, serialized, force);
+
+      if (res.validationStatus === "needs_fix"){
+        setIssues(res.issues || []);
+        setCanContinueAnyway(Boolean(res.canContinueWithWarning));
+        return; // does not advance
+      }
+
+      //ok -> clear issues and clear back overide
+      setIssues([]);
+      setCanContinueAnyway(false);
+      setOverrideStepKey(null);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function goBack(){
@@ -56,11 +81,57 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
     setOverrideStepKey(prev)
   }
 
+  const canContinue = async () => {
+    await saveAndNext (stepKey, raw,true);
+};
+
+const continueAnyway = async () => {
+  setSaving(true);
+  try {
+    const res = await submitAnswer(currentStepKey, value, true );
+    //if it is advanced hook already moved you
+    setIssues(res.issues || []);
+  }finally {
+    setSaving(false);
+  }
+}
+
+function renderWithIssues(ui: React.ReactNode) {
+  return (
+     <>
+      {issues.length > 0 && (
+        <div className="max-w-3xl mx-auto mb-6 p-4 rounded-xl border bg-white">
+          <div className="font-semibold mb-2">Fix needed</div>
+
+          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+            {issues.map((i, idx) => (
+              <li key={idx}>{i.message}</li>
+            ))}
+          </ul>
+
+          {canContinueAnyway && (
+            <button
+              onClick={continueAnyway}
+              disabled={saving}
+              className="mt-3 text-sm underline text-gray-600"
+            >
+              Continue anyway (results may be less accurate)
+            </button>
+          )}
+        </div>
+      )}
+
+      {ui}
+    </>
+  )
+}
+
+
   //render the current step
 
   if (stepKey === 'age'){
     const ageValue = raw? Number(raw) : 18
-    return(
+    return renderWithIssues(
       <AgeStep
       value={ageValue}
       onChange={(v: number) => setLocal('age', String(v))}
@@ -74,7 +145,7 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
   if (stepKey === 'idea') {
     const ideaValue = raw || ''
 
-    return (
+    return renderWithIssues (
       <IdeaStep
         value={ideaValue}
         onChange={(v: string) => setLocal('idea', v)}
@@ -87,7 +158,7 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
   if (stepKey === 'product_type') {
   const productTypeValue = (raw || null) as ProductType
-    return (
+    return renderWithIssues (
     <ProductTypeStep
       value={productTypeValue}
       onChange={(v: ProductType) => setLocal('product_type', v ?? '')}
@@ -105,7 +176,7 @@ if (stepKey === 'problem') {
 const problemValue = raw || ''
 
 
-return (
+return renderWithIssues(
   <ProblemStep
     value={problemValue}
     onChange={(v: string) => setLocal('problem', v)}
@@ -123,7 +194,7 @@ if (stepKey === 'target_customer') {
 const targetCustomerValue = raw || ''
 
 
-return (
+return renderWithIssues (
   <TargetCustomerStep
     value={targetCustomerValue}
     onChange={(v: string) => setLocal('target_customer', v)}
@@ -148,7 +219,7 @@ other: '',
 const industryValue = parsed.industry
 const industryOtherValue = parsed.other ?? ''
 
-return (
+return renderWithIssues (
   <IndustryStep
     value={industryValue}
     otherValue={industryOtherValue}
@@ -177,7 +248,7 @@ if (stepKey === 'industry_experience') {
 const industryExperienceValue = raw || ''
 
 
-return (
+return renderWithIssues (
   <IndustryExperienceStep
     value={industryExperienceValue}
     onChange={(v: string) => setLocal('industry_experience', v)}
@@ -195,7 +266,7 @@ return (
   // Stored as JSON array: ["dev","marketing",...]
   const skillsValue = safeJson<Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>>(raw) ?? []
 
-  return (
+  return renderWithIssues(
     <SkillsStep
       value={skillsValue}
       onChange={(v: Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>) =>
@@ -212,7 +283,7 @@ if (stepKey === 'team_size') {
 const teamSizeValue = raw ? Number(raw) : 1
 
 
-return (
+return renderWithIssues (
   <TeamSizeStep
     value={teamSizeValue}
     onChange={(v: number) => setLocal('team_size', String(v))}
@@ -226,7 +297,7 @@ return (
 
 if (stepKey === 'hours') {
 const hoursValue = raw ? Number(raw) : 6
-return (
+return renderWithIssues (
   <HoursCommitmentStep
     value={hoursValue}
     onChange={(v: number) => setLocal('hours', String(v))}

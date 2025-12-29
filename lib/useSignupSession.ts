@@ -81,7 +81,7 @@ export function useSignupSession(){
         }));
     };
 
-    const submitAnswer = async (stepKey: StepKey, value: string) => {
+    const submitAnswer = async (stepKey: StepKey, value: string, force = false) => {
         if(!state.sessionId) throw new Error ("No session");
 
         const res = await fetch("/api/signup/answer",{
@@ -91,6 +91,7 @@ export function useSignupSession(){
                 sessionId: state.sessionId,
                 stepKey,
                 answerText: value,
+                force,
             }),
         });
 
@@ -102,7 +103,13 @@ export function useSignupSession(){
             currentStepKey: json.nextStepKey ?? s.currentStepKey,
         }));
 
-        return json as {ok: boolean; nextStepKey: StepKey | null};
+        return json as {
+            validationStatus: "ok" | "needs_fix";
+            nextStepKey: StepKey | null;
+            issues: any[];
+            failCount: number;
+            canContinueWithWarning: boolean;
+        };
     };
 
     return useMemo(
