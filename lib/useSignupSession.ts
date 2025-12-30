@@ -97,6 +97,10 @@ export function useSignupSession(){
 
         const json = await res.json();
         if(!res.ok) throw new Error(json?.error || "Failed to save answer") 
+
+        //advancing here only happens due to confirmAnswer()
+
+
         
         setState((s) => ({
             ...s,
@@ -106,17 +110,55 @@ export function useSignupSession(){
         return json as {
             validationStatus: "ok" | "needs_fix";
             nextStepKey: StepKey | null;
-            issues: any[];
+            issues: {code: string; message: string; severity?: "error" | "warning" }[];
             failCount: number;
             canContinueWithWarning: boolean;
+            aiSuggestion: string | null;
+            aiReason: string | null;
         };
     };
+
+    const confirmAnswer = async (
+        stepKey: StepKey,
+        finalAnswer: string,
+        finalSource: "orginal" | "ai_suggested" | "user_edited"
+    ) => { 
+        if (!state.sessionId) throw new Error("No session");
+
+        const res = await fetch ("/api/signup/answer/confirm", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                sessionId: state.sessionId,
+                stepKey,
+                finalAnswer,
+                finalSource,
+            }),
+        });
+
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error || "failed to confirm answer");
+
+        //confirm route advances session, so update current step here
+        if (json.nextStepKey) {
+            setState((s) => ({...s, currentStepKey: json.nextStepKey}));
+        }
+
+        //keep local answer in sync
+        setState((s) => ({
+            ...s,
+            answersByStepKey: {...s.answersByStepKey, [stepKey]: finalAnswer},
+        }));
+
+        return json as {ok: boolean; nextStepKey: StepKey | null};
+    }
 
     return useMemo(
         () => ({
             ...state,
             setAnswerLocal,
             submitAnswer,
+            confirmAnswer,
         }),
         [state]
     );

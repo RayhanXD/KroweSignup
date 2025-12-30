@@ -29,10 +29,12 @@ function safeJson<T = any>(s: string): T | null {
 
 
 export default function SignupPage() {
-  const {loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer } = useSignupSession();
+  const {loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer } = useSignupSession();
   const [issues, setIssues] = useState<{ code: string; message: string; severity?: string }[]>([]);
   const [canContinueAnyway, setCanContinueAnyway] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [aiReason, setAiReason] = useState<string | null>(null);
 
 //Slice 1: Optional client only back nav (NOT persisted if user refreshes)
 const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
@@ -58,18 +60,29 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
     try {
       const serialized = typeof v === "string" ? v: JSON.stringify(v);
-      const res = await submitAnswer(step, serialized, force);
+      //1) save + validate (+maybe ai suggestion) but dont advance
+      const res = await submitAnswer(step, serialized, false);
 
-      if (res.validationStatus === "needs_fix"){
+      //always update UI state from resposne
+
+      
         setIssues(res.issues || []);
         setCanContinueAnyway(Boolean(res.canContinueWithWarning));
-        return; // does not advance
-      }
+        setAiSuggestion(res.aiSuggestion ?? null);
+        setAiReason(res.aiReason ?? null);
+
+        //2) if ok -> auto confirm (one click and advance)
+        if(res.validationStatus === "ok"){
+          await confirmAnswer(step, serialized, "orginal");
+          clearFixUI();
+          setOverrideStepKey(null);
+        }
+
+        //3 if needs fix -> stop here, user must chose a confirm action
+        //(use suggestion/ save edit /keept orgin anayawy)
+
 
       //ok -> clear issues and clear back overide
-      setIssues([]);
-      setCanContinueAnyway(false);
-      setOverrideStepKey(null);
     } finally {
       setSaving(false);
     }
@@ -81,41 +94,106 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
     setOverrideStepKey(prev)
   }
 
-  const canContinue = async () => {
-    await saveAndNext (stepKey, raw,true);
-};
-
 const continueAnyway = async () => {
+  if(!canContinueAnyway) return; //saftey
   setSaving(true);
   try {
-    const res = await submitAnswer(currentStepKey, value, true );
-    //if it is advanced hook already moved you
-    setIssues(res.issues || []);
+    //confirm the users current value and advance
+    await confirmAnswer(stepKey, value, "orginal")
+    clearFixUI();
+    setOverrideStepKey(null);
   }finally {
     setSaving(false);
   }
 }
 
+const clearFixUI = () => {
+  setIssues([]);
+  setAiSuggestion(null);
+  setAiReason(null);
+  setCanContinueAnyway(false);
+}
+
 function renderWithIssues(ui: React.ReactNode) {
   return (
-     <>
-      {issues.length > 0 && (
+ <>
+      {(issues.length > 0 || aiSuggestion) && (
         <div className="max-w-3xl mx-auto mb-6 p-4 rounded-xl border bg-white">
-          <div className="font-semibold mb-2">Fix needed</div>
+          {issues.length > 0 && (
+            <>
+              <div className="font-semibold mb-2 text-black">Fix needed</div>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                {issues.map((i, idx) => (
+                  <li key={idx}>{i.message}</li>
+                ))}
+              </ul>
+            </>
+          )}
 
-          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-            {issues.map((i, idx) => (
-              <li key={idx}>{i.message}</li>
-            ))}
-          </ul>
+          {/* AI suggestion box */}
+          {aiSuggestion && (
+            <div className="mt-4 p-3 rounded-lg border bg-gray-50">
+              <div className="text-sm font-medium mb-1 text-black">Suggested rewrite</div>
+              {aiReason && <div className="text-xs text-gray-500 mb-2">{aiReason}</div>}
+              <div className="text-sm whitespace-pre-wrap text-black">{aiSuggestion}</div>
 
+              <div className="mt-3 flex flex-wrap gap-2">
+                {/* CONFIRM AI suggestion and advance */}
+                <button
+                  disabled={saving}
+                  className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm"
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      await confirmAnswer(stepKey, aiSuggestion, "ai_suggested");
+                      clearFixUI();
+                      setOverrideStepKey(null);
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  Use suggestion
+                </button>
+
+                {/* Load suggestion into input so user can edit */}
+                <button
+                  disabled={saving}
+                  className="px-3 py-2 rounded-lg border text-sm text-black"
+                  onClick={() => setLocal(stepKey, aiSuggestion)}
+                >
+                  Edit suggestion
+                </button>
+
+                {/* CONFIRM user's edited value and advance */}
+                <button
+                  disabled={saving}
+                  className="px-3 py-2 rounded-lg border text-sm text-black"
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      await confirmAnswer(stepKey, value, "user_edited");
+                      clearFixUI();
+                      setOverrideStepKey(null);
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  Save my edit
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Keep original anyway (only after fail twice) */}
           {canContinueAnyway && (
             <button
               onClick={continueAnyway}
               disabled={saving}
               className="mt-3 text-sm underline text-gray-600"
             >
-              Continue anyway (results may be less accurate)
+              Keep my original anyway (results may be less accurate)
             </button>
           )}
         </div>
@@ -123,7 +201,7 @@ function renderWithIssues(ui: React.ReactNode) {
 
       {ui}
     </>
-  )
+  );
 }
 
 

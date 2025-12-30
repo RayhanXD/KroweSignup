@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getNextStepKey, isValidStepKey, StepKey } from "@/lib/signupSteps";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { normalizeAnswer, validateStep } from "@/lib/validators";
+import { aiRewrite } from "@/lib/aiRewrite";
 
 type Body = {
   sessionId: string;
@@ -38,8 +39,14 @@ export async function POST(req: Request) {
 
   const prevFailCount = existing?.fail_count ?? 0;
 
-  // validate
+  // validate is computed
   const validation = validateStep(stepKey, answerText);
+
+  let ai = null as null | {suggestion: string; reason: string};
+
+  if (validation.status === "needs_fix"){
+    ai = await aiRewrite(stepKey, answerText);
+  }
 
   const nextFailCount =
     validation.status === "needs_fix" ? prevFailCount + 1 : 0;
@@ -58,6 +65,8 @@ export async function POST(req: Request) {
         validation_status: validation.status,
         validation_issues: validation.issues,
         fail_count: nextFailCount,
+        ai_suggestion: ai?.suggestion ?? null,
+        ai_suggestion_json: ai ? ai : null,
       },
       { onConflict: "session_id,step_key" }
     );
@@ -86,5 +95,7 @@ export async function POST(req: Request) {
     failCount: nextFailCount,
     canContinueWithWarning,
     nextStepKey,
+    aiSuggestion: ai?.suggestion ?? null,
+    aiReason: ai?.reason ?? null,
   });
 }

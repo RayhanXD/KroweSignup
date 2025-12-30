@@ -1,26 +1,26 @@
 export type StepKey = 
 | "age"
-| "hours"
 | "idea"
+| "product_type"
+| "problem"
+| "target_customer"
 | "industry"
 | "industry_experience"
-| "problem"
-| "product_type"
 | "skills"
-| "target_customer"
-| "team_size";
+| "team_size"
+| "hours";
 
 export const SIGNUP_STEPS: StepKey [] = [
     "age",
-    "hours",
     "idea",
+    "product_type",
+    "problem",
+    "target_customer",
     "industry",
     "industry_experience",
-    "problem",
-    "product_type",
     "skills",
-    "target_customer",
     "team_size",
+    "hours",
 ];
 
 export function isValidStepKey(v: string): v is StepKey {

@@ -20,7 +20,7 @@ export async function GET(
 
     const { data: answers, error: aErr } = await supabase
         .from("signup_answers")
-        .select("step_key, raw_answer")
+        .select("step_key, raw_answer, final_answer")
         .eq("session_id", sessionId);
 
      if (aErr) {
