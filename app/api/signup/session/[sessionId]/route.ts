@@ -9,7 +9,7 @@ export async function GET(
     const sessionId = params.sessionId
 
     const { data: session, error: sErr } = await supabase
-        .from("signup_sessions")
+        .from("signup_report")
         .select("id, current_step_key, status")
         .eq("id", sessionId)
         .single();

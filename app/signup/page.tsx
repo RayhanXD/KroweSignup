@@ -79,7 +79,7 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
       localStorage.removeItem(STORAGE_KEY);
 
       //Redirect after the signup 
-      router.replace("/signup/complete"); //when final platform put dashboard here
+      router.replace(`/signup/complete?sessionId=${sessionId}`); //when final platform put dashboard here
     } finally {
       setFinishing(false);
     }
