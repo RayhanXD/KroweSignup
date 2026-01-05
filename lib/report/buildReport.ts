@@ -1,6 +1,24 @@
+import { join } from "path/win32";
 import { StepKey } from "../signupSteps";
+import type { Competitor } from "./findCompetitors";
 
 type Payload = Record<string, { final?: string } | any>;
+
+export type ReportData = {
+  inputsSnapshot: any;
+  flags: string[];
+  timeToMvp: any;
+  competitors?: Competitor[];
+  competitorError?: string;
+  competitorDebug?: {
+    got?: number;
+    error?: string;
+    idea?: string | null;
+    industry?: string | null;
+    targetCustomer?: string | null;
+    rawText?: string;
+  }
+};
 
 function getFinal(payload: any, key: StepKey): string | null {
   const v = payload?.[key]?.final;
@@ -281,7 +299,75 @@ export function founderFitScore(params: {
   };
 }
 
-export function buildReportFromPayload(payload: Payload) {
+export function productTypeScore(productType: string | null): { score: number | null; note?: string } {
+  if (!productType) return { score: null, note: "missing data" };
+  const pt = productType.toLowerCase();
+
+  //Higher score = typically easier/ faster to ship + iterate for mvp
+  if (pt.includes("web")) return { score: 0.8 };
+  if (pt.includes("mobile")) return { score: 0.6 };
+  if (pt.includes("both")) return { score: 0.4 };
+  return { score: 0.5, note: "unclear product type" };
+}
+
+//you dont have MVP cost yet -> netural default, add this later 
+export function costEfficiencyScore(): { score: number | null; note: string } {
+  return { score: null, note: "missing data (we have't added this feature yet" };
+}
+
+export function startupAdvantageScore(params: {
+  skill: number | null;
+  age: number | null;
+  costEff: number | null;
+  productType: number | null;
+  industry: number | null;
+}) {
+  const missing: string[] = [];
+  if (params.skill == null) missing.push("skill score");
+  if (params.age == null) missing.push("age score");
+  if (params.costEff == null) missing.push("cost efficiency score");
+  if (params.productType == null) missing.push("product type score");
+  if (params.industry == null) missing.push("industry familiarity score");
+
+  //netural defaults for math continuity(data here is still missing)
+  const skill = params.skill ?? 0.5;
+  const age = params.age ?? 0.5;
+  const costEff = params.costEff ?? 0.5;
+  const productType = params.productType ?? 0.5;
+  const industry = params.industry ?? 0.5;
+
+  const sas0to10 =
+    (skill * 0.42 +
+      age * 0.13 +
+      costEff * 0.15 +
+      productType * 0.10 +
+      industry * 0.20) * 10;
+
+  //Report expects /100 so store as 0-100
+  const sas0to100 = Math.round(sas0to10 * 10);
+
+  const interpreation =
+    sas0to100 >= 80 ? "Strong advantage for early execution (still validate demand)." :
+      sas0to100 >= 60 ? "Decent position, but you’ll need a sharp niche + consistent execution." :
+        sas0to100 >= 40 ? "You can still win, but you’re under-resourced—go narrower and simpler." :
+          "High risk vs typical competitors. You need to simplify scope or add missing capabilities.";
+
+  return {
+    socre: sas0to100,
+    interpreation,
+    missing,
+    components: { skill, age, costEff, productType, industry },
+  }
+
+}
+
+export function competitorScaffold(industry: string | null): { name: string; link: string; description: string }[] {
+  const i = (industry || "").toLowerCase();
+  // placeholder scaffold logic
+  return [];
+}
+
+export function buildReportFromPayload(payload: any, opts?: { competitors?: Competitor[]; competitorError?: string }) {
   const age = safeNumber(getFinal(payload, "age"));
   const hours = safeNumber(getFinal(payload, "hours"));
   const teamSize = safeNumber(getFinal(payload, "team_size"));
@@ -307,6 +393,31 @@ export function buildReportFromPayload(payload: Payload) {
 
   const skillScore = estimateSkillScore(skillsRaw);
   const time = estimateTimeToMvp({ productType, skillScore, hours, teamSize });
+
+  const competitors = opts?.competitors ?? [];
+
+  const competitorLines =
+    competitors.length
+      ? competitors.map((c: any) => `- **${c.name}** — ${c.why_competitor} (${c.url})`).join("\n")
+      : `No competitors found yet`;
+
+
+  const data: ReportData = {
+    inputsSnapshot: {
+      idea,
+      productType,
+      targetCustomer,
+      industry,
+      age,
+      hours,
+      teamSize,
+      skillsRaw,
+    },
+    flags,
+    timeToMvp: time,
+    competitors: opts?.competitors ?? [],
+    competitorError: undefined,
+  }
 
   const markdown = [
     `# 🧭 Krowe Pre-Seed Advisor Report`,
@@ -369,17 +480,17 @@ export function buildReportFromPayload(payload: Payload) {
     `- **Score:** ${ind.score == null ? "⚠ Missing Data" : `${Math.round(ind.score * 100)}%`}`,
     ``,
     `### Evidence`,
+    ...(ind.evidence.map(e => `- ${e}`)),
+
+    "## 🥊 Top Competitors",
+    competitorLines,
+    "",
   ].join("\n");
 
   return {
-    version: "6.2.1",
+    version: "6.2.2",
     generatedAt: new Date().toISOString(),
-    data: {
-      inputsSnapshot: {
-        idea, productType, targetCustomer, industry, age, hours, teamSize, skillsRaw, flags,
-        timeToMvp: time
-      },
-    },
+    data,
     markdown,
   }
 }

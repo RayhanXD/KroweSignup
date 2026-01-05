@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { buildReportFromPayload } from "@/lib/report/buildReport";
+import { findCompetitorsViaWeb } from "@/lib/report/findCompetitors";
 
 type Body = { sessionId: string };
+
+const CURRENT_VERSION = "6.2.2";
 
 export async function POST(req: Request) {
   const supabase = createServerSupabaseClient();
@@ -20,13 +23,13 @@ export async function POST(req: Request) {
     .eq("session_id", sessionId)
     .maybeSingle();
 
-    const existiingVersion = existing?.report?.version;
+  const existiingVersion = existing?.report?.version;
 
-    if(existing?.id && existiingVersion === "6.2.2") {
-      return NextResponse.json({ ok: true, reportId: existing.id, sessionId});
-    }
-
-  if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
+  if (existing?.id && existiingVersion === "CURRENT_VERSION") {
+    return NextResponse.json({ ok: true, reportId: existing.id, sessionId });
+  }
+  //if it exist but is old we will regerenate and overwrite
+  if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 }); //maybe delete?
   if (existing?.id) {
     return NextResponse.json({ ok: true, reportId: existing.id, sessionId });
   }
@@ -40,11 +43,28 @@ export async function POST(req: Request) {
 
   if (legErr) return NextResponse.json({ error: legErr.message }, { status: 500 });
 
-  // 3) Skeleton report (Slice 6.1)
-  const report = buildReportFromPayload(legacy?.payload ?? {});
+  // Pull these from your payload (adjust keys if yours differ)
+  const idea = legacy?.payload?.idea?.final ?? null;
+  const industry = legacy?.payload?.industry?.final ?? null;
+  const targetCustomer = legacy?.payload?.target_customer?.final ?? null;
+
+  //fetch competitors first 
+  let competitors: any [] = [];
+
+  // Only do the web competitor search if we have enough info
+  if (idea && industry) {
+    try {
+     const res = await findCompetitorsViaWeb({ idea, industry, targetCustomer });
+     competitors = res.competitors ?? [];
+    } catch  {
+      competitors = [];
+    }
+  } 
+
+  //4) buld report from payload + competitors
+  const reportObj = buildReportFromPayload(legacy.payload, { competitors, competitorError: undefined });
 
   // 4) Store the report (✅ correct table + column names)
-
   // Use ignoreDuplicates: true to handle race conditions where another request created it 
   // between our check at (1) and this insert.
   const { data: upserted, error: insErr } = await supabase
@@ -53,9 +73,9 @@ export async function POST(req: Request) {
       {
         session_id: sessionId,
         status: "ready",
-        report,
+        report: reportObj,
       },
-      { onConflict: "session_id", ignoreDuplicates: true }
+      { onConflict: "session_id"}
     )
     .select("id")
     .maybeSingle();
@@ -63,21 +83,7 @@ export async function POST(req: Request) {
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
 
   // If upserted is null (due to ignoreDuplicates), fetch the existing record
-  let reportId = upserted?.id;
-  if (!reportId) {
-    const { data: retry } = await supabase
-      .from("signup_reports")
-      .select("id")
-      .eq("session_id", sessionId)
-      .maybeSingle();
 
-    if (retry?.id) {
-      reportId = retry.id;
-    } else {
-      // Only happens if logic is very weird (deleted right after creation?)
-      return NextResponse.json({ error: "Context conflict: Could not create or find report" }, { status: 500 });
-    }
-  }
 
-  return NextResponse.json({ ok: true, reportId, sessionId });
+  return NextResponse.json({ ok: true, reportId: upserted?.id ?? existing?.id, sessionId });
 }
