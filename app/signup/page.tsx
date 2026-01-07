@@ -72,10 +72,25 @@ export default function SignupPage() {
   }
 
   async function handleTargetCustomerContinue() {
-    const data = await sendToApi(targetCustomer)
-    const next = data.signupState?.current_phase
-    console.log('Next phase:', next)
-    if (next) setCurrentPhase(next)
+    try {
+      const data = await sendToApi(targetCustomer)
+      const next = data.signupState?.current_phase
+      console.log('API Response:', data)
+      console.log('Current phase:', currentPhase)
+      console.log('Next phase:', next)
+      
+      // Only update if phase actually changed
+      if (next && next !== currentPhase) {
+        setCurrentPhase(next)
+      } else if (data.reply) {
+        // If validation failed, show the error message
+        console.error('Validation error:', data.reply)
+        alert(data.reply)
+      }
+    } catch (error) {
+      console.error('Error in handleTargetCustomerContinue:', error)
+      alert('An error occurred. Please try again.')
+    }
   }
 
   async function handleProblemContinue() {
@@ -92,6 +107,12 @@ export default function SignupPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
     })
+    
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error(`API error: ${res.status} - ${errorText}`)
+    }
+    
     const data = await res.json()
     return data
   }

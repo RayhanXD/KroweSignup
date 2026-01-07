@@ -276,20 +276,19 @@ export async function POST(req: Request) {
   } else if (signupState.current_phase === PHASE.TARGET_CUSTOMER) {
     const tc = userMessage.trim()
 
-    // tine validation 
-    const mustHave = [
-      'our target customer is',
-      'currently',
-      'who cares about',
-      'looking for',
-    ]
-
+    // flexible validation - accept any reasonable description
     const lower = tc.toLowerCase()
-    const missing = mustHave.filter((phrase) => !lower.includes(phrase))
-
-    if (missing.length > 0){
+    
+    // Check for target customer phrase variations (more flexible)
+    const hasTargetCustomerPhrase = 
+      lower.includes('target customer') ||
+      lower.includes('target audience') ||
+      lower.includes('customer') ||
+      tc.trim().length >= 20 // Accept any reasonable description
+    
+    if (!hasTargetCustomerPhrase) {
       const reply = 
-       "Almost — please rewrite using the exact structure (it improves the accuracy a lot):\n\n" +
+       "Please provide a description of your target customer. You can use this structure for better results:\n\n" +
       "Our target customer is a [age range] [type of person], currently [specific situation], who cares about [their priority], and is looking for [specific outcome]."
       return Response.json({ reply, signupState})
     }
