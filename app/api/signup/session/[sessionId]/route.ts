@@ -3,10 +3,10 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 
 export async function GET(
     _req: Request,
-    {params}: { params: {sessionId: string} }
-){
+    { params }: { params: Promise<{ sessionId: string }> }
+) {
     const supabase = createServerSupabaseClient()
-    const sessionId = params.sessionId
+    const { sessionId } = await params
 
     const { data: session, error: sErr } = await supabase
         .from("signup_report")
@@ -14,8 +14,8 @@ export async function GET(
         .eq("id", sessionId)
         .single();
 
-    if (sErr){
-        return NextResponse.json({ error: "session not found"}, {status: 404})
+    if (sErr) {
+        return NextResponse.json({ error: "session not found" }, { status: 404 })
     }
 
     const { data: answers, error: aErr } = await supabase
@@ -23,11 +23,11 @@ export async function GET(
         .select("step_key, raw_answer, final_answer")
         .eq("session_id", sessionId);
 
-     if (aErr) {
-         return NextResponse.json({ error: aErr.message }, { status: 500 });
+    if (aErr) {
+        return NextResponse.json({ error: aErr.message }, { status: 500 });
     }
 
-     const answersByStepKey: Record<string, string> = {};
+    const answersByStepKey: Record<string, string> = {};
     for (const a of answers ?? []) answersByStepKey[a.step_key] = a.raw_answer ?? "";
 
 

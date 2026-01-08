@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function SignupCompletePage() {
+function SignupCompleteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId");
@@ -56,5 +56,13 @@ export default function SignupCompletePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SignupCompletePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignupCompleteContent />
+    </Suspense>
   );
 }
