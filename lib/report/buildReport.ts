@@ -2,6 +2,9 @@ import { join } from "path/win32";
 import { StepKey } from "../signupSteps";
 import type { Competitor } from "./findCompetitors";
 import type { MvpCostEstimate } from "./estimateMvpCost";
+import { costEfficiencyEstimate, productTypeScore, startupAdvantageScore } from "./scoring";
+import { computeThingsNeed, deriveSkillProfile } from "./thingsNeeded";
+import type { MarketSizeLLM } from "./marketsize";
 
 type Payload = Record<string, { final?: string } | any>;
 
@@ -14,6 +17,7 @@ export type ReportData = {
   competitorError?: string;
   mvpCostEstimate?: MvpCostEstimate | null;
   mvpCostEstimateError?: string;
+  marketSize?: MarketSizeLLM | null;
   competitorDebug?: {
     got?: number;
     error?: string;
@@ -302,67 +306,14 @@ export function founderFitScore(params: {
   };
 }
 
-export function productTypeScore(productType: string | null): { score: number | null; note?: string } {
-  if (!productType) return { score: null, note: "missing data" };
-  const pt = productType.toLowerCase();
 
-  //Higher score = typically easier/ faster to ship + iterate for mvp
-  if (pt.includes("web")) return { score: 0.8 };
-  if (pt.includes("mobile")) return { score: 0.6 };
-  if (pt.includes("both")) return { score: 0.4 };
-  return { score: 0.5, note: "unclear product type" };
-}
 
 //you dont have MVP cost yet -> netural default, add this later 
 export function costEfficiencyScore(): { score: number | null; note: string } {
   return { score: null, note: "missing data (we have't added this feature yet" };
 }
 
-export function startupAdvantageScore(params: {
-  skill: number | null;
-  age: number | null;
-  costEff: number | null;
-  productType: number | null;
-  industry: number | null;
-}) {
-  const missing: string[] = [];
-  if (params.skill == null) missing.push("skill score");
-  if (params.age == null) missing.push("age score");
-  if (params.costEff == null) missing.push("cost efficiency score");
-  if (params.productType == null) missing.push("product type score");
-  if (params.industry == null) missing.push("industry familiarity score");
 
-  //netural defaults for math continuity(data here is still missing)
-  const skill = params.skill ?? 0.5;
-  const age = params.age ?? 0.5;
-  const costEff = params.costEff ?? 0.5;
-  const productType = params.productType ?? 0.5;
-  const industry = params.industry ?? 0.5;
-
-  const sas0to10 =
-    (skill * 0.42 +
-      age * 0.13 +
-      costEff * 0.15 +
-      productType * 0.10 +
-      industry * 0.20) * 10;
-
-  //Report expects /100 so store as 0-100
-  const sas0to100 = Math.round(sas0to10 * 10);
-
-  const interpreation =
-    sas0to100 >= 80 ? "Strong advantage for early execution (still validate demand)." :
-      sas0to100 >= 60 ? "Decent position, but you’ll need a sharp niche + consistent execution." :
-        sas0to100 >= 40 ? "You can still win, but you’re under-resourced—go narrower and simpler." :
-          "High risk vs typical competitors. You need to simplify scope or add missing capabilities.";
-
-  return {
-    socre: sas0to100,
-    interpreation,
-    missing,
-    components: { skill, age, costEff, productType, industry },
-  }
-
-}
 
 export function competitorScaffold(industry: string | null): { name: string; link: string; description: string }[] {
   const i = (industry || "").toLowerCase();
@@ -370,8 +321,42 @@ export function competitorScaffold(industry: string | null): { name: string; lin
   return [];
 }
 
+function fmtUSD(n: number) {
+  if (!Number.isFinite(n)) return String(n);
+  if (n >= 1e12) return `${(n / 1e12).toFixed(1)}T`;
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return `${n}`;
+}
 
-export function buildReportFromPayload(payload: any, opts?: { competitors?: Competitor[]; competitorError?: string; costEstimate?: MvpCostEstimate | null; mvpCostEstimateError?: string }) {
+export function buildMarkdownWithMarketSize(params: {
+  existingMarkdown: string;
+  marketSize: MarketSizeLLM;
+}) {
+  const ms = params.marketSize;
+
+  const section = [
+    ``,
+    `## 📊 Market Size (AI Estimate)`,
+    `- **Market Definition:** ${ms.market_definition}`,
+    `- **TAM:** $${fmtUSD(ms.tam_usd_range.low)}–$${fmtUSD(ms.tam_usd_range.high)} / year`,
+    `- **SAM:** $${fmtUSD(ms.sam_usd_range.low)}–$${fmtUSD(ms.sam_usd_range.high)} / year`,
+    `- **Wedge SAM:** $${fmtUSD(ms.wedge_sam_usd_range.low)}–$${fmtUSD(ms.wedge_sam_usd_range.high)} / year`,
+    `- **Confidence:** ${Math.round(ms.confidence * 100)}%`,
+    ``,
+    `### Assumptions`,
+    ...(ms.key_assumptions?.length ? ms.key_assumptions.map((a) => `- ${a}`) : [`- (none provided)`]),
+    ``,
+    `### Notes`,
+    ...(ms.notes?.length ? ms.notes.map((n) => `- ${n}`) : [`- (none provided)`]),
+  ].join("\n");
+
+  return params.existingMarkdown + "\n\n" + section;
+}
+
+
+export function buildReportFromPayload(payload: any, opts?: { competitors?: Competitor[]; competitorError?: string; costEstimate?: MvpCostEstimate | null; mvpCostEstimateError?: string; marketSize?: MarketSizeLLM | null }) {
   const age = safeNumber(getFinal(payload, "age"));
   const hours = safeNumber(getFinal(payload, "hours"));
   const teamSize = safeNumber(getFinal(payload, "team_size"));
@@ -392,13 +377,7 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
   const ptS = productTypeScore(productType);
   const ind = industryFamiliarityScore(industry);
   const ffs = founderFitScore({ skill: skills.overall, age: ageS, costAligment: costS.score ?? null, industryFamiliarity: ind.score ?? null });
-  const sas = startupAdvantageScore({
-    skill: skills.overall ?? null,
-    age: ageS ?? null,
-    costEff: costEffS.score ?? null,
-    productType: ptS.score ?? null,
-    industry: ind.score ?? null
-  });
+
 
   const flags: string[] = [];
   if (hours != null && hours >= 26) flags.push("Weekly commitment is likely unsustainable (burnour risk is high")
@@ -410,6 +389,24 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
   const competitors = opts?.competitors ?? [];
   const competitorError = opts?.competitorError;
   const costEstimate = opts?.costEstimate ?? null;
+  const marketSize = opts?.marketSize ?? null;
+
+  const profile = deriveSkillProfile(skillsRaw);
+  const things = computeThingsNeed({ productType, skillProfile: profile, teamSize });
+
+
+  //1) scores need for SAS 
+  const costEffScore = costEfficiencyEstimate(costEstimate?.cost_mid_usd ?? null);
+
+  //2) Compute SAS score
+  const sas = startupAdvantageScore({
+    skill: skills.overall ?? null,
+    age: ageS ?? null,
+    costEff: costEffS.score ?? null,
+    productType: ptS.score ?? null,
+    industry: ind.score ?? null
+  });
+
 
   const competitorLines =
     competitors.length
@@ -436,7 +433,23 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
     competitors: opts?.competitors ?? [],
     costEstimate,
     competitorError: undefined,
+    marketSize,
   }
+
+  // Format currency helper
+  const fmt = (n: number) => `$${n.toLocaleString()}`;
+
+  const marketSizeSection = marketSize
+    ? [
+      `## 🌍 Market Size`,
+      `- **Definition:** ${marketSize.market_definition}`,
+      `- **TAM (Total Addressable):** ${fmt(marketSize.tam_usd_range.low)} - ${fmt(marketSize.tam_usd_range.high)} / year`,
+      `- **SAM (Serviceable):** ${fmt(marketSize.sam_usd_range.low)} - ${fmt(marketSize.sam_usd_range.high)} / year`,
+      `- **Wedge:** ${fmt(marketSize.wedge_sam_usd_range.low)} - ${fmt(marketSize.wedge_sam_usd_range.high)} / year`,
+      `- **Notes:** ${marketSize.notes?.[0] || ""}`,
+      ``
+    ]
+    : [];
 
   const markdown = [
     `# 🧭 Krowe Pre-Seed Advisor Report`,
@@ -461,6 +474,7 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
     `- **Rationale:** ${time.rationale}`,
     ``,
     `---`,
+    ...marketSizeSection,
     `*(Next slices will add Founder Fit (FFS), Startup Advantage (SAS), Things Needed, Market Snapshot, Roadmap, and Pivot logic.)*`,
     `## 👤 Founder Fit (FFS)`,
     `- **Score:** ${ffs}/100`,
@@ -502,6 +516,32 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
     ...(ind.evidence.map(e => `- ${e}`)),
 
     ``,
+    `## 🧩 Startup Advantage Score (SAS)`,
+    `- **Score:** ${sas.score}/100`,
+    `- **Competitive Position:** ${sas.interpretation}`,
+    sas.missing.length ? `- **⚠ Missing Data:** ${sas.missing.join(", ")}` : `- **Missing Data:** None`,
+    ``,
+    `### Breakdown`,
+    `- **Skill:** ${(sas.components.skill * 100).toFixed(0)}%`,
+    `- **Age:** ${(sas.components.age * 100).toFixed(0)}%`,
+    `- **Cost Efficiency:** ${(sas.components.costEff * 100).toFixed(0)}%`,
+    `- **Product Type:** ${(sas.components.productType * 100).toFixed(0)}%`,
+    `- **Industry:** ${(sas.components.industry * 100).toFixed(0)}%`,
+
+    ``,
+    `## 🧰 Things You Need`,
+    ...things.needs.map(n => `- **${n.title}** — ${n.why}`),
+    ``,
+    `## 🧩 Skill Gaps`,
+    ...(things.gaps.length
+      ? things.gaps.flatMap(g => [
+        `### ${g.gap}`,
+        `- **Impact:** ${g.impact}`,
+        `- **Fix options:**`,
+        ...g.fixes.map(x => `  - ${x}`),
+        ``,
+      ])
+      : [`- None detected (based on current inputs).`, ``]),
     `## 💸 Estimated MVP Cost`,
     ...(costEstimate
       ? [
@@ -527,6 +567,10 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
     "## 🥊 Top Competitors",
     competitorLines,
     "",
+    marketSize ? buildMarkdownWithMarketSize({
+      existingMarkdown: "",
+      marketSize,
+    }) : "",
   ].join("\n");
 
   return {
@@ -556,10 +600,16 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
       mvpCostEstimate: costEstimate ?? undefined,
       mvpCostEstimateError: opts?.mvpCostEstimateError,
 
+      //sas score
+      startupAdvantageScore: sas,
+
       //competitors must be acutal array
       competitors,
       //competitors debug string
       competitorError: opts?.competitorError,
+
+      thingsNeed: things,
+      marketSize,
     },
     markdown,
   }

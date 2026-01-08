@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { buildReportFromPayload } from "@/lib/report/buildReport";
 import { findCompetitorsViaWeb } from "@/lib/report/findCompetitors";
 import { estimateMvpCostViaLLM } from "@/lib/report/estimateMvpCost";
+import { estimateMarketSizeLLM } from "@/lib/report/marketsize";
+
 
 type Body = { sessionId: string };
 
@@ -92,14 +94,19 @@ export async function POST(req: Request) {
   const idea = legacy?.payload?.idea?.final ?? null;
   const industry = legacy?.payload?.industry?.final ?? null;
   const targetCustomer = legacy?.payload?.target_customer?.final ?? null;
+  const problem = legacy?.payload?.problem?.final ?? null;
   const productType = legacy?.payload?.product_type?.final ?? null;
   const teamSize = legacy?.payload?.team_size?.final ?? null;
   const hoursPerWeek = legacy?.payload.hours?.final ?? null;
+  const existingMarketSize = existing?.report?.marketSize ?? null;
 
   //Mvp costs section
   let costEstimate: any = null;
   let mvpCostEstimateError: string | undefined;
+  let marketSize = existingMarketSize;
 
+
+  //mvp function
   if (idea) {
     try {
       costEstimate = await estimateMvpCostViaLLM({
@@ -131,10 +138,21 @@ export async function POST(req: Request) {
     }
   }
 
+  //market size function
+  if (!marketSize) {
+    marketSize = await estimateMarketSizeLLM({
+      idea,
+      problem,
+      targetCustomer,
+      industry,
+      competitors: (competitors ?? []).map((c) => ({ name: c.name })),
+    })
+  }
+
   //4) buld report from payload + competitors
   // Ensure we pass the CURRENT_VERSION if buildReportFromPayload needs it, or it uses its own.
   // Assuming buildReportFromPayload attaches the version, but we should make sure.
-  const reportObj = buildReportFromPayload(legacy.payload, { competitors, competitorError, costEstimate, mvpCostEstimateError });
+  const reportObj = buildReportFromPayload(legacy.payload, { competitors, competitorError, costEstimate, mvpCostEstimateError, marketSize });
 
   // Explicitly set/override version to match our constant
   // (depending on buildReportFromPayload implementation, it might vary, but we want consistency)
