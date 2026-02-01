@@ -17,7 +17,7 @@ export const STORAGE_KEYS = {
 // Report Version
 // ============================================================================
 
-export const REPORT_VERSION = "6.2.2" as const;
+export const REPORT_VERSION = "6.2.3" as const;
 
 // ============================================================================
 // Validation Thresholds

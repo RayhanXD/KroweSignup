@@ -20,13 +20,13 @@ export function getFinal(payload: SignupPayload, key: StepKey): string | null {
  */
 export function classifyHours(hours: number | null): string | null {
   if (hours == null) return "⚠ Missing Data";
-  if (hours <= 3) return "Very reasonable";
-  if (hours <= 7) return "Reasonable";
-  if (hours <= 12) return "Normal";
-  if (hours <= 18) return "Ambitious";
-  if (hours <= 25) return "Difficult";
-  if (hours <= 35) return "Borderline unreasonable";
-  if (hours <= 50) return "Unreasonable";
+  if (hours <= 3) return "To little hours, nothing will get done";
+  if (hours <= 7) return "Light commitment (slow progress/min results expected)";
+  if (hours <= 12) return "Normal Commintent (progress is attainable)";
+  if (hours <= 18) return "Serious Commitent";
+  if (hours <= 25) return "Embrassing True startup hours";
+  if (hours <= 35) return "Bound to succeed if you dont burn out";
+  if (hours <= 50) return "High Burnout Risk";
   return "Completely unreasonable";
 }
 
