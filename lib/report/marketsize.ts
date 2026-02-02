@@ -93,9 +93,12 @@ export async function estimateMarketSizeLLM(input: {
                     "Hard rules:"+
                     "- Avoid fake precision. Use broad ranges (ex: $200M–$800M), not single numbers."+
                    " - Show assumptions briefly (user count, ARPA/price, adoption rate, geography)."+
+                   " -make sure assumptions ranges do not overlap with each other"+
                    " - If critical details are missing, make conservative assumptions and explicitly label them."+
                    " - Prefer bottom-up logic (users × $/year) when possible; otherwise use proxy spend logic."+
                    " - Do NOT browse the web. Do NOT cite external sources. This is a modeled estimate."+
+                   "when consider pricing keep in mind of users busienss type (b2b or b2c) where b2b have higher pricing than b2c"+
+                   "keep in my user product type since most often itll be a subscription based product"+
                     "Output format:"+
                     "Return ONLY valid JSON matching this schema (no markdown, no commentary outside JSON)",
             },
@@ -107,6 +110,8 @@ export async function estimateMarketSizeLLM(input: {
                 "- the user’s market definition (who/where/how they buy/pricing anchor),"+
                 "- an initial wedge plan (beachhead + first use case + GTM motion + conversion target),"+
                 "- a planning market size for Year 1 (target revenue + customer count)."+
+                "- consdier that the users launching MVP that year so keep target customer count realistic"+
+                "- consider that the users MVP is a subscription based product so keep target revenue realistic"+
                 "Use USD/year ranges and conservative assumptions if details are missing."+
                 "Return ONLY valid JSON matching the schema from the system prompt.\n\n"+
                 "Inputs:"+ JSON.stringify(payload, null, 2),

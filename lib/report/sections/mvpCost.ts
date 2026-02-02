@@ -29,9 +29,6 @@ export function buildMvpCostSection(params: MvpCostParams): string {
     ...(costEstimate.key_cost_drivers?.length
       ? [`### Key cost drivers`, ...costEstimate.key_cost_drivers.map((d: string) => `- ${d}`), ``]
       : []),
-    ...(costEstimate.assumptions?.length
-      ? [`### Assumptions`, ...costEstimate.assumptions.map((a: string) => `- ${a}`)]
-      : []),
     ``,
   ].join("\n");
 }
