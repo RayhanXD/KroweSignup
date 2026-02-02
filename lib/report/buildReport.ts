@@ -246,9 +246,6 @@ export function buildMarkdownWithMarketSize(params: {
     `- **Target Revenue:** $${fmtUSD(y1.target_revenue_usd.low)}–$${fmtUSD(y1.target_revenue_usd.high)}`,
     `- **Customer Count:** ${y1.customer_count.low.toLocaleString()}–${y1.customer_count.high.toLocaleString()}`,
     ``,
-    `### Assumptions`,
-    ...(ms.key_assumptions?.length ? ms.key_assumptions.map((a) => `- ${a}`) : [`- (none provided)`]),
-    ``,
     `### Notes`,
     ...(ms.notes?.length ? ms.notes.map((n) => `- ${n}`) : [`- (none provided)`]),
   ].join("\n");
@@ -371,6 +368,7 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
     buildThingsNeededSection({
       needs: things.needs,
     }),
+    `---`,
     buildMvpCostSection({ costEstimate }),
     buildCompetitorsSection({ competitors }),
   ].join("\n");
