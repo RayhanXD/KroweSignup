@@ -230,6 +230,7 @@ export function buildMarkdownWithMarketSize(params: {
   marketSize: MarketSizeLLM;
 }) {
   const ms = params.marketSize;
+  const y1 = ms.planning_year_1;
 
   const section = [
     ``,
@@ -239,6 +240,11 @@ export function buildMarkdownWithMarketSize(params: {
     `- **SAM:** $${fmtUSD(ms.sam_usd_range.low)}–$${fmtUSD(ms.sam_usd_range.high)} / year`,
     `- **Wedge SAM:** $${fmtUSD(ms.wedge_sam_usd_range.low)}–$${fmtUSD(ms.wedge_sam_usd_range.high)} / year`,
     `- **Confidence:** ${Math.round(ms.confidence * 100)}%`,
+    ``,
+    `### 📅 Planning Market Size (Year 1)`,
+    `- **Target Revenue:** $${fmtUSD(y1.target_revenue_usd.low)}–$${fmtUSD(y1.target_revenue_usd.high)}`,
+    `- **Customer Count:** ${y1.customer_count.low.toLocaleString()}–${y1.customer_count.high.toLocaleString()}`,
+    `- **Implied ARPA:** $${fmtUSD(y1.implied_arpa_usd.low)}–$${fmtUSD(y1.implied_arpa_usd.high)}`,
     ``,
     `### Assumptions`,
     ...(ms.key_assumptions?.length ? ms.key_assumptions.map((a) => `- ${a}`) : [`- (none provided)`]),

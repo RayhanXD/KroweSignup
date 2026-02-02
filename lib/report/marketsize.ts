@@ -10,6 +10,11 @@ export type MarketSizeLLM = {
     tam_usd_range: { low: number; high: number; unit: "USD/year" };
     sam_usd_range: { low: number; high: number; unit: "USD/year" };
     wedge_sam_usd_range: { low: number; high: number; unit: "USD/year" };
+    planning_year_1: {
+        target_revenue_usd: { low: number; high: number };
+        customer_count: { low: number; high: number };
+        implied_arpa_usd: { low: number; high: number };
+    };
     key_assumptions: string[];
     confidence: number; // 0–1
     notes: string[];
@@ -49,6 +54,12 @@ function isValidMarketSize(x: any): x is MarketSizeLLM {
     typeof x?.wedge_sam_usd_range?.low === "number" &&
     typeof x?.wedge_sam_usd_range?.high === "number" &&
     x?.wedge_sam_usd_range?.unit === "USD/year" &&
+    typeof x?.planning_year_1?.target_revenue_usd?.low === "number" &&
+    typeof x?.planning_year_1?.target_revenue_usd?.high === "number" &&
+    typeof x?.planning_year_1?.customer_count?.low === "number" &&
+    typeof x?.planning_year_1?.customer_count?.high === "number" &&
+    typeof x?.planning_year_1?.implied_arpa_usd?.low === "number" &&
+    typeof x?.planning_year_1?.implied_arpa_usd?.high === "number" &&
     Array.isArray(x?.key_assumptions) &&
     typeof x?.confidence === "number" &&
     Array.isArray(x?.notes)
@@ -71,22 +82,37 @@ export async function estimateMarketSizeLLM(input: {
     };
 
     const response = await openai.responses.create({
-        model: "gpt-5-mini",
+        model: "gpt-4o-mini",
         input: [
             {
                 role: "system",
                 content:
-                    "You are a market-sizing analyst. Produce realistic TAM/SAM/Wedge-SAM ranges in USD/year. " +
-                    "Avoid fake precision: use broad ranges and state assumptions. " +
-                    "If details are missing, make conservative assumptions and say so. " +
-                    "Return ONLY valid JSON that matches the schema.",
+               "You are a market-sizing analyst for early-stage startups." +
+                "Goal:"+
+                "Estimate realistic market size ranges in USD/year for:"+
+                    "- TAM (total addressable market, global)"+
+                    "- SAM (serviceable available market: reachable in the next 12–24 months)"+
+                    "- Wedge-SAM (the first narrow beachhead niche you can actually win)"+
+                    "Hard rules:"+
+                    "- Avoid fake precision. Use broad ranges (ex: $200M–$800M), not single numbers."+
+                   " - Show assumptions briefly (user count, ARPA/price, adoption rate, geography)."+
+                   " - If critical details are missing, make conservative assumptions and explicitly label them."+
+                   " - Prefer bottom-up logic (users × $/year) when possible; otherwise use proxy spend logic."+
+                   " - Do NOT browse the web. Do NOT cite external sources. This is a modeled estimate."+
+                    "Output format:"+
+                    "Return ONLY valid JSON matching this schema (no markdown, no commentary outside JSON)",
             },
             {
                 role: "user",
                 content:
-                    "Estimate market size for this startup. Output TAM (global), SAM (reachable initial market), " +
-                    "and wedge-SAM (first narrow niche). Use USD/year ranges.\n\n" +
-                    JSON.stringify(payload, null, 2),
+                "Estimate market size for this startup using TAM (global), SAM (reachable in 12–24 months), and Wedge-SAM (first narrow niche)." +
+                "Also include:"+
+                "- the user’s market definition (who/where/how they buy/pricing anchor),"+
+                "- an initial wedge plan (beachhead + first use case + GTM motion + conversion target),"+
+                "- a planning market size for Year 1 (target revenue + customer count + implied ARPA)."+
+                "Use USD/year ranges and conservative assumptions if details are missing."+
+                "Return ONLY valid JSON matching the schema from the system prompt.\n\n"+
+                "Inputs:"+ JSON.stringify(payload, null, 2),
             },
         ],
         //strucutred outpts (JSON Schema) via txt.format
@@ -103,6 +129,7 @@ export async function estimateMarketSizeLLM(input: {
                         "tam_usd_range",
                         "sam_usd_range",
                         "wedge_sam_usd_range",
+                        "planning_year_1",
                         "key_assumptions",
                         "confidence",
                         "notes",
@@ -137,6 +164,40 @@ export async function estimateMarketSizeLLM(input: {
                                 low: { type: "number" },
                                 high: { type: "number" },
                                 unit: { type: "string", enum: ["USD/year"] },
+                            },
+                        },
+                        planning_year_1: {
+                            type: "object",
+                            additionalProperties: false,
+                            required: ["target_revenue_usd", "customer_count", "implied_arpa_usd"],
+                            properties: {
+                                target_revenue_usd: {
+                                    type: "object",
+                                    additionalProperties: false,
+                                    required: ["low", "high"],
+                                    properties: {
+                                        low: { type: "number" },
+                                        high: { type: "number" },
+                                    },
+                                },
+                                customer_count: {
+                                    type: "object",
+                                    additionalProperties: false,
+                                    required: ["low", "high"],
+                                    properties: {
+                                        low: { type: "number" },
+                                        high: { type: "number" },
+                                    },
+                                },
+                                implied_arpa_usd: {
+                                    type: "object",
+                                    additionalProperties: false,
+                                    required: ["low", "high"],
+                                    properties: {
+                                        low: { type: "number" },
+                                        high: { type: "number" },
+                                    },
+                                },
                             },
                         },
                         key_assumptions: { type: "array", items: { type: "string" } },
