@@ -6,7 +6,7 @@ export type ScorePiece = {
 
 export type IndustryResult = {
     score: number | null;
-    level: "High" | "Medium" | "Low" | "Unknown"
+    level: "High" | "Medium" | "Low" | "Inexperienced" | "Unknown"
     evidence: string[];
 };
 

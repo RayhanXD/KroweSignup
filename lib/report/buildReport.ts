@@ -51,7 +51,7 @@ export function costAligmentScore(): { score: number | null; note: string } {
 //in future use LLM to analyze text and determine the score
 export function industryFamiliarityScore(industryExp: string | null): {
   score: number | null;
-  level: "High" | "Medium" | "Low" | "Unknown";
+  level: "High" | "Medium" | "Low" | "Inexperienced" | "Unknown";
   evidence: string[];
 } {
   if (!industryExp) return { score: null, level: "Unknown", evidence: [] };
@@ -77,8 +77,8 @@ export function industryFamiliarityScore(industryExp: string | null): {
   if (hasFailedStartup) return { score: 0.45, level: "Low", evidence };
   if (hasPublicWork) return { score: 0.45, level: "Low", evidence };
 
-  // Priority from spec (simplified into tiers) :contentReference[oaicite:5]{index=5}
-  return { score: 0, level: "Unknown", evidence: ["No industry-specific experience detected"] };
+  // Fallback: no keywords matched - user has no industry experience
+  return { score: 0, level: "Inexperienced", evidence: ["No industry-specific experience detected"] };
 }
 
 //update later when skillScore quetsion is more defined and inlcude LLM to anaylze
