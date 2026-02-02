@@ -14,11 +14,10 @@ type InputsParams = {
   hours: number | null;
   hoursLabel: string | null;
   problem: string | null;
-  flags: string[];
 };
 
 export function buildInputsSection(params: InputsParams): string {
-  const { idea, productType, targetCustomer, industry, age, teamSize, hours, hoursLabel, problem, flags } = params;
+  const { idea, productType, targetCustomer, industry, age, teamSize, hours, hoursLabel, problem } = params;
 
   return [
     `## 📌 Inputs Snapshot`,
@@ -32,9 +31,6 @@ export function buildInputsSection(params: InputsParams): string {
     ...(teamSize != null ? [`- **Team Size:** ${teamSize}`] : []),
     ...(hours != null && hoursLabel != null ? [`- **Weekly Commitment:** ${hours} hrs/week → **${hoursLabel}**`] : []),
     ...(problem != null ? [`- **Problem:** ${problem}`] : []),
-    ``,
-    `### ⚠ Flags`,
-    ...(flags.length ? flags.map((f) => `- ${f}`) : [`- None`]),
     ``,
   ].join("\n");
 }

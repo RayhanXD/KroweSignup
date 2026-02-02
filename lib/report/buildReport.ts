@@ -346,7 +346,6 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
       hours,
       hoursLabel,
       problem,
-      flags,
     }),
     buildTimeToMvpSection({
       label: time.label,
