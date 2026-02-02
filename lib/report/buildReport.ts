@@ -2,7 +2,7 @@ import { StepKey } from "../signupSteps";
 import type { Competitor } from "./findCompetitors";
 import type { MvpCostEstimate } from "./estimateMvpCost";
 import { costEfficiencyEstimate, productTypeScore, startupAdvantageScore } from "./scoring";
-import { computeThingsNeed, deriveSkillProfile } from "./thingsNeeded";
+import { computeThingsNeed, deriveSkillProfile, type ThingsNeededResult } from "./thingsNeeded";
 import type { MarketSizeLLM } from "./marketsize";
 import { REPORT_VERSION } from "../constants";
 import { safeNumber } from "../utils/parsing";
@@ -258,7 +258,7 @@ export function buildMarkdownWithMarketSize(params: {
 }
 
 
-export function buildReportFromPayload(payload: SignupPayload, opts?: { competitors?: Competitor[]; competitorError?: string; costEstimate?: MvpCostEstimate | null; mvpCostEstimateError?: string; marketSize?: MarketSizeLLM | null }) {
+export function buildReportFromPayload(payload: SignupPayload, opts?: { competitors?: Competitor[]; competitorError?: string; costEstimate?: MvpCostEstimate | null; mvpCostEstimateError?: string; marketSize?: MarketSizeLLM | null; thingsNeeded?: ThingsNeededResult | null }) {
   const age = safeNumber(getFinal(payload, "age"));
   const hours = safeNumber(getFinal(payload, "hours"));
   const teamSize = safeNumber(getFinal(payload, "team_size"));
@@ -293,8 +293,9 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
   const costEstimate = opts?.costEstimate ?? null;
   const marketSize = opts?.marketSize ?? null;
 
+  // Use LLM-generated thingsNeeded if provided, otherwise fall back to heuristic
   const profile = deriveSkillProfile(skillsRaw);
-  const things = computeThingsNeed({ productType, skillProfile: profile, teamSize });
+  const things = opts?.thingsNeeded ?? computeThingsNeed({ productType, skillProfile: profile, teamSize });
 
 
   //1) scores need for SAS 

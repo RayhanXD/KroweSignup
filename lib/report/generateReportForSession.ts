@@ -18,6 +18,7 @@ import { buildReportFromPayload } from "./buildReport";
 import { findCompetitorsViaWeb, type Competitor } from "./findCompetitors";
 import { estimateMvpCostViaLLM, type MvpCostEstimate } from "./estimateMvpCost";
 import { estimateMarketSizeLLM, type MarketSizeLLM } from "./marketsize";
+import { computeThingsNeededLLM, type ThingsNeededResult } from "./thingsNeeded";
 import { REPORT_VERSION } from "@/lib/constants";
 
 export type GenerateReportOptions = {
@@ -92,6 +93,7 @@ export async function generateReportForSession(
   let costEstimate: MvpCostEstimate | null = null;
   let mvpCostEstimateError: string | undefined;
   let marketSize: MarketSizeLLM | null = null;
+  let thingsNeeded: ThingsNeededResult | null = null;
 
   // 3a) Find competitors via web search
   if (idea && industry) {
@@ -147,6 +149,25 @@ export async function generateReportForSession(
     marketSize = null;
   }
 
+  // 3d) Generate things needed via LLM
+  console.log(`[generateReportForSession] Running things needed generation...`);
+  try {
+    thingsNeeded = await computeThingsNeededLLM({
+      idea,
+      productType,
+      targetCustomer,
+      industry,
+      problem,
+      skillsRaw: rawInputs.skills ?? null,
+      teamSize,
+      hours: hoursPerWeek,
+    });
+    console.log(`[generateReportForSession] Things needed: ${thingsNeeded?.needs.length ?? 0} needs, ${thingsNeeded?.gaps.length ?? 0} gaps`);
+  } catch (e: any) {
+    console.error("[generateReportForSession] Things needed error:", e?.message);
+    thingsNeeded = null;
+  }
+
   // 4) Build the report
   console.log(`[generateReportForSession] Building report...`);
   const report = buildReportFromPayload(mappedPayload, {
@@ -155,6 +176,7 @@ export async function generateReportForSession(
     costEstimate,
     mvpCostEstimateError,
     marketSize,
+    thingsNeeded,
   });
 
   // Ensure version is set
@@ -192,6 +214,7 @@ export async function generateReportForSession(
     competitorError,
     hasCostEstimate: costEstimate !== null,
     hasMarketSize: marketSize !== null,
+    hasThingsNeeded: thingsNeeded !== null,
   };
   console.log(`[generateReportForSession] Enrichment debug:`, enrichmentDebug);
 
