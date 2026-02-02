@@ -33,7 +33,6 @@ export function buildFounderFitSection(params: FounderFitParams): string {
     `## 👤 Founder Fit (FFS)`,
     `- **Score:** ${score}/100`,
     `- **Category:** ${category}`,
-    missing.length ? `- **⚠ Missing Data:** ${missing.join(", ")}` : `- **Missing Data:** None`,
     ``,
     `### Breakdown`,
     `- **Skill Score:** ${(components.skill * 100).toFixed(0)}%`,

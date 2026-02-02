@@ -102,8 +102,8 @@ export function industryFamiliarityScore(industryExp: string | null | undefined)
     if (hasStudy || hasAttempt || hasPortfolio) return { score: 0.45, level: "Low", evidence };
 
     return {
-        score: 0.35,
-        level: "Low",
+        score: 0,
+        level: "Unknown",
         evidence: evidence.length ? evidence : ["generic / unclear experince"]
     };
 

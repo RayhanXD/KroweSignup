@@ -353,7 +353,6 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
     }),
     `---`,
     buildMarketSizeSection({ marketSize }),
-    `*(Next slices will add Founder Fit (FFS), Startup Advantage (SAS), Things Needed, Market Snapshot, Roadmap, and Pivot logic.)*`,
     buildFounderFitSection({
       score: (ffs as any).socre ?? Math.round(((ffs.components.skill * 0.42) + (ffs.components.age * 0.14) + (ffs.components.cost * 0.20) + (ffs.components.industry * 0.24)) * 100),
       category: ffs.category,

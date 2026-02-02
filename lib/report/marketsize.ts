@@ -109,7 +109,7 @@ export async function estimateMarketSizeLLM(input: {
                 "Also include:"+
                 "- the user’s market definition (who/where/how they buy/pricing anchor),"+
                 "- an initial wedge plan (beachhead + first use case + GTM motion + conversion target),"+
-                "- a planning market size for Year 1 (target revenue + customer count + implied ARPA)."+
+                "- a planning market size for Year 1 (target revenue + customer count)."+
                 "Use USD/year ranges and conservative assumptions if details are missing."+
                 "Return ONLY valid JSON matching the schema from the system prompt.\n\n"+
                 "Inputs:"+ JSON.stringify(payload, null, 2),
@@ -181,15 +181,6 @@ export async function estimateMarketSizeLLM(input: {
                                     },
                                 },
                                 customer_count: {
-                                    type: "object",
-                                    additionalProperties: false,
-                                    required: ["low", "high"],
-                                    properties: {
-                                        low: { type: "number" },
-                                        high: { type: "number" },
-                                    },
-                                },
-                                implied_arpa_usd: {
                                     type: "object",
                                     additionalProperties: false,
                                     required: ["low", "high"],

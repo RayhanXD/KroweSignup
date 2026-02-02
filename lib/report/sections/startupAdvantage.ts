@@ -22,7 +22,6 @@ export function buildStartupAdvantageSection(params: StartupAdvantageParams): st
     `## 🧩 Startup Advantage Score (SAS)`,
     `- **Score:** ${score}/100`,
     `- **Competitive Position:** ${interpretation}`,
-    missing.length ? `- **⚠ Missing Data:** ${missing.join(", ")}` : `- **Missing Data:** None`,
     ``,
     `### Breakdown`,
     `- **Skill:** ${(components.skill * 100).toFixed(0)}%`,
