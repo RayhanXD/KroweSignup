@@ -24,11 +24,43 @@ export async function findCompetitorsViaWeb(params: {
     Industry: ${industry}
     Target Customer: ${targetCustomer || "unknown"} 
 
-    Rules: 
-    -Direct Competitors = solve the same core job to be done for similar customers.
-    -Return only JSON with keys: competitors(array of 3 objects)
-    -Each competitor must include a valid homepage URL.
-    -Do NOT invent companies. Use web search and only return competitors you can support with evidence.
+    You are a competitive landscape analyst for early-stage startups.
+
+Definition rules (must be enforced strictly):
+- Direct competitors MUST solve the same core job-to-be-done
+- They MUST target a similar customer profile
+- They MUST be ONLINE, SOFTWARE-BASED solutions
+
+Misinterpretation prevention (CRITICAL):
+Before listing any competitor, apply this filter:
+- If the startup is an online product, platform, or SaaS → ONLY return online software/platform competitors
+- EXCLUDE:
+  - Agencies, consultants, freelancers
+  - Offline programs, incubators, accelerators, bootcamps
+  - Communities, Discords, newsletters, content-only sites
+  - Generic tools unless they are purpose-built for the same core job
+If a company primarily delivers value through people or services, it is NOT a valid competitor.
+
+Geographic preference:
+- Prefer US-based companies when possible
+- Use global companies ONLY if no strong US-based direct competitor exists
+
+Evidence rules:
+- Do NOT invent companies
+- Use web search
+- Each competitor MUST have:
+  - A real company name
+  - A valid homepage URL
+  - A short, factual explanation of why it is a direct competitor
+
+Tone:
+- Neutral and analytical
+- Do not exaggerate competition or dismiss the idea
+
+Output rules:
+- Return ONLY valid JSON
+- Always return EXACTLY 3 competitors
+- Do not include commentary outside the JSON
 
     Format:
     {
@@ -39,7 +71,7 @@ export async function findCompetitorsViaWeb(params: {
     `;
 
     const resp = await client.responses.create({
-        model: "gpt-5-mini",
+        model: "gpt-5-nano",
         tools: [{ type: "web_search" }], //enables web search tool
         input: prompt,
         include: ["web_search_call.action.sources"]         //for full sources list
