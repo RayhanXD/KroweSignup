@@ -162,7 +162,7 @@ export async function generateReportForSession(
       teamSize,
       hours: hoursPerWeek,
     });
-    console.log(`[generateReportForSession] Things needed: ${thingsNeeded?.needs.length ?? 0} needs, ${thingsNeeded?.gaps.length ?? 0} gaps`);
+    console.log(`[generateReportForSession] Things needed: ${thingsNeeded?.needs.length ?? 0} needs`);
   } catch (e: any) {
     console.error("[generateReportForSession] Things needed error:", e?.message);
     thingsNeeded = null;

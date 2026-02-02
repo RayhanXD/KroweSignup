@@ -2,7 +2,7 @@ import { StepKey } from "../signupSteps";
 import type { Competitor } from "./findCompetitors";
 import type { MvpCostEstimate } from "./estimateMvpCost";
 import { costEfficiencyEstimate, productTypeScore, startupAdvantageScore } from "./scoring";
-import { computeThingsNeed, deriveSkillProfile, type ThingsNeededResult } from "./thingsNeeded";
+import { computeThingsNeed, type ThingsNeededResult } from "./thingsNeeded";
 import type { MarketSizeLLM } from "./marketsize";
 import { REPORT_VERSION } from "../constants";
 import { safeNumber } from "../utils/parsing";
@@ -293,8 +293,7 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
   const marketSize = opts?.marketSize ?? null;
 
   // Use LLM-generated thingsNeeded if provided, otherwise fall back to heuristic
-  const profile = deriveSkillProfile(skillsRaw);
-  const things = opts?.thingsNeeded ?? computeThingsNeed({ productType, skillProfile: profile, teamSize });
+  const things = opts?.thingsNeeded ?? computeThingsNeed({ productType });
 
 
   //1) scores need for SAS 
@@ -371,7 +370,6 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
     }),
     buildThingsNeededSection({
       needs: things.needs,
-      gaps: things.gaps,
     }),
     buildMvpCostSection({ costEstimate }),
     buildCompetitorsSection({ competitors }),
