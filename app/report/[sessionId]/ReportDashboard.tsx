@@ -190,7 +190,7 @@ function ProgressBar({
 }) {
   const percentage = (value / max) * 100;
   return (
-    <div className={cn("h-1.5 bg-muted rounded-full overflow-hidden", className)}>
+    <div className={cn("h-1.5 bg-gray-200 rounded-full overflow-hidden", className)}>
       <div
         className="h-full bg-orange-500 rounded-full transition-all duration-500"
         style={{ width: `${percentage}%` }}
