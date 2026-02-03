@@ -3,8 +3,6 @@
 import React, { useState } from "react";
 import {
   Info,
-  ChevronDown,
-  ChevronUp,
   Clock,
   DollarSign,
   Users,
@@ -63,7 +61,7 @@ interface ReportDataForUI {
     wedge_sam_usd_range?: { low: number; high: number };
     planning_year_1?: { target_revenue_usd?: { low: number; high: number } };
   } | null;
-  competitors?: Array<{ name: string; evidence?: string; why_competitor?: string }>;
+  competitors?: Array<{ name: string; url?: string; evidence?: string; why_competitor?: string }>;
   thingsNeed?: { needs: Array<{ title: string; why?: string }> };
   skills?: {
     overall: number | null;
@@ -99,33 +97,6 @@ function Tooltip({
         {content}
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-foreground" />
       </div>
-    </div>
-  );
-}
-
-function Collapsible({
-  title,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
-        aria-expanded={isOpen}
-      >
-        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        {title}
-      </button>
-      {isOpen && <div className="mt-3">{children}</div>}
     </div>
   );
 }
@@ -395,7 +366,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                 <div className="flex flex-col gap-1">
                   <p className="text-xs text-muted-foreground">Confidence</p>
                   <span className="text-xs px-2 py-1 bg-[#F2F2F2] text-[#525252] rounded-full">
-                    {Math.round(mvpCost.confidence_0_1 * 100)}%
+                    {Math.round(mvpCost.confidence_0_1 * 100)}% score
                   </span>
                 </div>
               </div>
@@ -425,34 +396,35 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
               {founderFit != null && <ScoreRing score={founderFit.score} />}
             </div>
             {founderFit?.components && (
-              <Collapsible title="View breakdown">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Breakdown</p>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Skill Score</span>
-                    <span className="font-medium text-black">
-                      {Math.round(founderFit.components.skill * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Industry Familiarity</span>
-                    <span className="font-medium text-black">
-                      {Math.round(founderFit.components.industry * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Age Factor</span>
-                    <span className="font-medium text-black">
-                      {Math.round(founderFit.components.age * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Cost Alignment</span>
-                    <span className="font-medium text-black">
-                      {Math.round(founderFit.components.cost * 100)}%
-                    </span>
-                  </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Skill Score</span>
+                  <span className="font-medium text-black">
+                    {Math.round(founderFit.components.skill * 100)}%
+                  </span>
                 </div>
-              </Collapsible>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Industry Familiarity</span>
+                  <span className="font-medium text-black">
+                    {Math.round(founderFit.components.industry * 100)}%
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Age Factor</span>
+                  <span className="font-medium text-black">
+                    {Math.round(founderFit.components.age * 100)}%
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cost Alignment</span>
+                  <span className="font-medium text-black">
+                    {Math.round(founderFit.components.cost * 100)}%
+                  </span>
+                </div>
+                </div>
+              </div>
             )}
           </DashboardCard>
 
@@ -479,40 +451,41 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
               )}
             </div>
             {startupAdvantage?.components && (
-              <Collapsible title="View breakdown">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Breakdown</p>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Skill</span>
-                    <span className="font-medium text-black">
-                      {Math.round(startupAdvantage.components.skill * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Age</span>
-                    <span className="font-medium text-black">
-                      {Math.round(startupAdvantage.components.age * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Cost Efficiency</span>
-                    <span className="font-medium text-black">
-                      {Math.round(startupAdvantage.components.costEff * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Product Type</span>
-                    <span className="font-medium text-black">
-                      {Math.round(startupAdvantage.components.productType * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Industry</span>
-                    <span className="font-medium text-black">
-                      {Math.round(startupAdvantage.components.industry * 100)}%
-                    </span>
-                  </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Skill</span>
+                  <span className="font-medium text-black">
+                    {Math.round(startupAdvantage.components.skill * 100)}%
+                  </span>
                 </div>
-              </Collapsible>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Age</span>
+                  <span className="font-medium text-black">
+                    {Math.round(startupAdvantage.components.age * 100)}%
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cost Efficiency</span>
+                  <span className="font-medium text-black">
+                    {Math.round(startupAdvantage.components.costEff * 100)}%
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Product Type</span>
+                  <span className="font-medium text-black">
+                    {Math.round(startupAdvantage.components.productType * 100)}%
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Industry</span>
+                  <span className="font-medium text-black">
+                    {Math.round(startupAdvantage.components.industry * 100)}%
+                  </span>
+                </div>
+                </div>
+              </div>
             )}
           </DashboardCard>
 
@@ -678,7 +651,18 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                     className="p-4 bg-white rounded-lg border border-gray-200"
                   >
                     <h3 className="font-semibold text-black mb-1">
-                      {competitor.name}
+                      {competitor.url && /^https?:\/\//i.test(competitor.url) ? (
+                        <a
+                          href={competitor.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-orange-600 hover:underline"
+                        >
+                          {competitor.name}
+                        </a>
+                      ) : (
+                        competitor.name
+                      )}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       {competitor.evidence ?? competitor.why_competitor ?? "—"}
