@@ -2,6 +2,7 @@
 
 import type { ChangeEvent } from 'react';
 import { ArrowRight, Lock, User } from 'lucide-react';
+import SignupStepLayout from '../SignupStepLayout';
 
 type AgeStepProps = {
   value: number;
@@ -27,28 +28,8 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
   };
 
   return (
-    <div className="min-h-screen bg-white text-foreground flex flex-col">
-      <header className="border-b border-gray-200 bg-white/90 backdrop-blur">
-        <div className="max-w-6xl mx-auto px-6 py-4 md:py-5">
-          <div className="flex items-center gap-4">
-            <div className="flex-shrink-0">
-              <img src="/KroweLogo.png" alt="Krowe Logo" className="h-6 w-auto md:h-8" />
-            </div>
-            <div className="flex-1 flex justify-center min-w-0 px-2">
-              <div className="w-full max-w-xs h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="bg-orange-500 h-full rounded-full transition-[width]"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
-            <div className="flex-shrink-0 w-6 md:w-8" aria-hidden />
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-4xl grid md:grid-cols-2 gap-12 md:gap-16 items-stretch">
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full max-w-4xl grid md:grid-cols-2 gap-12 md:gap-16 items-stretch">
           <div className="space-y-6">
             <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
               <User className="w-6 h-6 text-orange-500" />
@@ -125,12 +106,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
             </div>
           </div>
         </div>
-      </main>
-
-      <footer className="py-6 text-center">
-        <p className="text-xs text-muted-foreground tracking-wide">© 2023 KROWE INCUBATOR</p>
-      </footer>
-    </div>
+    </SignupStepLayout>
   )
 }
 

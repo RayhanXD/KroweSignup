@@ -1,5 +1,7 @@
 'use client'
 
+import SignupStepLayout from '../SignupStepLayout'
+
 type ProductType = 'mobile' | 'web' | 'both' | 'other'
 
 type ProductTypeStepProps = {
@@ -18,18 +20,8 @@ export default function ProductTypeStep({
   progressPercent = 33,
 }: ProductTypeStepProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex justify-center pt-6">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
-      </div>
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
-          <div
-            className="bg-orange-500 h-full rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full max-w-6xl mx-auto flex flex-col">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900">
             what type of product is your idea?
@@ -105,6 +97,6 @@ export default function ProductTypeStep({
           </button>
         </div>
       </div>
-    </div>
+    </SignupStepLayout>
   )
 }

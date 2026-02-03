@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import SignupStepLayout from '../SignupStepLayout'
 import {
   GraduationCap,
   Wallet,
@@ -111,18 +112,8 @@ export default function IndustryStep({
   const canContinue = !!value && (value !== 'other' || otherValue.trim().length >= 3)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
-      <div className="flex justify-center pt-4">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-16 w-auto" />
-      </div>
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-3 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-6">
-          <div
-            className="bg-orange-500 h-full rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full max-w-6xl mx-auto flex flex-col">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center mb-2">
             <Factory className="w-12 h-12 text-orange-500" />
@@ -223,6 +214,6 @@ export default function IndustryStep({
           </button>
         </div>
       </div>
-    </div>
+    </SignupStepLayout>
   )
 }

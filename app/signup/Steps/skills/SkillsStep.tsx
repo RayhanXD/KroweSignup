@@ -1,4 +1,6 @@
-'use client '
+'use client'
+
+import SignupStepLayout from '../SignupStepLayout'
 
 type SkillId = 'dev' | 'marketing' | 'leadership' | 'other' | 'none'
 
@@ -41,19 +43,9 @@ export default function SkillsStep({
   const canContinue = selectedSkills.length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex justify-center pt-6">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
-      </div>
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
-          <div
-            className="bg-orange-500 h-full rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 mt-4">
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full max-w-3xl mx-auto">
+        <div className="flex flex-col gap-6 mb-6">
           <div className="text-6xl ">🏢</div>
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -117,6 +109,6 @@ export default function SkillsStep({
           </button>
         </div>
       </div>
-    </div>
+    </SignupStepLayout>
   )
 }

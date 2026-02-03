@@ -1,5 +1,7 @@
 'use client'
 
+import SignupStepLayout from '../SignupStepLayout'
+
 type IdeaStepProps = {
   value: string;
   onChange: (v: string) => void;
@@ -18,19 +20,8 @@ export default function IdeaStep({
   const canContinue = value.trim().length > 20;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex justify-center pt-6">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
-      </div>
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
-          <div
-            className="bg-orange-500 h-full rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 mt-4">
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full max-w-3xl mx-auto flex flex-col gap-6">
           <div className="text-4xl mb-1">💼</div>
 
           <h1 className="text-4xl font-semibold text-gray-900">
@@ -74,7 +65,6 @@ export default function IdeaStep({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </SignupStepLayout>
   )
 }

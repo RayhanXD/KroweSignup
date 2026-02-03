@@ -1,5 +1,7 @@
 'use client'
 
+import SignupStepLayout from '../SignupStepLayout'
+
 type IndustryExperienceStepProps = {
   value: string;
   onChange: (v: string) => void;
@@ -16,26 +18,14 @@ export default function IndustryExperienceStep({
   progressPercent = 66, //adjust this to change progress bar on this page
 }: IndustryExperienceStepProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex justify-center pt-6">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
-      </div>
-      <div className="w-full max-w-4xl mx-auto flex-1 flex flex-col pt-5 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
-          <div
-            className="h-full bg-orange-500 rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 mt-4">
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full max-w-3xl mx-auto">
+        <div className="flex flex-col gap-6 mb-6">
           <div className="text-4xl">🏢</div>
-
           <div className="flex flex-col gap-2">
             <h1 className="text-4xl font-semibold text-gray-900">
               whats your industry experience, if any?
             </h1>
-
             <p className="text-gray-500 text-base max-w-2xl leading-relaxed mb-2">
               don't feel pressured to lie or make up experience, knowing where you
               are will help us take you to where you want to be
@@ -63,7 +53,6 @@ export default function IndustryExperienceStep({
           >
             &lt; Go Back
           </button>
-
           <button
             type="button"
             onClick={onContinue}
@@ -74,6 +63,6 @@ export default function IndustryExperienceStep({
           </button>
         </div>
       </div>
-    </div>
+    </SignupStepLayout>
   )
 }

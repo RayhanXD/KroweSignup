@@ -1,6 +1,7 @@
 'use client'
 
 import { Users } from 'lucide-react'
+import SignupStepLayout from '../SignupStepLayout'
 
 type TeamSizeStepProps = {
   value: number
@@ -23,19 +24,10 @@ export default function TeamSizeStep({
   const displayText = teamSize === 30 ? 'person' : 'people'
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex justify-center pt-6">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
-      </div>
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
-          <div
-            className="bg-orange-500 h-full rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        <div className="max-w-3xl mx-auto mt-4">
+    <>
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full max-w-6xl mx-auto flex flex-col">
+        <div className="max-w-3xl mx-auto w-full">
           <div className="flex flex-col">
             <div className="mb-8">
               <Users className="w-16 h-16 text-slate-400" strokeWidth={1.5} />
@@ -96,8 +88,8 @@ export default function TeamSizeStep({
           </div>
         </div>
       </div>
-
-      <style>{`
+    </SignupStepLayout>
+    <style>{`
         .slider::-webkit-slider-thumb {
           appearance: none;
           width: 20px;
@@ -119,6 +111,6 @@ export default function TeamSizeStep({
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
       `}</style>
-    </div>
+    </>
   )
 }
