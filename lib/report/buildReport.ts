@@ -203,7 +203,7 @@ export function founderFitScore(params: {
     rounded >= 80 ? "strong fit " : rounded >= 60 ? "partial fit " : "poor fit";
 
   return {
-    socre: rounded,
+    score: rounded,
     category,
     missing,
     components: { skill: skillEff, age: ageEff, cost: costEff, industry: indEff },
@@ -350,7 +350,7 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
     `---`,
     buildMarketSizeSection({ marketSize }),
     buildFounderFitSection({
-      score: (ffs as any).socre ?? Math.round(((ffs.components.skill * 0.42) + (ffs.components.age * 0.14) + (ffs.components.cost * 0.20) + (ffs.components.industry * 0.24)) * 100),
+      score: ffs.score ?? Math.round(((ffs.components.skill * 0.42) + (ffs.components.age * 0.14) + (ffs.components.cost * 0.20) + (ffs.components.industry * 0.24)) * 100),
       category: ffs.category,
       missing: ffs.missing,
       components: ffs.components,

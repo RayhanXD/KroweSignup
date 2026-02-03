@@ -212,7 +212,7 @@ function DashboardCard({
   return (
     <div
       className={cn(
-        "bg-white rounded-xl border border-gray-200 p-6 shadow-sm transition-all hover:border-gray-300 hover:shadow-md",
+        "bg-white rounded-xl border border-gray-200 p-6 shadow-sm transition-all hover:border-orange-500 hover:shadow-md",
         accent && "border-t-2 border-t-orange-500",
         className
       )}
@@ -380,18 +380,24 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
             </p>
             {mvpCost && (
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <ProgressBar
-                    value={Math.round(mvpCost.cost_efficiency_score_0_1 * 100)}
-                    className="w-20"
-                  />
-                  <span className="text-sm font-medium text-black">
-                    {Math.round(mvpCost.cost_efficiency_score_0_1 * 100)}/100
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs text-muted-foreground">Cost efficiency</p>
+                  <div className="flex items-center gap-2">
+                    <ProgressBar
+                      value={Math.round(mvpCost.cost_efficiency_score_0_1 * 100)}
+                      className="w-20"
+                    />
+                    <span className="text-sm font-medium text-black">
+                      {Math.round(mvpCost.cost_efficiency_score_0_1 * 100)}/100
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs text-muted-foreground">Confidence</p>
+                  <span className="text-xs px-2 py-1 bg-[#F2F2F2] text-[#525252] rounded-full">
+                    {Math.round(mvpCost.confidence_0_1 * 100)}%
                   </span>
                 </div>
-                <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
-                  {Math.round(mvpCost.confidence_0_1 * 100)}% confidence
-                </span>
               </div>
             )}
           </DashboardCard>
@@ -545,7 +551,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                 </span>
               )}
               {inputs.industry && (
-                <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
+                <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded-full">
                   {inputs.industry}
                 </span>
               )}
@@ -649,7 +655,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                 thingsNeed.map((item, index) => (
                   <label
                     key={index}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F8F8F8] transition-colors cursor-pointer group"
                   >
                     <div className="w-5 h-5 border-2 border-gray-300 rounded group-hover:border-orange-500 transition-colors flex-shrink-0" />
                     <span className="text-sm text-black">{item.title}</span>
@@ -697,7 +703,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                 mvpScopeList.map((item, index) => (
                   <span
                     key={index}
-                    className="text-sm px-3 py-1.5 bg-muted rounded-full text-black"
+                    className="text-sm px-3 py-1.5 bg-gray-100 rounded-full text-black"
                   >
                     {item}
                   </span>
