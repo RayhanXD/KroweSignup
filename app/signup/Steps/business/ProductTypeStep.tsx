@@ -1,5 +1,6 @@
 'use client'
 
+import { Lock } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type ProductType = 'mobile' | 'web' | 'both' | 'other'
@@ -21,80 +22,136 @@ export default function ProductTypeStep({
 }: ProductTypeStepProps) {
   return (
     <SignupStepLayout progressPercent={progressPercent}>
-      <div className="w-full max-w-6xl mx-auto flex flex-col">
-        <div className="text-center mb-16">
-          <h2 className="text-5xl font-bold text-gray-900">
-            what type of product is your idea?
-          </h2>
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-6 mb-32">
-          <button
-            type="button"
-            onClick={() => onChange('mobile')}
-            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${value === 'mobile' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
-              }`}
-          >
-            <div className="text-7xl">📱</div>
-            <span className="text-lg text-gray-900">mobile app</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onChange('web')}
-            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${value === 'web' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
-              }`}
-          >
-            <div className="text-7xl">💻</div>
-            <span className="text-lg text-gray-900">web app</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onChange('both')}
-            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${value === 'both' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
-              }`}
-          >
-            <div className="text-5xl flex items-center gap-1">
-              <span>📱</span>
-              <span className="text-4xl text-gray-900">/</span>
-              <span>💻</span>
+      <div className="flex-grow flex items-center justify-center p-6 md:p-12 relative overflow-hidden w-full">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-orange-50/40 via-transparent to-transparent pointer-events-none -z-10 translate-x-1/3 -translate-y-1/4" />
+        <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
+          <div className="text-center mb-12 space-y-4 max-w-2xl">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 mb-2 border border-orange-100/50 shadow-sm">
+              <span className="material-symbols-outlined">category</span>
             </div>
-            <span className="text-lg text-gray-900">both</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onChange('other')}
-            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${value === 'other' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
-              }`}
-          >
-            <div className="flex gap-3 text-4xl">
-              <span className="w-3 h-3 bg-gray-900 rounded-full" />
-              <span className="w-3 h-3 bg-gray-900 rounded-full" />
-              <span className="w-3 h-3 bg-gray-900 rounded-full" />
-            </div>
-            <span className="text-lg text-gray-900">other</span>
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-          >
-            &lt; Go Back
-          </button>
-
-          <button
-            type="button"
-            onClick={onContinue}
-            disabled={!value}
-            className="px-8 py-3 bg-[#F97316] text-white rounded-lg font-medium hover:bg-[#F97316]/90 transition-colors disabled:opacity-50"
-          >
-            Continue
-          </button>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+              What type of <span className="text-orange-500 bg-clip-text bg-gradient-to-r from-primary-600 to-primary-500">product</span> is your idea?
+            </h1>
+            <p className="text-lg text-gray-500 leading-relaxed">
+              Categorizing your solution helps us tailor the incubation roadmap specifically for your technology stack.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-12">
+            <label className="group cursor-pointer relative">
+              <input
+                className="peer sr-only"
+                name="product_type"
+                type="radio"
+                value="mobile"
+                checked={value === 'mobile'}
+                onChange={() => onChange('mobile')}
+              />
+              <div className="h-full bg-white rounded-2xl border border-gray-200 p-8 flex flex-col items-center justify-center gap-6 text-center transition-all duration-300 hover:shadow-card-hover hover:border-orange-200 hover:-translate-y-1 peer-checked:border-orange-400 peer-checked:shadow-card-hover peer-checked:ring-1 peer-checked:ring-orange-400 peer-checked:bg-orange-50">
+                <div className="w-16 h-16 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 peer-checked:bg-white peer-checked:text-orange-500 peer-checked:border peer-checked:border-orange-200 flex items-center justify-center transition-colors duration-300">
+                  <span className="material-symbols-outlined text-[32px]">smartphone</span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-orange-600 peer-checked:text-orange-700">Mobile App</h3>
+                  <p className="text-xs text-gray-500 font-medium">iOS & Android</p>
+                </div>
+                <div className="absolute top-4 right-4 opacity-0 peer-checked:opacity-100 transition-opacity text-orange-500">
+                  <span className="material-symbols-outlined filled">check_circle</span>
+                </div>
+              </div>
+            </label>
+            <label className="group cursor-pointer relative">
+              <input
+                className="peer sr-only"
+                name="product_type"
+                type="radio"
+                value="web"
+                checked={value === 'web'}
+                onChange={() => onChange('web')}
+              />
+              <div className="h-full bg-white rounded-2xl border border-gray-200 p-8 flex flex-col items-center justify-center gap-6 text-center transition-all duration-300 hover:shadow-card-hover hover:border-orange-200 hover:-translate-y-1 peer-checked:border-orange-400 peer-checked:shadow-card-hover peer-checked:ring-1 peer-checked:ring-orange-400 peer-checked:bg-orange-50">
+                <div className="w-16 h-16 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 peer-checked:bg-white peer-checked:text-orange-500 peer-checked:border peer-checked:border-orange-200 flex items-center justify-center transition-colors duration-300">
+                  <span className="material-symbols-outlined text-[32px]">laptop_mac</span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-orange-600 peer-checked:text-orange-700">Web App</h3>
+                  <p className="text-xs text-gray-500 font-medium">Browser Based</p>
+                </div>
+                <div className="absolute top-4 right-4 opacity-0 peer-checked:opacity-100 transition-opacity text-orange-500">
+                  <span className="material-symbols-outlined filled">check_circle</span>
+                </div>
+              </div>
+            </label>
+            <label className="group cursor-pointer relative">
+              <input
+                className="peer sr-only"
+                name="product_type"
+                type="radio"
+                value="both"
+                checked={value === 'both'}
+                onChange={() => onChange('both')}
+              />
+              <div className="h-full bg-white rounded-2xl border border-gray-200 p-8 flex flex-col items-center justify-center gap-6 text-center transition-all duration-300 hover:shadow-card-hover hover:border-orange-200 hover:-translate-y-1 peer-checked:border-orange-400 peer-checked:shadow-card-hover peer-checked:ring-1 peer-checked:ring-orange-400 peer-checked:bg-orange-50">
+                <div className="w-16 h-16 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 peer-checked:bg-white peer-checked:text-orange-500 peer-checked:border peer-checked:border-orange-200 flex items-center justify-center transition-colors duration-300">
+                  <span className="material-symbols-outlined text-[32px]">devices</span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-orange-600 peer-checked:text-orange-700">Both</h3>
+                  <p className="text-xs text-gray-500 font-medium">Cross-platform</p>
+                </div>
+                <div className="absolute top-4 right-4 opacity-0 peer-checked:opacity-100 transition-opacity text-orange-500">
+                  <span className="material-symbols-outlined filled">check_circle</span>
+                </div>
+              </div>
+            </label>
+            <label className="group cursor-pointer relative">
+              <input
+                className="peer sr-only"
+                name="product_type"
+                type="radio"
+                value="other"
+                checked={value === 'other'}
+                onChange={() => onChange('other')}
+              />
+              <div className="h-full bg-white rounded-2xl border border-gray-200 p-8 flex flex-col items-center justify-center gap-6 text-center transition-all duration-300 hover:shadow-card-hover hover:border-orange-200 hover:-translate-y-1 peer-checked:border-orange-400 peer-checked:shadow-card-hover peer-checked:ring-1 peer-checked:ring-orange-400 peer-checked:bg-orange-50">
+                <div className="w-16 h-16 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 peer-checked:bg-white peer-checked:text-orange-500 peer-checked:border peer-checked:border-orange-200 flex items-center justify-center transition-colors duration-300">
+                  <span className="material-symbols-outlined text-[32px]">more_horiz</span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-orange-600 peer-checked:text-orange-700">Other</h3>
+                  <p className="text-xs text-gray-500 font-medium">Hardware / Service</p>
+                </div>
+                <div className="absolute top-4 right-4 opacity-0 peer-checked:opacity-100 transition-opacity text-orange-500">
+                  <span className="material-symbols-outlined filled">check_circle</span>
+                </div>
+              </div>
+            </label>
+          </div>
+          <div className="flex items-center justify-between w-full max-w-5xl border-t border-gray-100 pt-8">
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-gray-500 hover:text-gray-900 text-sm font-medium px-4 py-2 transition-colors focus:outline-none flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-lg">arrow_back</span>
+              Go Back
+            </button>
+            <button
+              type="button"
+              onClick={onContinue}
+              disabled={!value}
+              className="group relative inline-flex items-center justify-center px-8 py-3 text-sm font-semibold text-white transition-all duration-300 bg-gray-900 rounded-lg hover:bg-primary-600 hover:shadow-lg hover:shadow-orange-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              Continue
+              <span className="material-symbols-outlined text-lg ml-2 transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+            </button>
+          </div>
+        {/* Privacy Notice */}
+        <footer className="px-6 pt-10 pb-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Lock className="w-4 h-4" />
+            <span>Your intellectual property is private and encrypted.</span>
+          </div>
+        </footer>
         </div>
       </div>
     </SignupStepLayout>
