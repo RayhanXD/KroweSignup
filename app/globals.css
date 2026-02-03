@@ -28,18 +28,6 @@
   --shadow-soft: 0 4px 20px -2px rgb(0 0 0 / 0.06), 0 2px 8px -2px rgb(0 0 0 / 0.04);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --muted: #27272a;
-    --muted-foreground: #a1a1aa;
-    --card: #18181b;
-    --card-foreground: #ededed;
-    --border: #3f3f46;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
