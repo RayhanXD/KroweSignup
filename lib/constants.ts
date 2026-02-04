@@ -17,7 +17,7 @@ export const STORAGE_KEYS = {
 // Report Version
 // ============================================================================
 
-export const REPORT_VERSION = "6.2.2" as const;
+export const REPORT_VERSION = "6.2.4" as const;
 
 // ============================================================================
 // Validation Thresholds
@@ -58,7 +58,7 @@ export const VALIDATION_THRESHOLDS = {
 // ============================================================================
 
 export const DEFAULT_VALUES = {
-  AGE: 18,
+  AGE: 0,
   HOURS: 6,
   TEAM_SIZE: 1,
 } as const;

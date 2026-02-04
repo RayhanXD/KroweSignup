@@ -1,18 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
-import {
-  GraduationCap,
-  Wallet,
-  Heart,
-  ShoppingCart,
-  Layers,
-  Store,
-  Palette,
-  MoreHorizontal,
-  Factory,
-  ChevronLeft,
-} from 'lucide-react'
+import SignupStepLayout from '../SignupStepLayout'
 
 export type IndustryId =
   | 'edtech'
@@ -34,12 +22,73 @@ type IndustryStepProps = {
   progressPercent?: number
 }
 
-interface Industry {
+interface IndustryOption {
   id: IndustryId
   name: string
   description: string
-  icon: ReactNode
+  icon: string
+  iconBg: string
+  iconColor: string
 }
+
+const INDUSTRIES: IndustryOption[] = [
+  {
+    id: 'fintech',
+    name: 'Fintech',
+    description: 'Tech-powered financial services like payments, banking, lending, and investing.',
+    icon: 'account_balance_wallet',
+    iconBg: 'bg-[#FFF5EE]',
+    iconColor: 'text-[#E05202]',
+  },
+  {
+    id: 'health',
+    name: 'Healthtech',
+    description: 'Software and services designed to improve medical care and hospital management.',
+    icon: 'cardiology',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-500',
+  },
+  {
+    id: 'ecommerce',
+    name: 'E-commerce',
+    description: 'Online marketplaces, direct-to-consumer brands, and retail technology.',
+    icon: 'shopping_cart',
+    iconBg: 'bg-purple-50',
+    iconColor: 'text-purple-500',
+  },
+  {
+    id: 'saas',
+    name: 'SaaS',
+    description: 'Software licensed on a subscription basis, centrally hosted.',
+    icon: 'cloud_queue',
+    iconBg: 'bg-green-50',
+    iconColor: 'text-green-500',
+  },
+  {
+    id: 'edtech',
+    name: 'Edtech',
+    description: 'Technology facilitating learning and improving performance.',
+    icon: 'school',
+    iconBg: 'bg-yellow-50',
+    iconColor: 'text-yellow-600',
+  },
+  {
+    id: 'marketplace',
+    name: 'Marketplace',
+    description: 'Platforms connecting buyers and sellers, two-sided marketplaces, and peer-to-peer services.',
+    icon: 'store',
+    iconBg: 'bg-teal-50',
+    iconColor: 'text-teal-600',
+  },
+  {
+    id: 'creator',
+    name: 'Creator Tools',
+    description: 'Tools and platforms for content creators, influencers, and digital artists.',
+    icon: 'palette',
+    iconBg: 'bg-pink-50',
+    iconColor: 'text-pink-500',
+  },
+]
 
 export default function IndustryStep({
   value,
@@ -50,179 +99,127 @@ export default function IndustryStep({
   onContinue,
   progressPercent = 0,
 }: IndustryStepProps) {
-  const industries: Industry[] = [
-    {
-      id: 'edtech',
-      name: 'EdTech',
-      description:
-        'Educational technology platforms, online learning, and knowledge-sharing tools',
-      icon: <GraduationCap className="w-6 h-6" />,
-    },
-    {
-      id: 'fintech',
-      name: 'FinTech',
-      description:
-        'Tech-powered financial services like payments, banking, lending, and investing',
-      icon: <Wallet className="w-6 h-6" />,
-    },
-    {
-      id: 'health',
-      name: 'Health / Wellness',
-      description:
-        'Healthcare technology, fitness apps, mental health, and wellness platforms',
-      icon: <Heart className="w-6 h-6" />,
-    },
-    {
-      id: 'ecommerce',
-      name: 'E-commerce',
-      description:
-        'Online retail, direct-to-consumer brands, and digital shopping experiences',
-      icon: <ShoppingCart className="w-6 h-6" />,
-    },
-    {
-      id: 'saas',
-      name: 'SaaS / Productivity',
-      description:
-        'Software-as-a-service tools, workflow automation, and productivity solutions',
-      icon: <Layers className="w-6 h-6" />,
-    },
-    {
-      id: 'marketplace',
-      name: 'Marketplace',
-      description:
-        'Platforms connecting buyers and sellers, two-sided marketplaces, and peer-to-peer services',
-      icon: <Store className="w-6 h-6" />,
-    },
-    {
-      id: 'creator',
-      name: 'Creator Tools',
-      description:
-        'Tools and platforms for content creators, influencers, and digital artists',
-      icon: <Palette className="w-6 h-6" />,
-    },
-    {
-      id: 'other',
-      name: 'Other',
-      description: 'If none of these fit your idea, select this and type your industry',
-      icon: <MoreHorizontal className="w-6 h-6" />,
-    },
-  ]
-
   const canContinue = !!value && (value !== 'other' || otherValue.trim().length >= 3)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
-      <div className="flex justify-center pt-4">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-16 w-auto" />
-      </div>
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-3 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-6">
-          <div
-            className="bg-orange-500 h-full rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center mb-2">
-            <Factory className="w-12 h-12 text-orange-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            what industry does your idea fall under
-          </h1>
-          <p className="text-sm text-gray-500 max-w-3xl mx-auto">
-            based on the answers you gave prior we picked some that we thought were the best fit
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-          {industries.map((industry) => (
-            <button
-              key={industry.id}
-              type="button"
-              onClick={() => onChange(industry.id)}
-              className={[
-                'relative p-3 rounded-xl border-2 transition-all duration-200 text-left',
-                value === industry.id
-                  ? 'border-orange-500 bg-orange-50 shadow-lg scale-105'
-                  : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow-md hover:scale-[1.02]',
-              ].join(' ')}
-            >
-              <div
-                className={[
-                  'mb-2 inline-flex',
-                  value === industry.id ? 'text-orange-500' : 'text-orange-400',
-                ].join(' ')}
-              >
-                {industry.icon}
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="flex-grow flex items-center justify-center p-4 md:p-8 relative overflow-hidden w-full">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-orange-50/40 via-transparent to-transparent pointer-events-none -z-10 translate-x-1/3 -translate-y-1/4" />
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+          {/* Left column */}
+          <div className="lg:col-span-4 flex flex-col justify-center space-y-5 pt-2 lg:sticky lg:top-20">
+            <div className="space-y-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#FFF5EE] text-[#E05202] mb-1 shadow-sm">
+                <span className="material-symbols-outlined text-[20px]">factory</span>
               </div>
-
-              <h3 className="text-base font-semibold text-gray-900 mb-1">
-                {industry.name}
-              </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                {industry.description}
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 leading-[1.15]">
+                What <span className="text-orange-500 bg-clip-text bg-gradient-to-r from-primary-600 to-primary-500">industry</span> does your idea fall under?
+              </h1>
+              <p className="text-base text-gray-500 leading-relaxed">
+                Based on your previous answers, we&apos;ve highlighted some sectors that seem like a good fit, or you can specify your own.
               </p>
-
-              {value === industry.id && (
-                <div className="absolute top-4 right-4 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="3"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Show text input only if "other" is selected */}
-        {value === 'other' && (
-          <div className="max-w-2xl mx-auto mb-6">
-            <label className="block text-sm text-gray-600 mb-2">
-              Type your industry
-            </label>
-            <input
-              value={otherValue}
-              onChange={(e) => onOtherChange(e.target.value)}
-              placeholder="Example: Real Estate, LegalTech, HR, Robotics..."
-              className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-orange-200"
-            />
+            </div>
+            <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-gray-400 font-medium">
+              <span className="material-symbols-outlined text-sm">lock</span>
+              <span>Your intellectual property is secure.</span>
+            </div>
           </div>
-        )}
 
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-6 py-3 text-gray-700 font-medium hover:text-gray-900 transition-colors flex items-center gap-2"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span>Go Back</span>
-          </button>
+          {/* Right column */}
+          <div className="lg:col-span-8 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {INDUSTRIES.map((industry) => (
+                <div key={industry.id} className="relative group">
+                  <input
+                    className="peer sr-only"
+                    id={`ind_${industry.id}`}
+                    name="industry"
+                    type="radio"
+                    value={industry.id}
+                    checked={value === industry.id}
+                    onChange={() => onChange(industry.id)}
+                  />
+                  <label
+                    htmlFor={`ind_${industry.id}`}
+                    className="block h-full cursor-pointer bg-white border border-gray-200 rounded-lg p-3.5 hover:border-primary-300 hover:shadow-md transition-all duration-200 relative peer-checked:border-primary-400 peer-checked:shadow-md peer-checked:ring-1 peer-checked:ring-primary-400 peer-checked:bg-orange-50/50 peer-checked:[&_.check-icon]:opacity-100 peer-checked:[&_.check-icon]:scale-100"
+                  >
+                    <div className="check-icon absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-primary-500 text-white flex items-center justify-center opacity-0 scale-75 transition-all duration-200">
+                      <span className="material-symbols-outlined text-[10px] font-bold">check</span>
+                    </div>
+                    <div className={`w-8 h-8 rounded-md ${industry.iconBg} ${industry.iconColor} flex items-center justify-center mb-2.5`}>
+                      <span className="material-symbols-outlined text-[18px]">{industry.icon}</span>
+                    </div>
+                    <h3 className="font-bold text-gray-900 text-sm mb-0.5">{industry.name}</h3>
+                    <p className="text-[11px] text-gray-500 leading-relaxed">{industry.description}</p>
+                  </label>
+                </div>
+              ))}
 
-          <button
-            type="button"
-            onClick={onContinue}
-            disabled={!canContinue}
-            className={[
-              'px-8 py-3 rounded-lg font-semibold transition-all duration-200',
-              canContinue
-                ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-lg hover:shadow-xl'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed',
-            ].join(' ')}
-          >
-            Continue
-          </button>
+              {/* Other card with inline input */}
+              <div className="relative group h-full">
+                <input
+                  className="peer sr-only"
+                  id="ind_other"
+                  name="industry"
+                  type="radio"
+                  value="other"
+                  checked={value === 'other'}
+                  onChange={() => onChange('other')}
+                />
+                <label
+                  htmlFor="ind_other"
+                  className="block h-full cursor-pointer bg-white border border-gray-200 rounded-lg p-3.5 hover:border-primary-300 hover:shadow-md transition-all duration-200 relative flex flex-col peer-checked:border-primary-400 peer-checked:shadow-md peer-checked:ring-1 peer-checked:ring-primary-400 peer-checked:bg-orange-50/50 peer-checked:[&_.check-icon]:opacity-100 peer-checked:[&_.check-icon]:scale-100"
+                >
+                  <div className="check-icon absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-primary-500 text-white flex items-center justify-center opacity-0 scale-75 transition-all duration-200">
+                    <span className="material-symbols-outlined text-[10px] font-bold">check</span>
+                  </div>
+                  <div className="w-8 h-8 rounded-md bg-gray-100 text-gray-600 flex items-center justify-center mb-2.5">
+                    <span className="material-symbols-outlined text-[18px]">more_horiz</span>
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-sm mb-0.5">Other</h3>
+                  <p className="text-[11px] text-gray-500 mb-2">If none of these fit your idea select this and type your industry.</p>
+                  <div className="mt-auto pt-1">
+                    <input
+                      type="text"
+                      value={otherValue}
+                      onChange={(e) => onOtherChange(e.target.value)}
+                      onFocus={() => onChange('other')}
+                      placeholder="Type specific industry..."
+                      className="w-full text-xs text-gray-900 border-0 border-b border-gray-200 focus:border-[#E05202] focus:outline-none focus:ring-0 bg-transparent px-0 py-0.5 transition-colors placeholder:text-gray-400 caret-[#E05202] [&:-webkit-autofill]:[box-shadow:inset_0_0_0_1000px_white] [&:-webkit-autofill]:[-webkit-text-fill-color:#171717]"
+                    />
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+              {onBack != null && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="text-gray-500 hover:text-gray-900 text-xs font-medium px-3 py-1.5 transition-colors focus:outline-none rounded-md hover:bg-gray-50"
+                >
+                  Back
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onContinue}
+                disabled={!canContinue}
+                className="inline-flex items-center justify-center gap-2 bg-[#E05202] hover:bg-[#c44a02] text-white px-6 py-2.5 rounded-full text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E05202] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue
+                <span className="material-symbols-outlined text-lg">arrow_forward</span>
+              </button>
+            </div>
+
+            <div className="lg:hidden flex items-center justify-center gap-1.5 text-[11px] text-gray-400 mt-4 mb-6">
+              <span className="material-symbols-outlined text-xs">lock</span>
+              <span>Private and secure.</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </SignupStepLayout>
   )
 }

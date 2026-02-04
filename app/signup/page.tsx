@@ -2,6 +2,8 @@
 
 import type React from "react"
 import { useState } from 'react'
+import FixNeededCard from './FixNeededCard'
+import { SignupFixBannerProvider } from './SignupFixBannerContext'
 import {
   AgeStep,
   IdeaStep,
@@ -157,93 +159,44 @@ export default function SignupPage() {
   }
 
   function renderWithIssues(ui: React.ReactNode) {
+    const showFixCard = issues.length > 0 || aiSuggestion
+    const fixBanner = showFixCard ? (
+      <FixNeededCard
+        issues={issues}
+        aiSuggestion={aiSuggestion}
+        aiReason={aiReason}
+        canContinueAnyway={canContinueAnyway}
+        saving={saving}
+        finishing={finishing}
+        onUseSuggestion={async () => {
+          setSaving(true)
+          try {
+            await confirmAndMaybeFinish(stepKey, aiSuggestion!, 'ai_suggested')
+            clearFixUI()
+            setOverrideStepKey(null)
+          } finally {
+            setSaving(false)
+          }
+        }}
+        onEditSuggestion={() => setLocal(stepKey, aiSuggestion!)}
+        onSaveMyEdit={async () => {
+          setSaving(true)
+          try {
+            await confirmAndMaybeFinish(stepKey, value, 'user_edited')
+            clearFixUI()
+            setOverrideStepKey(null)
+          } finally {
+            setSaving(false)
+          }
+        }}
+        onContinueAnyway={continueAnyway}
+      />
+    ) : null
     return (
-      <>
-        {(issues.length > 0 || aiSuggestion) && (
-          <div className="max-w-3xl mx-auto mb-6 p-4 rounded-xl border bg-white">
-            {issues.length > 0 && (
-              <>
-                <div className="font-semibold mb-2 text-black">Fix needed</div>
-                <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-                  {issues.map((i, idx) => (
-                    <li key={idx}>{i.message}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            {/* AI suggestion box */}
-            {aiSuggestion && (
-              <div className="mt-4 p-3 rounded-lg border bg-gray-50">
-                <div className="text-sm font-medium mb-1 text-black">Suggested rewrite</div>
-                {aiReason && <div className="text-xs text-gray-500 mb-2">{aiReason}</div>}
-                <div className="text-sm whitespace-pre-wrap text-black">{aiSuggestion}</div>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {/* CONFIRM AI suggestion and advance */}
-                  <button
-                    disabled={saving || finishing}
-                    className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm"
-                    onClick={async () => {
-                      setSaving(true);
-                      try {
-                        await confirmAndMaybeFinish(stepKey, aiSuggestion, "ai_suggested");
-                        clearFixUI();
-                        setOverrideStepKey(null);
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                  >
-                    Use suggestion
-                  </button>
-
-                  {/* Load suggestion into input so user can edit */}
-                  <button
-                    disabled={saving || finishing}
-                    className="px-3 py-2 rounded-lg border text-sm text-black"
-                    onClick={() => setLocal(stepKey, aiSuggestion)}
-                  >
-                    Edit suggestion
-                  </button>
-
-                  {/* CONFIRM user's edited value and advance */}
-                  <button
-                    disabled={saving || finishing}
-                    className="px-3 py-2 rounded-lg border text-sm text-black"
-                    onClick={async () => {
-                      setSaving(true);
-                      try {
-                        await confirmAndMaybeFinish(stepKey, value, "user_edited");
-                        clearFixUI();
-                        setOverrideStepKey(null);
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                  >
-                    Save my edit
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Keep original anyway (only after fail twice) */}
-            {canContinueAnyway && (
-              <button
-                onClick={continueAnyway}
-                disabled={saving}
-                className="mt-3 text-sm underline text-gray-600"
-              >
-                Keep my original anyway (results may be less accurate)
-              </button>
-            )}
-          </div>
-        )}
-
+      <SignupFixBannerProvider value={fixBanner}>
         {ui}
-      </>
-    );
+      </SignupFixBannerProvider>
+    )
   }
 
 

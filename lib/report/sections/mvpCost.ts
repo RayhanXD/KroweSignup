@@ -26,15 +26,9 @@ export function buildMvpCostSection(params: MvpCostParams): string {
     `- **Confidence:** ${Math.round(costEstimate.confidence_0_1 * 100)}%`,
     `- **Recommended MVP scope:** ${costEstimate.recommended_mvp_scope}`,
     ``,
-    `### Key cost drivers`,
     ...(costEstimate.key_cost_drivers?.length
-      ? costEstimate.key_cost_drivers.map((d: string) => `- ${d}`)
-      : [`- ⚠ Missing Data`]),
-    ``,
-    `### Assumptions`,
-    ...(costEstimate.assumptions?.length
-      ? costEstimate.assumptions.map((a: string) => `- ${a}`)
-      : [`- ⚠ Missing Data`]),
+      ? [`### Key cost drivers`, ...costEstimate.key_cost_drivers.map((d: string) => `- ${d}`), ``]
+      : []),
     ``,
   ].join("\n");
 }

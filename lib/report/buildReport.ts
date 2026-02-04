@@ -2,7 +2,7 @@ import { StepKey } from "../signupSteps";
 import type { Competitor } from "./findCompetitors";
 import type { MvpCostEstimate } from "./estimateMvpCost";
 import { costEfficiencyEstimate, productTypeScore, startupAdvantageScore } from "./scoring";
-import { computeThingsNeed, deriveSkillProfile } from "./thingsNeeded";
+import { computeThingsNeed, type ThingsNeededResult } from "./thingsNeeded";
 import type { MarketSizeLLM } from "./marketsize";
 import { REPORT_VERSION } from "../constants";
 import { safeNumber } from "../utils/parsing";
@@ -51,33 +51,34 @@ export function costAligmentScore(): { score: number | null; note: string } {
 //in future use LLM to analyze text and determine the score
 export function industryFamiliarityScore(industryExp: string | null): {
   score: number | null;
-  level: "High" | "Medium" | "Low" | "Unknown";
+  level: "High" | "Medium" | "Low" | "Inexperienced" | "Unknown";
   evidence: string[];
 } {
-  if (!industryExp) return { score: null, level: "Unknown", evidence: ["⚠ Missing Data"] };
+  if (!industryExp) return { score: null, level: "Unknown", evidence: [] };
 
   const t = industryExp.toLowerCase();
   const evidence: string[] = [];
-
+  
   const hasSuccessfulStartup = /(exit|acquir|raised|revenue|profit|grew to|\busers\b)/.test(t);
   const hasWork = /(intern|job|worked|employ|company|role|months|years)/.test(t);
   const hasStudy = /(major|degree|stud(y|ied)|cs|finance|business|certificate|course)/.test(t);
   const hasFailedStartup = /(failed|shut down|didn'?t work|pivoted|couldn'?t)/.test(t);
   const hasPublicWork = /(published|portfolio|github|paper|blog|video)/.test(t);
 
-  if (hasSuccessfulStartup) evidence.push("Mentions traction/revenue/exit-like outcomes");
-  if (hasWork) evidence.push("Mentions work/internship experience");
-  if (hasStudy) evidence.push("Mentions relevant study/certificates");
-  if (hasFailedStartup) evidence.push("Mentions prior attempt (even if failed)");
-  if (hasPublicWork) evidence.push("Mentions public work/portfolio");
+  if (hasSuccessfulStartup) evidence.push("Has successful startup experience (exit, acquisition, or revenue)");
+  if (hasWork) evidence.push("Has relevant work experience in the industry");
+  if (hasStudy) evidence.push("Has formal education or certifications in the field");
+  if (hasFailedStartup) evidence.push("Has prior startup experience (including failed attempts)");
+  if (hasPublicWork) evidence.push("Has public portfolio or published work");
 
-  // Priority from spec (simplified into tiers) :contentReference[oaicite:5]{index=5}
   if (hasSuccessfulStartup) return { score: 0.90, level: "High", evidence };
-  if (hasWork && hasStudy) return { score: 0.70, level: "Medium", evidence };
-  if (hasWork) return { score: 0.60, level: "Medium", evidence };
-  if (hasStudy || hasFailedStartup || hasPublicWork) return { score: 0.45, level: "Low", evidence };
+  if (hasWork) return { score: 0.70, level: "Medium", evidence };
+  if (hasStudy) return { score: 0.60, level: "Medium", evidence };
+  if (hasFailedStartup) return { score: 0.45, level: "Low", evidence };
+  if (hasPublicWork) return { score: 0.45, level: "Low", evidence };
 
-  return { score: 0.35, level: "Low", evidence: evidence.length ? evidence : ["Generic / unclear experience"] };
+  // Fallback: no keywords matched - user has no industry experience
+  return { score: 0, level: "Inexperienced", evidence: ["No industry-specific experience detected"] };
 }
 
 //update later when skillScore quetsion is more defined and inlcude LLM to anaylze
@@ -202,7 +203,7 @@ export function founderFitScore(params: {
     rounded >= 80 ? "strong fit " : rounded >= 60 ? "partial fit " : "poor fit";
 
   return {
-    socre: rounded,
+    score: rounded,
     category,
     missing,
     components: { skill: skillEff, age: ageEff, cost: costEff, industry: indEff },
@@ -230,6 +231,7 @@ export function buildMarkdownWithMarketSize(params: {
   marketSize: MarketSizeLLM;
 }) {
   const ms = params.marketSize;
+  const y1 = ms.planning_year_1;
 
   const section = [
     ``,
@@ -240,8 +242,9 @@ export function buildMarkdownWithMarketSize(params: {
     `- **Wedge SAM:** $${fmtUSD(ms.wedge_sam_usd_range.low)}–$${fmtUSD(ms.wedge_sam_usd_range.high)} / year`,
     `- **Confidence:** ${Math.round(ms.confidence * 100)}%`,
     ``,
-    `### Assumptions`,
-    ...(ms.key_assumptions?.length ? ms.key_assumptions.map((a) => `- ${a}`) : [`- (none provided)`]),
+    `### 📅 Planning Market Size (Year 1)`,
+    `- **Target Revenue:** $${fmtUSD(y1.target_revenue_usd.low)}–$${fmtUSD(y1.target_revenue_usd.high)}`,
+    `- **Customer Count:** ${y1.customer_count.low.toLocaleString()}–${y1.customer_count.high.toLocaleString()}`,
     ``,
     `### Notes`,
     ...(ms.notes?.length ? ms.notes.map((n) => `- ${n}`) : [`- (none provided)`]),
@@ -251,7 +254,7 @@ export function buildMarkdownWithMarketSize(params: {
 }
 
 
-export function buildReportFromPayload(payload: SignupPayload, opts?: { competitors?: Competitor[]; competitorError?: string; costEstimate?: MvpCostEstimate | null; mvpCostEstimateError?: string; marketSize?: MarketSizeLLM | null }) {
+export function buildReportFromPayload(payload: SignupPayload, opts?: { competitors?: Competitor[]; competitorError?: string; costEstimate?: MvpCostEstimate | null; mvpCostEstimateError?: string; marketSize?: MarketSizeLLM | null; thingsNeeded?: ThingsNeededResult | null }) {
   const age = safeNumber(getFinal(payload, "age"));
   const hours = safeNumber(getFinal(payload, "hours"));
   const teamSize = safeNumber(getFinal(payload, "team_size"));
@@ -286,8 +289,8 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
   const costEstimate = opts?.costEstimate ?? null;
   const marketSize = opts?.marketSize ?? null;
 
-  const profile = deriveSkillProfile(skillsRaw);
-  const things = computeThingsNeed({ productType, skillProfile: profile, teamSize });
+  // Use LLM-generated thingsNeeded if provided, otherwise fall back to heuristic
+  const things = opts?.thingsNeeded ?? computeThingsNeed({ productType });
 
 
   //1) scores need for SAS 
@@ -339,7 +342,6 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
       hours,
       hoursLabel,
       problem,
-      flags,
     }),
     buildTimeToMvpSection({
       label: time.label,
@@ -347,9 +349,8 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
     }),
     `---`,
     buildMarketSizeSection({ marketSize }),
-    `*(Next slices will add Founder Fit (FFS), Startup Advantage (SAS), Things Needed, Market Snapshot, Roadmap, and Pivot logic.)*`,
     buildFounderFitSection({
-      score: (ffs as any).socre ?? Math.round(((ffs.components.skill * 0.42) + (ffs.components.age * 0.14) + (ffs.components.cost * 0.20) + (ffs.components.industry * 0.24)) * 100),
+      score: ffs.score ?? Math.round(((ffs.components.skill * 0.42) + (ffs.components.age * 0.14) + (ffs.components.cost * 0.20) + (ffs.components.industry * 0.24)) * 100),
       category: ffs.category,
       missing: ffs.missing,
       components: ffs.components,
@@ -366,14 +367,10 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
     }),
     buildThingsNeededSection({
       needs: things.needs,
-      gaps: things.gaps,
     }),
+    `---`,
     buildMvpCostSection({ costEstimate }),
     buildCompetitorsSection({ competitors }),
-    marketSize ? buildMarkdownWithMarketSize({
-      existingMarkdown: "",
-      marketSize,
-    }) : "",
   ].join("\n");
 
   return {
@@ -413,6 +410,10 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
 
       thingsNeed: things,
       marketSize,
+
+      // for UI Skills & Industry card
+      skills,
+      industryResult: ind,
     },
     markdown,
   }

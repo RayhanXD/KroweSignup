@@ -1,6 +1,8 @@
 'use client'
-import { useState } from 'react';
-import { User, ChevronLeft } from 'lucide-react';
+
+import type { ChangeEvent } from 'react';
+import { ArrowRight, Lock, User } from 'lucide-react';
+import SignupStepLayout from '../SignupStepLayout';
 
 type AgeStepProps = {
   value: number;
@@ -13,75 +15,99 @@ type AgeStepProps = {
 export default function AgeStep({ value, onChange, onBack, onContinue, progressPercent = 0 }: AgeStepProps) {
   const age = value;
 
+  const handleAgeChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const numericValue = event.target.value.replace(/\D/g, '');
+
+    if (!numericValue) {
+      onChange(0);
+      return;
+    }
+
+    const parsedValue = Math.min(120, parseInt(numericValue, 10));
+    onChange(parsedValue);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex justify-center pt-6">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
-      </div>
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
-          <div
-            className="bg-orange-500 h-full rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-        <div className="w-full max-w-md mx-auto">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-8">
-            <User className="w-7 h-7 text-gray-600" strokeWidth={1.5} />
-          </div>
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full max-w-4xl grid md:grid-cols-2 gap-12 md:gap-16 items-stretch">
+          <div className="space-y-6">
+            <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
+              <User className="w-6 h-6 text-orange-500" />
+            </div>
 
-          <h1 className="text-3xl font-semibold text-gray-800 mb-2">
-            How old are you
-          </h1>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-black">How old</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-orange-500">are you?</h1>
+            </div>
 
-          <p className="text-gray-400 text-sm mb-16">
-            This helps us know your startup success
-          </p>
-
-          <div className="w-full mb-4">
-            <p className="text-2xl font-semibold text-gray-800 mb-6">
-              {age} years old
+            <p className="text-muted-foreground leading-relaxed max-w-sm">
+              We tailor the Krowe incubator experience to different life stages. Your age helps us match you with the right peer cohort.
             </p>
 
-            <input
-              type="range"
-              min="0"
-              max="60"
-              value={age}
-              onChange={(e) => onChange(parseInt(e.target.value, 10))}
-              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-orange-500 [&::-moz-range-thumb]:border-none"
-              style={{
-                background: `linear-gradient(to right, #1f2937 0%, #1f2937 ${(age / 60) * 100}%, #e5e7eb ${(age / 60) * 100}%, #e5e7eb 100%)`,
-              }}
-            />
+            <div className="bg-gray-100 rounded-xl p-5 max-w-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Privacy Note
+                </span>
+              </div>
+              <p className="text-sm text-black leading-relaxed">
+                This information is kept private and is only used for internal matching algorithms and cohort assignment.
+              </p>
+            </div>
 
-            <div className="flex justify-between text-xs text-gray-400 mt-2">
-              <span>0</span>
-              <span>60+</span>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Lock className="w-4 h-4" />
+              <span className="text-sm">Your personal data is encrypted and secure.</span>
             </div>
           </div>
 
-          <div className="flex justify-between gap-4 mt-16 w-full">
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Go back
-            </button>
+          <div className="flex flex-col">
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase mb-4">
+                Enter Your Age
+              </label>
 
-            <button
-              type="button"
-              onClick={onContinue}
-              className="flex items-center justify-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
-            >
-              Continue
-            </button>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={age === 0 ? '' : age.toString()}
+                onChange={handleAgeChange}
+                className="text-7xl md:text-8xl font-light text-center text-black bg-transparent border-none outline-none w-full max-w-[200px] placeholder:text-muted-foreground/60 transition-colors"
+                placeholder="18"
+              />
+
+              <div className="w-32 h-px bg-border mt-2" />
+            </div>
+
+            <div className="flex items-center justify-between mt-16 pt-6">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-sm text-muted-foreground">Auto-saved</span>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={onContinue}
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors"
+                >
+                  Continue
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+    </SignupStepLayout>
   )
 }
+
 

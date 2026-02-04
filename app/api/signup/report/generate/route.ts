@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
-import { buildReportFromPayload } from "@/lib/report/buildReport";
-import { findCompetitorsViaWeb } from "@/lib/report/findCompetitors";
-import { estimateMvpCostViaLLM } from "@/lib/report/estimateMvpCost";
-import { estimateMarketSizeLLM } from "@/lib/report/marketsize";
+import { generateReportForSession } from "@/lib/report/generateReportForSession";
 import { REPORT_VERSION } from "@/lib/constants";
 import type { GenerateReportRequest } from "@/lib/types/api";
 
@@ -81,106 +78,32 @@ export async function POST(req: Request) {
   // If it exists but is old version (legacy/outdated), we proceed to regenerate (overwrite).
   // Note: Race condition still possible here for *updates*, but less critical than initial creation.
 
+  // 2) Generate report using shared pipeline (includes all LLM enrichment)
+  try {
+    const result = await generateReportForSession(sessionId, { reason: "generate" });
 
-  // 2) Pull payload from legacy backfill
-  const { data: legacy, error: legErr } = await supabase
-    .from("signup_responses")
-    .select("payload")
-    .eq("session_id", sessionId)
-    .single();
-
-  if (legErr) return NextResponse.json({ error: legErr.message }, { status: 500 });
-
-  // Pull these from your payload (adjust keys if yours differ)
-  const idea = legacy?.payload?.idea?.final ?? null;
-  const industry = legacy?.payload?.industry?.final ?? null;
-  const targetCustomer = legacy?.payload?.target_customer?.final ?? null;
-  const problem = legacy?.payload?.problem?.final ?? null;
-  const productType = legacy?.payload?.product_type?.final ?? null;
-  const teamSize = legacy?.payload?.team_size?.final ?? null;
-  const hoursPerWeek = legacy?.payload.hours?.final ?? null;
-  const existingMarketSize = existing?.report?.marketSize ?? null;
-
-  //Mvp costs section
-  let costEstimate: any = null;
-  let mvpCostEstimateError: string | undefined;
-  let marketSize = existingMarketSize;
-
-
-  //mvp function
-  if (idea) {
-    try {
-      costEstimate = await estimateMvpCostViaLLM({
-        idea,
-        industry,
-        productType,
-        targetCustomer,
-        teamSize,
-        hoursPerWeek,
-      });
-    } catch (e: any) {
-      costEstimate = null;
-      mvpCostEstimateError = e?.message || "Failed to estimate cost";
+    // Fetch the report ID if we didn't get it from the result
+    let reportId = result.reportId;
+    if (!reportId) {
+      const { data: freshReport } = await supabase
+        .from("signup_reports")
+        .select("id")
+        .eq("session_id", sessionId)
+        .single();
+      reportId = freshReport?.id;
     }
+
+    return NextResponse.json({
+      ok: true,
+      reportId: reportId ?? existing?.id,
+      sessionId,
+      updatedAt: result.updatedAt,
+    });
+  } catch (error: any) {
+    console.error("[generate] Report generation failed:", error);
+    return NextResponse.json(
+      { error: error?.message || "Report generation failed" },
+      { status: 500 }
+    );
   }
-
-  //fetch competitors first 
-  let competitors: any[] = [];
-  let competitorError: string | undefined;
-
-  // Only do the web competitor search if we have enough info
-  if (idea && industry) {
-    try {
-      const res = await findCompetitorsViaWeb({ idea, industry, targetCustomer });
-      competitors = res.competitors ?? [];
-    } catch (e: any) {
-      competitorError = e?.message || "competitor search failed";
-      competitors = [];
-    }
-  }
-
-  //market size function
-  if (!marketSize) {
-    marketSize = await estimateMarketSizeLLM({
-      idea,
-      problem,
-      targetCustomer,
-      industry,
-      competitors: (competitors ?? []).map((c) => ({ name: c.name })),
-    })
-  }
-
-  //4) buld report from payload + competitors
-  // Ensure we pass the CURRENT_VERSION if buildReportFromPayload needs it, or it uses its own.
-  // Assuming buildReportFromPayload attaches the version, but we should make sure.
-  const reportObj = buildReportFromPayload(legacy.payload, { competitors, competitorError, costEstimate, mvpCostEstimateError, marketSize });
-
-  // Explicitly set/override version to match our constant
-  // (depending on buildReportFromPayload implementation, it might vary, but we want consistency)
-  if (reportObj) {
-    (reportObj as any).version = CURRENT_VERSION;
-  }
-
-  // 4) Store the report (✅ correct table + column names)
-  // Use ignoreDuplicates: true to handle race conditions where another request created it 
-  // between our check at (1) and this insert.
-  const { data: upserted, error: insErr } = await supabase
-    .from("signup_reports")
-    .upsert(
-      {
-        session_id: sessionId,
-        status: "ready",
-        report: reportObj,
-      },
-      { onConflict: "session_id" }
-    )
-    .select("id")
-    .single();
-
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
-
-  // If upserted is null (due to ignoreDuplicates), fetch the existing record
-
-
-  return NextResponse.json({ ok: true, reportId: upserted?.id ?? existing?.id, sessionId });
 }

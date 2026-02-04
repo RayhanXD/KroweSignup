@@ -16,7 +16,7 @@ export function buildCompetitorsSection(params: CompetitorsParams): string {
     : `No competitors found yet`;
 
   return [
-    `## 🥊 Top Competitors`,
+    `## 🥊 Top Competitors [testtest]`,
     competitorLines,
     ``,
   ].join("\n");

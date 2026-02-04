@@ -1,4 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { RefreshReportButton } from "./RefreshReportButton";
+import { ReportDashboard } from "./ReportDashboard";
 
 export default async function ReportPage({
   params,
@@ -33,16 +35,12 @@ export default async function ReportPage({
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto rounded-2xl border bg-white p-6">
-        <div className="text-2xl font-semibold text-black">Krowe Report (Skeleton)</div>
-        <div className="mt-2 text-sm text-gray-600">Session: {sessionId}</div>
-
-      <pre className="mt-6 whitespace-pre-wrap text-sm bg-gray-50 border rounded-xl p-4 overflow-auto text-black">
-        {data.report.markdown}
-        </pre>
-
+    <div className="min-h-screen">
+      <div className="border-b border-border bg-card px-4 py-3 flex items-center justify-between gap-4">
+        <span className="text-sm text-muted-foreground">Session: {sessionId}</span>
+        <RefreshReportButton sessionId={sessionId} />
       </div>
+      <ReportDashboard report={data.report ?? {}} status={data.status} />
     </div>
   );
 }

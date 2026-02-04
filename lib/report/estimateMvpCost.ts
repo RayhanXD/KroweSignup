@@ -37,17 +37,53 @@ Inputs:
 - Team size: ${args.teamSize ?? "unknown"}
 - Hours per week: ${args.hoursPerWeek ?? "unknown"}
 
-Rules:
-- Assume an MVP: smallest scope that can validate the core value.
-- Assume typical indie founder constraints (use managed services, no custom infra unless required).
-- Return a realistic USD range for a 4–8 week MVP.
-- Also return cost_efficiency_score_0_1 where:
-  - 1.0 = very cheap / fast to build (simple web app, low integrations)
-  - 0.0 = very expensive / slow (hardware, regulated, complex integrations, marketplace w/ liquidity)
+Your goal:
+Produce a realistic but founder-optimistic cost estimate for building and launching a DEMO-QUALITY, SELLABLE MVP that solves the user’s core problem.
+
+Cost scope (included):
+- Build cost (engineering + minimal design)
+- Tooling & infra (hosting, auth, APIs, databases, analytics)
+- Early ops (domain, email, basic SaaS subscriptions)
+
+Strict constraints:
+- NEVER assume freelancers, agencies, or paid contractors.
+- If skills are missing, assume the founder finds a cofounder instead of hiring.
+- Use managed services and lowest-cost alternatives wherever possible.
+- Avoid custom infrastructure unless absolutely required.
+- Assume no AI usage unless the idea explicitly requires it.
+- Only include legal costs if the startup CANNOT operate without them
+  (e.g. legaltech, fintech, healthcare, regulated products).
+- Avoid high-cost tooling unless unavoidable.
+-NEVER assume founders time into the cost estimate assume their time is free.
+
+MVP definition:
+- Demo-quality but sellable
+- Can be shown to users or early customers
+- Solves the core problem, not feature-complete
+
+Time horizon:
+- Assume a 4–8 week MVP build.
+
+Estimation bias:
+- Founder-optimistic but still plausible
+- Lower bounds should feel achievable by a focused team
+- Midpoint should reflect realistic execution with discipline
+
+Scoring rules:
+- cost_efficiency_score_0_1:
+  - 1.0 = extremely cheap and fast to build (simple web app, few integrations)
+  - 0.0 = structurally expensive (hardware, heavy regulation, complex infra)
+- confidence_0_1 reflects how reliable the estimate is given the inputs
+
+Output rules:
+- Return ONLY valid JSON matching the schema.
+- All USD values must be integers.
+- cost_low_usd < cost_mid_usd < cost_high_usd
+- Keep assumptions concise and practical.
 `;
 
   const resp = await client.responses.create({
-    model: "gpt-5-mini",
+    model: "gpt-5-nano",
     input: prompt,
     // ✅ Structured Outputs in Responses API uses text.format :contentReference[oaicite:1]{index=1}
     text: {

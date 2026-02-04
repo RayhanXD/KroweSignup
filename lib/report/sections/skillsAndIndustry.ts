@@ -28,14 +28,11 @@ export function buildSkillsAndIndustrySection(params: SkillsAndIndustryParams): 
     `- **Development:** ${skills.profile.development}`,
     `- **Marketing:** ${skills.profile.marketing}`,
     `- **Leadership:** ${skills.profile.leadership}`,
-    `- **Overall Skill Score:** ${skills.overall == null ? "⚠ Missing Data" : `${Math.round(skills.overall * 100)}%`}`,
+    ...(skills.overall != null ? [`- **Overall Skill Score:** ${Math.round(skills.overall * 100)}%`] : []),
     ``,
     `### Industry Familiarity`,
     `- **Level:** ${industry.level}`,
-    `- **Score:** ${industry.score == null ? "⚠ Missing Data" : `${Math.round(industry.score * 100)}%`}`,
-    ``,
-    `### Evidence`,
-    ...(industry.evidence.map(e => `- ${e}`)),
+    ...(industry.score != null ? [`- **Score:** ${Math.round(industry.score * 100)}%`] : []),
     ``,
   ].join("\n");
 }

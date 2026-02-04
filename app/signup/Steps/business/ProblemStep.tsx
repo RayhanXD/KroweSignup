@@ -1,5 +1,8 @@
 'use client'
 
+import { Lock } from 'lucide-react'
+import SignupStepLayout from '../SignupStepLayout'
+
 type ProblemStepProps = {
   value: string;
   onChange: (v: string) => void;
@@ -13,66 +16,82 @@ export default function ProblemStep({
   onChange,
   onBack,
   onContinue,
-  progressPercent = 44, // ex set whatever you want for this step
+  progressPercent = 44,
 }: ProblemStepProps) {
   const canContinue = value.trim().length >= 20
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex justify-center pt-6">
-        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
-      </div>
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
-          <div
-            className="bg-orange-500 h-full rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 mt-8">
-          <div className="text-4xl mb-2">🚩</div>
-
-          <h1 className="text-4xl font-semibold text-gray-900">
-            what&apos;s the problem your startup solves?
-          </h1>
-
-          <p className="text-gray-500 max-w-3xl">
-            Use this template: We help [target customer] [solve specific problem] by [simple solution/mechanism]
-          </p>
-
-          <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full max-w-3xl h-56 px-6 py-4 text-gray-700 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
-            placeholder="Ex: We help first-time founders turn ideas into launch-ready startups by guiding them step-by-step with AI"
-          />
-
-          <div className="w-full max-w-3xl flex items-center justify-between gap-4 mt-2">
-            <button
-              type="button"
-              onClick={onBack}
-              className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-            >
-              &lt; Go Back
-            </button>
-
-            <button
-              type="button"
-              onClick={onContinue}
-              disabled={!canContinue}
-              className="px-8 py-2.5 text-white rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50"
-              style={{ backgroundColor: '#F97316' }}
-            >
-              Continue
-            </button>
+    <SignupStepLayout progressPercent={progressPercent}>
+      <div className="w-full flex flex-col items-center">
+        <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          {/* Left Column */}
+          <div className="space-y-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#fef8f3] border border-orange-200/60 shadow-[0_0_0_1px_rgba(251,146,60,0.12)]">
+              <span className="material-symbols-outlined text-orange-500">flag</span>
+            </div>
+            <div className="space-y-4">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-[1.1]">
+                What&apos;s the <br /> <span className="text-orange-500 bg-clip-text bg-gradient-to-r from-primary-600 to-primary-500">problem</span> your startup solves?
+              </h1>
+              <p className="text-muted-foreground leading-relaxed">
+                Great startups are built on clear problem statements. Identify the specific pain point your target audience is facing.
+              </p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200/60 space-y-3">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-primary-500" /> Structure Tip
+              </h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Use this template: <br />
+                <span className="text-gray-900 font-semibold">&quot;We help [target customer] [solve specific problem] by [simple solution/mechanism]&quot;</span>
+              </p>
+            </div>
           </div>
 
-          <div className="text-xs text-gray-400 w-full max-w-3xl text-right">
-            {value.trim().length} characters (aim for 20+)
+          {/* Right Column */}
+          <div className="space-y-4 pt-6 md:pt-8">
+            <textarea
+              id="problem"
+              name="problem"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Ex: We help first-time founders turn ideas into launch-ready startups by guiding them step-by-step with AI"
+              className="w-full h-64 p-4 text-black placeholder:text-muted-foreground bg-white border border-gray-200 rounded-lg shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-colors"
+            />
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-green-500" />
+                Auto-saved
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={onContinue}
+                  disabled={!canContinue}
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50"
+                >
+                  Continue
+                  <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
+        {/* Privacy Notice */}
+        <footer className="px-6 pt-10 pb-4 w-full flex justify-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Lock className="w-4 h-4" />
+            <span>Your intellectual property is private and encrypted.</span>
+          </div>
+        </footer>
       </div>
-    </div>
+    </SignupStepLayout>
   )
 }
