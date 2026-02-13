@@ -13,6 +13,14 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
+function elapsedMs(startedAt: number): number {
+  return Date.now() - startedAt;
+}
+
+function logGenerateRoute(sessionId: string, requestStartedAt: number, message: string) {
+  console.log(`[generate] ${message} (sessionId=${sessionId}, elapsedMs=${elapsedMs(requestStartedAt)})`);
+}
+
 async function markReportFailed(sessionId: string, error: unknown) {
   const supabase = createServerSupabaseClient();
   const message = getErrorMessage(error, "Report generation failed");
@@ -35,18 +43,32 @@ async function markReportFailed(sessionId: string, error: unknown) {
 }
 
 function enqueueReportGeneration(sessionId: string) {
-  void generateReportForSession(sessionId, { reason: "generate" }).catch(async (error: unknown) => {
-    console.error("[generate] Background report generation failed:", error);
-    await markReportFailed(sessionId, error);
-  });
+  const backgroundStartedAt = Date.now();
+  console.log(`[generate] Background report generation started (sessionId=${sessionId})`);
+
+  void generateReportForSession(sessionId, { reason: "generate" })
+    .then((result) => {
+      console.log(
+        `[generate] Background report generation completed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${result.updatedAt})`
+      );
+    })
+    .catch(async (error: unknown) => {
+      console.error(
+        `[generate] Background report generation failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
+        error
+      );
+      await markReportFailed(sessionId, error);
+    });
 }
 
 export async function POST(req: Request) {
   const supabase = createServerSupabaseClient();
+  const requestStartedAt = Date.now();
   const body = (await req.json()) as Body;
 
   const sessionId = (body.sessionId || "").trim();
   if (!sessionId) {
+    console.log(`[generate] Missing sessionId (elapsedMs=${elapsedMs(requestStartedAt)})`);
     return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
   }
 
@@ -74,11 +96,13 @@ export async function POST(req: Request) {
 
   // If it's already done (ready) and version matches, return it
   if (existing?.id && isCurrent && isReady) {
+    logGenerateRoute(sessionId, requestStartedAt, "Returning existing ready report");
     return NextResponse.json({ ok: true, reportId: existing.id, sessionId, status: "ready" });
   }
 
   // If it's currently processing and not stale, return immediately.
   if (existing?.id && isProcessing && isCurrent && !isStaleProcessing) {
+    logGenerateRoute(sessionId, requestStartedAt, "Report already processing, returning immediately");
     return NextResponse.json({ ok: true, reportId: existing.id, sessionId, status: "processing" });
   }
 
@@ -115,10 +139,12 @@ export async function POST(req: Request) {
           status: racer?.status ?? "processing",
         });
       } else {
+        logGenerateRoute(sessionId, requestStartedAt, "Insert failed while creating processing placeholder");
         return NextResponse.json({ error: insertErr.message }, { status: 500 });
       }
     }
     reportId = inserted?.id;
+    logGenerateRoute(sessionId, requestStartedAt, "Inserted processing placeholder");
   } else if (!isReady || !isCurrent || isStaleProcessing) {
     // Existing row is stale/outdated/incomplete - reset to processing and regenerate.
     const { error: updateErr } = await supabase
@@ -131,12 +157,15 @@ export async function POST(req: Request) {
       .eq("session_id", sessionId);
 
     if (updateErr) {
+      logGenerateRoute(sessionId, requestStartedAt, "Failed to reset report to processing");
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
+    logGenerateRoute(sessionId, requestStartedAt, "Reset existing report to processing");
   }
 
   // 2) Kick off generation in background and return immediately.
   enqueueReportGeneration(sessionId);
+  logGenerateRoute(sessionId, requestStartedAt, "Enqueued background generation and returning processing");
 
   return NextResponse.json({
     ok: true,
