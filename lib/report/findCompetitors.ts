@@ -90,10 +90,12 @@ function normalizeUrl(rawUrl: string): string {
 function buildMinimalCompetitorMessages(params: {
   idea: string;
   industry: string;
+  productType?: string | null;
   targetCustomer?: string | null;
 }): PromptMessage[] {
   const idea = firstTwoSentences(params.idea);
   const industry = normalizeLine(params.industry);
+  const productType = normalizeLine(params.productType, "unknown");
   const targetCustomer = normalizeLine(params.targetCustomer, "unknown");
 
   return [
@@ -108,9 +110,10 @@ function buildMinimalCompetitorMessages(params: {
       content: [
         `Idea: ${idea}`,
         `Industry: ${industry}`,
+        `Product type: ${productType}`,
         `Target customer: ${targetCustomer}`,
         "Constraints:",
-        "- Return exactly 3 direct competitors solving the same core job for a similar customer.",
+        "- Return exactly 3 direct competitors solving the same core job and product type for a similar customer.",
         "- Exclude agencies, consultants, communities, newsletters, offline programs, and generic horizontal tools.",
         "- For each competitor, provide one concise why sentence and a confidence score (0 to 1).",
         "- Output must be valid JSON only, no markdown or extra commentary.",
@@ -288,6 +291,7 @@ async function runCompetitorRequest(params: {
 export async function findCompetitorsViaWeb(params: {
   idea: string;
   industry: string;
+  productType?: string | null;
   targetCustomer?: string | null;
 }) {
   const baseMessages = buildMinimalCompetitorMessages(params);
