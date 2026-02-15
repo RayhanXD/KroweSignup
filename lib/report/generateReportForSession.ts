@@ -216,7 +216,7 @@ export async function generateReportForSession(
   if (marketSizeResult.status === "fulfilled") {
     marketSize = marketSizeResult.value;
     console.log(
-      `[generateReportForSession] Market size confidence: ${marketSize?.confidence ?? "N/A"} (${marketSizeResult.durationMs}ms)`
+      `[generateReportForSession] Market size available: ${marketSize !== null} (${marketSizeResult.durationMs}ms)`
     );
   } else {
     marketSize = null;

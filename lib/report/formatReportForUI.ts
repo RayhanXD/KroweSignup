@@ -50,9 +50,12 @@ function formatNum(n: number): string {
  * Format planning year 1 target revenue as "~$1–3B/year" style.
  */
 export function formatPlanningYear1(planningYear1: {
+  planning_market_size_usd_range?: { low: number; high: number };
   target_revenue_usd?: { low: number; high: number };
 } | null | undefined): string {
-  const range = planningYear1?.target_revenue_usd;
+  const range =
+    planningYear1?.planning_market_size_usd_range ??
+    planningYear1?.target_revenue_usd;
   if (!range || typeof range.low !== "number" || typeof range.high !== "number") {
     return "—";
   }

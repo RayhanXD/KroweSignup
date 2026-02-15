@@ -56,11 +56,12 @@ interface ReportDataForUI {
     recommended_mvp_scope?: string;
   } | null;
   marketSize?: {
-    market_definition?: string;
+    planning_market_size_usd_range?: { low: number; high: number };
+    planning_year_1?: { target_revenue_usd?: { low: number; high: number } };
     tam_usd_range?: { low: number; high: number };
     sam_usd_range?: { low: number; high: number };
+    initial_wedge_usd_range?: { low: number; high: number };
     wedge_sam_usd_range?: { low: number; high: number };
-    planning_year_1?: { target_revenue_usd?: { low: number; high: number } };
   } | null;
   competitors?: Array<{ name: string; url?: string; evidence?: string; why_competitor?: string }>;
   thingsNeed?: { needs: Array<{ title: string; why?: string }> };
@@ -292,7 +293,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold text-black">Market Size</h2>
-                  <Tooltip content={marketSize?.market_definition ?? "Market definition not available."}>
+                  <Tooltip content="Estimated market sizes for planning, TAM, SAM, and initial wedge.">
                     <button
                       type="button"
                       className="text-gray-500 hover:text-black transition-colors"
@@ -313,7 +314,12 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
               <p className="text-sm text-gray-600 mb-1">Planning Market Size</p>
               <p className="text-5xl md:text-6xl font-bold text-black tracking-tight">
                 {marketSize
-                  ? formatPlanningYear1(marketSize.planning_year_1)
+                  ? formatPlanningYear1({
+                      planning_market_size_usd_range:
+                        marketSize.planning_market_size_usd_range,
+                      target_revenue_usd:
+                        marketSize.planning_year_1?.target_revenue_usd,
+                    })
                   : "—"}
               </p>
             </div>
@@ -334,7 +340,12 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
               <div>
                 <p className="text-xs text-gray-600 mb-1">Initial Wedge</p>
                 <p className="text-lg font-semibold text-black">
-                  {marketSize ? formatUsdRange(marketSize.wedge_sam_usd_range) : "—"}
+                  {marketSize
+                    ? formatUsdRange(
+                        marketSize.initial_wedge_usd_range ??
+                          marketSize.wedge_sam_usd_range
+                      )
+                    : "—"}
                 </p>
               </div>
             </div>

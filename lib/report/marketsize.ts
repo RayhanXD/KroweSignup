@@ -6,27 +6,35 @@ const openai = new OpenAI({
 });
 
 export type MarketSizeLLM = {
-    market_definition: string;
+    planning_market_size_usd_range: { low: number; high: number; unit: "USD/year" };
     tam_usd_range: { low: number; high: number; unit: "USD/year" };
     sam_usd_range: { low: number; high: number; unit: "USD/year" };
-    wedge_sam_usd_range: { low: number; high: number; unit: "USD/year" };
-    planning_year_1: {
-        target_revenue_usd: { low: number; high: number };
-        customer_count: { low: number; high: number };
-    };
-    key_assumptions: string[];
-    confidence: number; // 0–1
-    notes: string[];
+    initial_wedge_usd_range: { low: number; high: number; unit: "USD/year" };
 };
 
-function extractResponseText(response: any): string{
+function isUsdYearRange(value: unknown): value is { low: number; high: number; unit: "USD/year" } {
+    if (!value || typeof value !== "object") return false;
+    const candidate = value as Record<string, unknown>;
+    return (
+        typeof candidate.low === "number" &&
+        typeof candidate.high === "number" &&
+        candidate.unit === "USD/year"
+    );
+}
+
+function extractResponseText(response: unknown): string{
+    const candidate = response as {
+        output_text?: unknown;
+        output?: Array<{ content?: Array<{ text?: unknown }> }>;
+    };
+
     //path used for response
-    if (typeof response?.output_text === "string" && response.output_text.trim()){
-        return response.output_text.trim();
+    if (typeof candidate?.output_text === "string" && candidate.output_text.trim()){
+        return candidate.output_text.trim();
     }
 
     //fallback try to pull text from output content
-    const out = response?.output;
+    const out = candidate?.output;
     if(Array.isArray(out)) {
         for (const item of out ) {
             const content = item?.content;
@@ -41,25 +49,15 @@ function extractResponseText(response: any): string{
     return "";
 }
 
-function isValidMarketSize(x: any): x is MarketSizeLLM {
+function isValidMarketSize(x: unknown): x is MarketSizeLLM {
+  if (!x || typeof x !== "object") return false;
+  const candidate = x as Record<string, unknown>;
+
   return (
-    typeof x?.market_definition === "string" &&
-    typeof x?.tam_usd_range?.low === "number" &&
-    typeof x?.tam_usd_range?.high === "number" &&
-    x?.tam_usd_range?.unit === "USD/year" &&
-    typeof x?.sam_usd_range?.low === "number" &&
-    typeof x?.sam_usd_range?.high === "number" &&
-    x?.sam_usd_range?.unit === "USD/year" &&
-    typeof x?.wedge_sam_usd_range?.low === "number" &&
-    typeof x?.wedge_sam_usd_range?.high === "number" &&
-    x?.wedge_sam_usd_range?.unit === "USD/year" &&
-    typeof x?.planning_year_1?.target_revenue_usd?.low === "number" &&
-    typeof x?.planning_year_1?.target_revenue_usd?.high === "number" &&
-    typeof x?.planning_year_1?.customer_count?.low === "number" &&
-    typeof x?.planning_year_1?.customer_count?.high === "number" &&
-    Array.isArray(x?.key_assumptions) &&
-    typeof x?.confidence === "number" &&
-    Array.isArray(x?.notes)
+    isUsdYearRange(candidate.planning_market_size_usd_range) &&
+    isUsdYearRange(candidate.tam_usd_range) &&
+    isUsdYearRange(candidate.sam_usd_range) &&
+    isUsdYearRange(candidate.initial_wedge_usd_range)
   );
 }
 
@@ -79,7 +77,7 @@ export async function estimateMarketSizeLLM(input: {
     };
 
     const response = await openai.responses.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-nano",
         input: [
             {
                 role: "system",
@@ -87,14 +85,14 @@ export async function estimateMarketSizeLLM(input: {
                "You are a market-sizing analyst for early-stage startups." +
                 "Goal:"+
                 "Estimate realistic market size ranges in USD/year for:"+
+                    "- Planning Market Size (realistic first-year reachable revenue range)"+
                     "- TAM (total addressable market, global)"+
                     "- SAM (serviceable available market: reachable in the next 12–24 months)"+
-                    "- Wedge-SAM (the first narrow beachhead niche you can actually win)"+
+                    "- Initial Wedge (the first narrow beachhead niche you can actually win)"+
                     "Hard rules:"+
                     "- Avoid fake precision. Use broad ranges (ex: $200M–$800M), not single numbers."+
-                   " - Show assumptions briefly (user count, ARPA/price, adoption rate, geography)."+
-                   " -make sure assumptions ranges do not overlap with each other"+
-                   " - If critical details are missing, make conservative assumptions and explicitly label them."+
+                   " -make sure ranges are logically consistent (Planning <= Initial Wedge <= SAM <= TAM)."+
+                   " - If critical details are missing, make conservative assumptions."+
                    " - Prefer bottom-up logic (users × $/year) when possible; otherwise use proxy spend logic."+
                    " - Do NOT browse the web. Do NOT cite external sources. This is a modeled estimate."+
                    "when consider pricing keep in mind of users busienss type (b2b or b2c) where b2b have higher pricing than b2c"+
@@ -105,13 +103,12 @@ export async function estimateMarketSizeLLM(input: {
             {
                 role: "user",
                 content:
-                "Estimate market size for this startup using TAM (global), SAM (reachable in 12–24 months), and Wedge-SAM (first narrow niche)." +
-                "Also include:"+
-                "- the user’s market definition (who/where/how they buy/pricing anchor),"+
-                "- an initial wedge plan (beachhead + first use case + GTM motion + conversion target),"+
-                "- a planning market size for Year 1 (target revenue + customer count)."+
-                "- consdier that the users launching MVP that year so keep target customer count realistic"+
-                "- consider that the users MVP is a subscription based product so keep target revenue realistic"+
+                "Estimate market size for this startup with only these outputs:" +
+                "- planning_market_size_usd_range"+
+                "- tam_usd_range"+
+                "- sam_usd_range"+
+                "- initial_wedge_usd_range"+
+                "- consider that the user is launching an MVP in year 1 and likely a subscription product"+
                 "Use USD/year ranges and conservative assumptions if details are missing."+
                 "Return ONLY valid JSON matching the schema from the system prompt.\n\n"+
                 "Inputs:"+ JSON.stringify(payload, null, 2),
@@ -127,17 +124,22 @@ export async function estimateMarketSizeLLM(input: {
                     type: "object",
                     additionalProperties: false,
                     required: [
-                        "market_definition",
+                        "planning_market_size_usd_range",
                         "tam_usd_range",
                         "sam_usd_range",
-                        "wedge_sam_usd_range",
-                        "planning_year_1",
-                        "key_assumptions",
-                        "confidence",
-                        "notes",
+                        "initial_wedge_usd_range",
                     ],
                     properties: {
-                        market_definition: { type: "string" },
+                        planning_market_size_usd_range: {
+                            type: "object",
+                            additionalProperties: false,
+                            required: ["low", "high", "unit"],
+                            properties: {
+                                low: { type: "number" },
+                                high: { type: "number" },
+                                unit: { type: "string", enum: ["USD/year"] },
+                            },
+                        },
                         tam_usd_range: {
                             type: "object",
                             additionalProperties: false,
@@ -158,7 +160,7 @@ export async function estimateMarketSizeLLM(input: {
                                 unit: { type: "string", enum: ["USD/year"] },
                             },
                         },
-                        wedge_sam_usd_range: {
+                        initial_wedge_usd_range: {
                             type: "object",
                             additionalProperties: false,
                             required: ["low", "high", "unit"],
@@ -168,34 +170,6 @@ export async function estimateMarketSizeLLM(input: {
                                 unit: { type: "string", enum: ["USD/year"] },
                             },
                         },
-                        planning_year_1: {
-                            type: "object",
-                            additionalProperties: false,
-                            required: ["target_revenue_usd", "customer_count"],
-                            properties: {
-                                target_revenue_usd: {
-                                    type: "object",
-                                    additionalProperties: false,
-                                    required: ["low", "high"],
-                                    properties: {
-                                        low: { type: "number" },
-                                        high: { type: "number" },
-                                    },
-                                },
-                                customer_count: {
-                                    type: "object",
-                                    additionalProperties: false,
-                                    required: ["low", "high"],
-                                    properties: {
-                                        low: { type: "number" },
-                                        high: { type: "number" },
-                                    },
-                                },
-                            },
-                        },
-                        key_assumptions: { type: "array", items: { type: "string" } },
-                        confidence: { type: "number", minimum: 0, maximum: 1 },
-                        notes: { type: "array", items: { type: "string" } },
                     },
                 },
             },
@@ -222,7 +196,7 @@ export async function estimateMarketSizeLLM(input: {
         }
 
         return parsed;
-    } catch (e) {
+    } catch {
         console.error("Failed to parse market size LLM response:", raw);
         return null;
     }
