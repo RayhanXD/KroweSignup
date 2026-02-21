@@ -1,6 +1,5 @@
 'use client'
 
-import { Lock } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type IndustryExperienceStepProps = {
@@ -85,13 +84,6 @@ export default function IndustryExperienceStep({
             </div>
           </div>
         </div>
-        {/* Privacy Notice */}
-        <footer className="px-6 pt-10 pb-4 w-full flex justify-center">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="w-4 h-4" />
-            <span>Your intellectual property is private and encrypted.</span>
-          </div>
-        </footer>
       </div>
     </SignupStepLayout>
   )

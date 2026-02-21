@@ -1,6 +1,5 @@
 'use client'
 
-import { Lock } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type ProductType = 'mobile' | 'web' | 'both' | 'other'
@@ -145,13 +144,6 @@ export default function ProductTypeStep({
               <span className="material-symbols-outlined text-lg ml-2 transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
             </button>
           </div>
-        {/* Privacy Notice */}
-        <footer className="px-6 pt-10 pb-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="w-4 h-4" />
-            <span>Your intellectual property is private and encrypted.</span>
-          </div>
-        </footer>
         </div>
       </div>
     </SignupStepLayout>

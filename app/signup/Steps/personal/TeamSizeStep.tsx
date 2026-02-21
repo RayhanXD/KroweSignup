@@ -40,18 +40,17 @@ export default function TeamSizeStep({
                 it&apos;s okay to not have anyone yet
               </p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200/60 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-white to-transparent opacity-50" />
-              <h3 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" /> Team Dynamics
-              </h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Understanding your team size helps us recommend suitable collaboration tools and mentorship programs tailored to your scale.
+            {/* Structure Hint Box */}
+            <div className="bg-[#fafafa] rounded-lg p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Team Dynamics
+                </span>
+              </div>
+              <p className="font-mono text-sm text-black leading-relaxed">
+                Understanding your <span className="text-[#f97316]">team size</span> helps us recommend suitable <span className="text-[#f97316]">collaboration tools</span> and <span className="text-[#f97316]">mentorship programs</span> tailored to your scale.
               </p>
-            </div>
-            <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400 font-medium">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Your startup details are private.</span>
             </div>
           </div>
           <div className="lg:col-span-7 w-full">
@@ -107,10 +106,6 @@ export default function TeamSizeStep({
                   </button>
                 </div>
               </div>
-            </div>
-            <div className="lg:hidden flex items-center justify-center gap-2 text-xs text-gray-400 mt-6 mb-8">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Private and encrypted.</span>
             </div>
           </div>
         </div>

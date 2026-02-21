@@ -119,10 +119,6 @@ export default function IndustryStep({
                 Based on your previous answers, we&apos;ve highlighted some sectors that seem like a good fit, or you can specify your own.
               </p>
             </div>
-            <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-gray-400 font-medium">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Your intellectual property is secure.</span>
-            </div>
           </div>
 
           {/* Right column */}
@@ -211,11 +207,6 @@ export default function IndustryStep({
                 Continue
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </button>
-            </div>
-
-            <div className="lg:hidden flex items-center justify-center gap-1.5 text-[11px] text-gray-400 mt-4 mb-6">
-              <span className="material-symbols-outlined text-xs">lock</span>
-              <span>Private and secure.</span>
             </div>
           </div>
         </div>

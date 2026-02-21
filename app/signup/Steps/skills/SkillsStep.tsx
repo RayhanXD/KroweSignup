@@ -112,10 +112,6 @@ export default function SkillsStep({
                 resources and potential co-founders.
               </p>
             </div>
-            <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400 font-medium">
-              <span className="material-symbols-outlined text-base">lock</span>
-              <span>Your data is confidential.</span>
-            </div>
           </div>
 
           {/* Right column */}
@@ -240,11 +236,6 @@ export default function SkillsStep({
                   arrow_forward
                 </span>
               </button>
-            </div>
-
-            <div className="lg:hidden flex items-center justify-center gap-2 text-xs text-gray-400 mt-6 mb-8">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Private and secure.</span>
             </div>
           </div>
         </div>

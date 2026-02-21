@@ -1,7 +1,7 @@
 'use client'
 
 import type { ChangeEvent } from 'react';
-import { ArrowRight, Lock, User } from 'lucide-react';
+import { ArrowRight, User } from 'lucide-react';
 import SignupStepLayout from '../SignupStepLayout';
 
 type AgeStepProps = {
@@ -54,11 +54,6 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
               <p className="font-mono text-sm text-black leading-relaxed">
                 This information is kept <span className="text-[#f97316]">private</span> and is only used for us to understand how fit you are for your idea.
               </p>
-            </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Lock className="w-4 h-4" />
-              <span className="text-sm">Your personal data is encrypted and secure.</span>
             </div>
           </div>
 

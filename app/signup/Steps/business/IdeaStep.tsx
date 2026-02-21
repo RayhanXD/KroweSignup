@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Lightbulb, Lock } from 'lucide-react'
+import { ArrowRight, Lightbulb } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type IdeaStepProps = {
@@ -96,14 +96,6 @@ export default function IdeaStep({
             </div>
           </div>
         </div>
-
-        {/* Privacy Notice */}
-        <footer className="px-6 pt-10 pb-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="w-4 h-4" />
-            <span>Your intellectual property is private and encrypted.</span>
-          </div>
-        </footer>
       </div>
     </SignupStepLayout>
   )
