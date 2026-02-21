@@ -44,15 +44,17 @@ export default function SignupStepLayout({ progressPercent = 0, children }: Sign
         )}
         <div className="flex-1 flex flex-col items-center justify-center w-full">
           {children}
-          <div className="w-full max-w-6xl mx-auto px-6 pt-8 pb-2 text-center">
+          <div className="w-full max-w-6xl mx-auto px-6 pt-10 text-center">
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Lock className="w-4 h-4" aria-hidden />
               <span>Your intellectual property is private and encrypted.</span>
             </div>
-            <p className="text-xs text-muted-foreground tracking-wide mt-3">© 2026 Krowe Technologies Inc.</p>
           </div>
         </div>
       </main>
+      <footer className="mt-auto w-full py-6 text-center">
+        <p className="text-xs text-muted-foreground tracking-wide">© 2026 Krowe Technologies Inc.</p>
+      </footer>
     </div>
   )
 }
