@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 const RADIUS = 110;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const MAX_PROGRESS_BEFORE_DONE = 92;
-const TOTAL_ANIMATION_MS = 30000;
-const TICK_MS = 100;
+const LOADING_PROGRESS_CAP = 99;
+const EASING_TIME_CONSTANT_MS = 12000;
 
 function getStepForProgress(progress: number) {
   if (progress >= 90) return 4;
@@ -63,19 +62,14 @@ export function ProgressScreen({ isDone }: ProgressScreenProps) {
       if (start == null) start = timestamp;
       const elapsed = timestamp - start;
 
-      const ratio = Math.min(1, elapsed / TOTAL_ANIMATION_MS);
-      const next = Math.min(MAX_PROGRESS_BEFORE_DONE, ratio * MAX_PROGRESS_BEFORE_DONE);
+      const easingRatio = 1 - Math.exp(-elapsed / EASING_TIME_CONSTANT_MS);
+      const rawNext = easingRatio * LOADING_PROGRESS_CAP;
+      const next = Math.min(LOADING_PROGRESS_CAP, rawNext);
 
       setProgress((prev) => {
-        // While not done, never move backwards and never exceed the cap
-        const clampedNext = Math.min(MAX_PROGRESS_BEFORE_DONE, next);
+        const clampedNext = Math.min(LOADING_PROGRESS_CAP, next);
         return Math.max(prev, clampedNext);
       });
-
-      // Stop once we've reached the time-based cap
-      if (ratio >= 1) {
-        return;
-      }
 
       frame = window.requestAnimationFrame(animate);
     };
@@ -146,16 +140,6 @@ export function ProgressScreen({ isDone }: ProgressScreenProps) {
             <span className="text-xs md:text-sm font-semibold text-orange-500 uppercase tracking-[0.2em] mt-1">
               {phaseLabel}
             </span>
-          </div>
-        </div>
-
-        {/* Horizontal Progress Bar (mirrors displayProgress) */}
-        <div className="w-full max-w-md mt-4">
-          <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-orange-500 rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${displayProgress}%` }}
-            />
           </div>
         </div>
 
