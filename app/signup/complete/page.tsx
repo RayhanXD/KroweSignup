@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ProgressScreen } from "@/app/report/[sessionId]/ProgressScreen";
 
 function SignupCompleteContent() {
   const router = useRouter();
@@ -40,20 +41,23 @@ function SignupCompleteContent() {
     };
   }, [sessionId, router]);
 
+  if (!error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-white">
+        <div className="w-full max-w-4xl">
+          <ProgressScreen />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="max-w-md w-full rounded-2xl border bg-white p-6 text-center">
         <div className="text-xl font-semibold text-black">
-          Generating your Krowe roadmap…
+          There was a problem generating your roadmap
         </div>
-
-        {!error ? (
-          <p className="mt-2 text-sm text-gray-600">
-            This usually takes a moment.
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-red-600">{error}</p>
-        )}
+        <p className="mt-2 text-sm text-red-600">{error}</p>
       </div>
     </div>
   );
