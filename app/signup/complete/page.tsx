@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProgressScreen } from "@/app/report/[sessionId]/ProgressScreen";
+import SpiralPreloader from "@/app/components/SpiralPreloader";
 
 function SignupCompleteContent() {
   const router = useRouter();
@@ -65,7 +66,7 @@ function SignupCompleteContent() {
 
 export default function SignupCompletePage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<SpiralPreloader className="animate-fade-in" />}>
       <SignupCompleteContent />
     </Suspense>
   );

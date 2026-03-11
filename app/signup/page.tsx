@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from 'react'
 import FixNeededCard from './FixNeededCard'
 import { SignupFixBannerProvider } from './SignupFixBannerContext'
+import { SignupFormProvider } from './SignupFormContext'
 import {
   AgeStep,
   IdeaStep,
@@ -25,15 +26,22 @@ import { STORAGE_KEYS, DEFAULT_VALUES } from '@/lib/constants'
 import { safeJson } from '@/lib/utils/parsing'
 import type { ProductType } from '@/lib/types/answers'
 import type { FinalAnswerSource } from '@/lib/types/answers'
-import next from "next"
+import SpiralPreloader from '@/app/components/SpiralPreloader'
 
 const STORAGE_KEY = STORAGE_KEYS.SESSION_ID
 
+const PRELOADER_MIN_MS = 2250
 
+function sleepPreloaderMin(startTime: number) {
+  const elapsed = Date.now() - startTime
+  const remaining = Math.max(0, PRELOADER_MIN_MS - elapsed)
+  return remaining > 0 ? new Promise<void>((r) => setTimeout(r, remaining)) : Promise.resolve()
+}
 
 export default function SignupPage() {
   const { loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer, sessionId } = useSignupSession();
   const [issues, setIssues] = useState<{ code: string; message: string; severity?: string }[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [aiReason, setAiReason] = useState<string | null>(null);
@@ -44,13 +52,14 @@ export default function SignupPage() {
   //Slice 1: Optional client only back nav (NOT persisted if user refreshes)
   const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
-  if (loading) return <div className='p-6'>Loading...</div>;
+  if (loading) return <SpiralPreloader className="animate-fade-in" />;
   if (error) return <div className='p-6 text-red-600'>{error}</div>
   const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
   const progressPercent = getProgressPercent(stepKey);
   const raw = answersByStepKey[stepKey] ?? "";
   const value = raw
 
+  if (saving || finishing) return <SpiralPreloader className="animate-fade-in" />;
 
   function setLocal(step: StepKey, v: unknown) {
     const serialized = typeof v === 'string' ? v : JSON.stringify(v)
@@ -58,6 +67,7 @@ export default function SignupPage() {
   }
 
   async function finalizeSignup(sessionId: string) {
+    const start = Date.now();
     setFinishing(true);
     try {
       const res = await fetch("/api/signup/complete", {
@@ -78,6 +88,7 @@ export default function SignupPage() {
       //Redirect after the signup 
       router.replace(`/signup/complete?sessionId=${sessionId}`); //when final platform put dashboard here
     } finally {
+      await sleepPreloaderMin(start);
       setFinishing(false);
     }
   }
@@ -100,34 +111,32 @@ export default function SignupPage() {
 
 
   async function saveAndNext(step: StepKey, v: unknown, force = false) {
-    if (saving) return;
-    setSaving(true);
+    if (saving || submitting) return;
+    const start = Date.now();
+    setSubmitting(true);
 
     try {
       const serialized = typeof v === "string" ? v : JSON.stringify(v);
-      //1) save + validate (+maybe ai suggestion) but dont advance
       const res = await submitAnswer(step, serialized, force);
 
-      //always update UI state from resposne
       setIssues(res.issues || []);
       setCanContinueAnyway(Boolean(res.canContinueWithWarning));
       setAiSuggestion(res.aiSuggestion ?? null);
       setAiReason(res.aiReason ?? null);
 
-      //2) if ok -> auto confirm (one click and advance)
       if (res.validationStatus === "ok") {
+        setSubmitting(false);
+        setSaving(true);
         await confirmAndMaybeFinish(step, serialized, "original");
         clearFixUI();
         setOverrideStepKey(null);
+        await sleepPreloaderMin(start);
       }
-
-
-
-      //ok -> clear issues and clear back overide
     } catch (error: any) {
       console.error("Error in saveAndNext:", error);
       setIssues([{ code: "ERROR", message: error?.message || "An error occurred. Please try again." }]);
     } finally {
+      setSubmitting(false);
       setSaving(false);
     }
   }
@@ -140,6 +149,7 @@ export default function SignupPage() {
 
   const continueAnyway = async () => {
     if (!canContinueAnyway) return // safety
+    const start = Date.now();
     setSaving(true)
     try {
       // confirm the users current value and advance
@@ -147,6 +157,7 @@ export default function SignupPage() {
       clearFixUI()
       setOverrideStepKey(null)
     } finally {
+      await sleepPreloaderMin(start);
       setSaving(false)
     }
   }
@@ -169,23 +180,27 @@ export default function SignupPage() {
         saving={saving}
         finishing={finishing}
         onUseSuggestion={async () => {
+          const start = Date.now();
           setSaving(true)
           try {
             await confirmAndMaybeFinish(stepKey, aiSuggestion!, 'ai_suggested')
             clearFixUI()
             setOverrideStepKey(null)
           } finally {
+            await sleepPreloaderMin(start);
             setSaving(false)
           }
         }}
         onEditSuggestion={() => setLocal(stepKey, aiSuggestion!)}
         onSaveMyEdit={async () => {
+          const start = Date.now();
           setSaving(true)
           try {
             await confirmAndMaybeFinish(stepKey, value, 'user_edited')
             clearFixUI()
             setOverrideStepKey(null)
           } finally {
+            await sleepPreloaderMin(start);
             setSaving(false)
           }
         }}
@@ -193,9 +208,11 @@ export default function SignupPage() {
       />
     ) : null
     return (
-      <SignupFixBannerProvider value={fixBanner}>
-        {ui}
-      </SignupFixBannerProvider>
+      <SignupFormProvider value={{ submitting }}>
+        <SignupFixBannerProvider value={fixBanner}>
+          {ui}
+        </SignupFixBannerProvider>
+      </SignupFormProvider>
     )
   }
 

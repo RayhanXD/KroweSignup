@@ -26,7 +26,7 @@ export default function SignupStepLayout({ progressPercent = 0, children }: Sign
             <div className="flex-1 flex justify-center min-w-0 px-2 -ml-12 md:-ml-16">
               <div className="w-full max-w-xs h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="bg-orange-500 h-full rounded-full transition-[width]"
+                  className="signup-progress-fill bg-orange-500 h-full rounded-full"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>

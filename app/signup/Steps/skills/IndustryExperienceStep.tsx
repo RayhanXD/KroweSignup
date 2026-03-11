@@ -2,6 +2,7 @@
 
 import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
+import { useSignupForm } from '../../SignupFormContext'
 
 type IndustryExperienceStepProps = {
   value: string;
@@ -18,6 +19,8 @@ export default function IndustryExperienceStep({
   onContinue,
   progressPercent = 66, //adjust this to change progress bar on this page
 }: IndustryExperienceStepProps) {
+  const { submitting } = useSignupForm()
+
   return (
     <SignupStepLayout progressPercent={progressPercent}>
       <div className="w-full flex flex-col items-center">
@@ -26,19 +29,19 @@ export default function IndustryExperienceStep({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start p-6 md:p-8">
             <div className="lg:col-span-5 flex flex-col justify-center space-y-6 pt-4">
               <div className="space-y-4">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#FFF8F1] text-[#FF6B00] mb-2 border border-[#FFECD9] shadow-sm">
+                <div className="animate-fade-slide-in step-delay-1 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#FFF8F1] text-[#FF6B00] mb-2 border border-[#FFECD9] shadow-sm">
                   <span className="material-symbols-outlined">domain</span>
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-[1.1]">
+                <h1 className="animate-fade-slide-in step-delay-2 text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-[1.1]">
                   What&apos;s your <br /> <span className="text-orange-500 bg-clip-text bg-gradient-to-r from-primary-600 to-primary-500">industry experience</span>, if any?
                 </h1>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="animate-fade-slide-in step-delay-3 text-muted-foreground leading-relaxed">
                   Don&apos;t feel pressured to lie or make up experience, knowing where you are will help us take you to where you want to be.
                 </p>
               </div>
             </div>
             <div className="lg:col-span-7 w-full">
-              <div className="bg-white rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-gray-100 overflow-hidden relative group transition-all duration-500 hover:shadow-lg hover:ring-gray-200">
+              <div className="animate-fade-slide-in step-delay-5 bg-white rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-gray-100 overflow-hidden relative group transition-all duration-500 hover:shadow-lg hover:ring-gray-200">
                 <div className="relative min-h-[300px] flex flex-col pb-20">
                   <div className="w-full px-6 py-8 md:px-8 md:py-10">
                   <label className="block text-sm font-semibold text-gray-400 uppercase tracking-wide mb-6" htmlFor="experience">
@@ -57,7 +60,7 @@ export default function IndustryExperienceStep({
                   </div>
                   </div>
                 </div>
-                <div className="bg-white/80 backdrop-blur-sm border-t border-gray-50 p-4 md:px-6 md:py-4 flex items-center justify-between absolute bottom-0 w-full z-10">
+                <div className="animate-fade-slide-in step-delay-6 bg-white/80 backdrop-blur-sm border-t border-gray-50 p-4 md:px-6 md:py-4 flex items-center justify-between absolute bottom-0 w-full z-10">
                 <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   Auto-saved
@@ -73,7 +76,7 @@ export default function IndustryExperienceStep({
                   <button
                     type="button"
                     onClick={onContinue}
-                    disabled={value.trim().length < 3}
+                    disabled={value.trim().length < 3 || submitting}
                     className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue

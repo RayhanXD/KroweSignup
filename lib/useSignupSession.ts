@@ -8,6 +8,14 @@ import type { SubmitAnswerResponse, ConfirmAnswerResponse } from "@/lib/types/an
 
 const STORAGE_KEY = STORAGE_KEYS.SESSION_ID
 
+const PRELOADER_MIN_MS = 2500
+
+function sleepRemaining(startTime: number, minMs: number) {
+  const elapsed = Date.now() - startTime
+  const remaining = Math.max(0, minMs - elapsed)
+  return remaining > 0 ? new Promise<void>((r) => setTimeout(r, remaining)) : Promise.resolve()
+}
+
 export function useSignupSession(){
     const [state, setState] = useState<SessionState>({
         sessionId: null,
@@ -18,6 +26,7 @@ export function useSignupSession(){
     });
 
     useEffect(() => {
+        const startTime = Date.now()
         const existing = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY): null;
 
         async function startNew(){
@@ -27,6 +36,7 @@ export function useSignupSession(){
             if (!res.ok) throw new Error(json?.error || "failed to start session");
 
             localStorage.setItem(STORAGE_KEY, json.sessionId);
+            await sleepRemaining(startTime, PRELOADER_MIN_MS);
             setState((s) => ({
                 ...s,
                 sessionId: json.sessionId,
@@ -45,6 +55,7 @@ export function useSignupSession(){
                 return startNew();
             }
 
+            await sleepRemaining(startTime, PRELOADER_MIN_MS);
             setState((s) => ({
                 ...s,
                 sessionId,
@@ -60,6 +71,7 @@ export function useSignupSession(){
                 if (existing) await resume(existing);
                 else await startNew();
             } catch (e: any){
+                await sleepRemaining(startTime, PRELOADER_MIN_MS);
                 setState((s) => ({
                     ...s,
                     loading: false,

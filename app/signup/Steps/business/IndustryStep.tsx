@@ -2,6 +2,7 @@
 
 import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
+import { useSignupForm } from '../../SignupFormContext'
 
 export type IndustryId =
   | 'edtech'
@@ -101,6 +102,7 @@ export default function IndustryStep({
   progressPercent = 0,
 }: IndustryStepProps) {
   const canContinue = !!value && (value !== 'other' || otherValue.trim().length >= 3)
+  const { submitting } = useSignupForm()
 
   return (
     <SignupStepLayout progressPercent={progressPercent}>
@@ -110,13 +112,13 @@ export default function IndustryStep({
           {/* Left column */}
           <div className="lg:col-span-4 flex flex-col justify-center space-y-5 pt-2 lg:sticky lg:top-20">
             <div className="space-y-3">
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#FFF5EE] text-[#E05202] mb-1 shadow-sm">
+              <div className="animate-fade-slide-in step-delay-1 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#FFF5EE] text-[#E05202] mb-1 shadow-sm">
                 <span className="material-symbols-outlined text-[20px]">factory</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 leading-[1.15]">
+              <h1 className="animate-fade-slide-in step-delay-2 text-2xl md:text-3xl font-bold tracking-tight text-gray-900 leading-[1.15]">
                 What <span className="text-orange-500 bg-clip-text bg-gradient-to-r from-primary-600 to-primary-500">industry</span> does your idea fall under?
               </h1>
-              <p className="text-base text-gray-500 leading-relaxed">
+              <p className="animate-fade-slide-in step-delay-3 text-base text-gray-500 leading-relaxed">
                 Based on your previous answers, we&apos;ve highlighted some sectors that seem like a good fit, or you can specify your own.
               </p>
             </div>
@@ -124,7 +126,7 @@ export default function IndustryStep({
 
           {/* Right column */}
           <div className="lg:col-span-8 w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="animate-fade-slide-in step-delay-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {INDUSTRIES.map((industry) => (
                 <div key={industry.id} className="relative group">
                   <input
@@ -189,7 +191,7 @@ export default function IndustryStep({
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-5 border-t border-gray-100 pt-4">
+            <div className="animate-fade-slide-in step-delay-6 mt-6 flex items-center justify-end gap-5 border-t border-gray-100 pt-4">
               {onBack != null && (
                 <button
                   type="button"
@@ -202,7 +204,7 @@ export default function IndustryStep({
               <button
                 type="button"
                 onClick={onContinue}
-                disabled={!canContinue}
+                disabled={!canContinue || submitting}
                 className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue

@@ -3,6 +3,7 @@
 import type { ChangeEvent } from 'react';
 import { ArrowRight, User } from 'lucide-react';
 import SignupStepLayout from '../SignupStepLayout';
+import { useSignupForm } from '../../SignupFormContext';
 
 type AgeStepProps = {
   value: number;
@@ -14,6 +15,7 @@ type AgeStepProps = {
 
 export default function AgeStep({ value, onChange, onBack, onContinue, progressPercent = 0 }: AgeStepProps) {
   const age = value;
+  const { submitting } = useSignupForm();
 
   const handleAgeChange = (event: ChangeEvent<HTMLInputElement>) => {
     const numericValue = event.target.value.replace(/\D/g, '');
@@ -31,20 +33,20 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
     <SignupStepLayout progressPercent={progressPercent}>
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-12 md:gap-16 items-stretch">
           <div className="space-y-6">
-            <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
+            <div className="animate-fade-slide-in step-delay-1 w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
               <User className="w-6 h-6 text-orange-500" />
             </div>
 
-            <div>
+            <div className="animate-fade-slide-in step-delay-2">
               <h1 className="text-3xl md:text-4xl font-bold text-black">How old</h1>
               <h1 className="text-3xl md:text-4xl font-bold text-orange-500">are you?</h1>
             </div>
 
-            <p className="text-muted-foreground leading-relaxed max-w-sm">
+            <p className="animate-fade-slide-in step-delay-3 text-muted-foreground leading-relaxed max-w-sm">
               We tailor the Krowe incubator experience to different life stages. Your age helps us match you with the right peer cohort.
             </p>
 
-            <div className="bg-[#fafafa] rounded-lg p-5 space-y-3 max-w-sm">
+            <div className="animate-fade-slide-in step-delay-4 bg-[#fafafa] rounded-lg p-5 space-y-3 max-w-sm">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                 <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
@@ -58,7 +60,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
           </div>
 
           <div className="flex flex-col">
-            <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="animate-fade-slide-in step-delay-5 flex-1 flex flex-col items-center justify-center">
               <label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase mb-4">
                 Enter Your Age
               </label>
@@ -75,7 +77,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
               <div className="w-32 h-px bg-border mt-2" />
             </div>
 
-            <div className="flex items-center justify-between mt-16 pt-6">
+            <div className="animate-fade-slide-in step-delay-6 flex items-center justify-between mt-16 pt-6">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
                 <span className="text-sm text-muted-foreground">Auto-saved</span>
@@ -92,7 +94,8 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
                 <button
                   type="button"
                   onClick={onContinue}
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors"
+                  disabled={submitting}
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />

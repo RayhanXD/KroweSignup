@@ -3,13 +3,21 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary: #2563eb;
+  --primary: #f97316;
   --primary-foreground: #ffffff;
   --muted: #f4f4f5;
   --muted-foreground: #71717a;
   --card: #ffffff;
   --card-foreground: #171717;
   --border: #e4e4e7;
+
+  /* Motion system: one place for easing and duration */
+  --ease-out-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-smooth: cubic-bezier(0.4, 0, 1, 1);
+  --duration-enter: 0.85s;
+  --duration-exit: 0.28s;
+  --duration-preloader: 0.5s;
+  --stagger-step: 85ms;
 }
 
 @theme inline {
@@ -41,4 +49,137 @@ body {
 
 .material-symbols-outlined.filled {
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+@keyframes spiral-preloader-gather {
+  0% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  82% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+.spiral-preloader-svg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  animation: spiral-preloader-gather 2.4s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--duration-preloader) var(--ease-out-smooth) forwards;
+}
+
+.animate-fade-out {
+  animation: fade-out var(--duration-exit) var(--ease-in-smooth) forwards;
+}
+
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.animate-fade-slide-in {
+  animation: fade-slide-in var(--duration-enter) var(--ease-out-smooth) forwards;
+}
+
+.animate-fade-slide-out {
+  animation: fade-slide-out var(--duration-exit) var(--ease-in-smooth) forwards;
+}
+
+.step-delay-1 { animation-delay: 0ms; }
+.step-delay-2 { animation-delay: 0ms; }
+.step-delay-3 { animation-delay: 0ms; }
+.step-delay-4 { animation-delay: 0ms; }
+.step-delay-5 { animation-delay: 0ms; }
+.step-delay-6 { animation-delay: 0ms; }
+
+.signup-progress-fill {
+  transition: width var(--duration-enter) var(--ease-out-smooth);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spiral-preloader-svg {
+    animation: none;
+  }
+
+  .animate-fade-in {
+    animation-duration: 0.05s;
+    animation-timing-function: linear;
+  }
+
+  .animate-fade-out,
+  .animate-fade-slide-out {
+    animation-duration: 0.05s;
+    animation-timing-function: linear;
+  }
+
+  .animate-fade-slide-in {
+    animation: fade-in 0.01s linear forwards;
+  }
+
+  .step-delay-1,
+  .step-delay-2,
+  .step-delay-3,
+  .step-delay-4,
+  .step-delay-5,
+  .step-delay-6 {
+    animation-delay: 0ms;
+  }
+
+  .signup-progress-fill {
+    transition: none;
+  }
 }

@@ -2,6 +2,7 @@
 
 import { ArrowRight, Lightbulb } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
+import { useSignupForm } from '../../SignupFormContext'
 
 type IdeaStepProps = {
   value: string;
@@ -19,6 +20,7 @@ export default function IdeaStep({
   progressPercent = 22, // example 2/10 steps
 }: IdeaStepProps) {
   const canContinue = value.trim().length > 20;
+  const { submitting } = useSignupForm();
 
   return (
     <SignupStepLayout progressPercent={progressPercent}>
@@ -26,24 +28,24 @@ export default function IdeaStep({
         <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           {/* Left Column */}
           <div className="space-y-6">
-            <div className="w-12 h-12 rounded-xl bg-[#fff4e6] flex items-center justify-center">
+            <div className="animate-fade-slide-in step-delay-1 w-12 h-12 rounded-xl bg-[#fff4e6] flex items-center justify-center">
               <Lightbulb className="w-6 h-6 text-[#f97316]" />
             </div>
 
-            <div className="space-y-4">
+            <div className="animate-fade-slide-in step-delay-2 space-y-4">
               <h1 className="text-4xl font-bold tracking-tight text-black">
                 Refine your
                 <br />
                 <span className="text-[#f97316]">Startup Vision</span>
               </h1>
 
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="animate-fade-slide-in step-delay-3 text-muted-foreground leading-relaxed">
                 Clear articulation is the foundation of every successful venture. Focus on the core problem and your unique solution.
               </p>
             </div>
 
             {/* Structure Hint Box */}
-            <div className="bg-[#fafafa] rounded-lg p-5 space-y-3">
+            <div className="animate-fade-slide-in step-delay-4 bg-[#fafafa] rounded-lg p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
                 <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
@@ -61,15 +63,17 @@ export default function IdeaStep({
 
           {/* Right Column */}
           <div className="space-y-4">
+            <div className="animate-fade-slide-in step-delay-5">
             <textarea
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder="Start typing your vision here..."
               className="w-full h-64 p-4 text-black placeholder:text-muted-foreground bg-white border border-gray-200 rounded-lg shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] focus:shadow-md transition-colors"
             />
+            </div>
 
             {/* Footer Actions */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="animate-fade-slide-in step-delay-6 flex items-center justify-between pt-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 <span>Auto-saved</span>
@@ -86,7 +90,7 @@ export default function IdeaStep({
                 <button
                   type="button"
                   onClick={onContinue}
-                  disabled={!canContinue}
+                  disabled={!canContinue || submitting}
                   className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue

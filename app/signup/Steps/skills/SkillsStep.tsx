@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
+import { useSignupForm } from '../../SignupFormContext'
 
 type SkillId = 'dev' | 'marketing' | 'leadership' | 'other' | 'none'
 
@@ -67,6 +68,7 @@ export default function SkillsStep({
 }: SkillsStepProps) {
   const selectedSkills = value
   const [otherText, setOtherText] = useState('')
+  const { submitting } = useSignupForm()
 
   const toggleSkill = (skillId: SkillId) => {
     if (skillId === 'none') {
@@ -98,17 +100,17 @@ export default function SkillsStep({
           {/* Left column - pulled up so it sits centered with the selection cards */}
           <div className="lg:col-span-4 flex flex-col space-y-8 lg:sticky lg:top-24 -mt-56 lg:-mt-64">
             <div className="space-y-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 mb-2 border border-orange-100/50 shadow-sm">
+              <div className="animate-fade-slide-in step-delay-1 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 mb-2 border border-orange-100/50 shadow-sm">
                 <span className="material-symbols-outlined">psychology</span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 leading-[1.1]">
+              <h1 className="animate-fade-slide-in step-delay-2 text-4xl md:text-5xl font-bold tracking-tight text-gray-900 leading-[1.1]">
                 What are your{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-orange-500">
                   current skills
                 </span>
                 , if any?
               </h1>
-              <p className="text-lg text-gray-500 leading-relaxed">
+              <p className="animate-fade-slide-in step-delay-3 text-lg text-gray-500 leading-relaxed">
                 Identify your key strengths to help us match you with the right
                 resources and potential co-founders.
               </p>
@@ -117,7 +119,7 @@ export default function SkillsStep({
 
           {/* Right column */}
           <div className="lg:col-span-8 w-full pt-8 lg:pt-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="animate-fade-slide-in step-delay-5 grid grid-cols-1 md:grid-cols-2 gap-4">
               {SKILL_OPTIONS.map((skill) => (
                 <div key={skill.id} className="relative group">
                   <input
@@ -216,7 +218,7 @@ export default function SkillsStep({
               </div>
             </div>
 
-            <div className="mt-10 flex items-center justify-end gap-5 border-t border-gray-100 pt-6">
+            <div className="animate-fade-slide-in step-delay-6 mt-10 flex items-center justify-end gap-5 border-t border-gray-100 pt-6">
               {onBack != null && (
                 <button
                   type="button"
@@ -229,7 +231,7 @@ export default function SkillsStep({
               <button
                 type="button"
                 onClick={onContinue}
-                disabled={!canContinue}
+                disabled={!canContinue || submitting}
                 className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue

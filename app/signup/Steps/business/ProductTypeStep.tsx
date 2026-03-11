@@ -2,6 +2,7 @@
 
 import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
+import { useSignupForm } from '../../SignupFormContext'
 
 type ProductType = 'mobile' | 'web' | 'both' | 'other'
 
@@ -20,23 +21,25 @@ export default function ProductTypeStep({
   onContinue,
   progressPercent = 33,
 }: ProductTypeStepProps) {
+  const { submitting } = useSignupForm()
+
   return (
     <SignupStepLayout progressPercent={progressPercent}>
       <div className="flex-grow flex items-center justify-center p-6 md:p-12 relative overflow-hidden w-full">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-orange-50/40 via-transparent to-transparent pointer-events-none -z-10 translate-x-1/3 -translate-y-1/4" />
         <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
           <div className="text-center mb-12 space-y-4 max-w-2xl">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 mb-2 border border-orange-100/50 shadow-sm">
+            <div className="animate-fade-slide-in step-delay-1 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 mb-2 border border-orange-100/50 shadow-sm">
               <span className="material-symbols-outlined">category</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+            <h1 className="animate-fade-slide-in step-delay-2 text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
               What type of <span className="text-orange-500 bg-clip-text bg-gradient-to-r from-primary-600 to-primary-500">product</span> is your idea?
             </h1>
-            <p className="text-lg text-gray-500 leading-relaxed">
+            <p className="animate-fade-slide-in step-delay-3 text-lg text-gray-500 leading-relaxed">
               Categorizing your solution helps us tailor the incubation roadmap specifically for your technology stack.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-12">
+          <div className="animate-fade-slide-in step-delay-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-12">
             <label className="group cursor-pointer relative">
               <input
                 className="peer sr-only"
@@ -126,7 +129,7 @@ export default function ProductTypeStep({
               </div>
             </label>
           </div>
-          <div className="flex items-center justify-end gap-5 w-full max-w-5xl border-t border-gray-100 pt-8">
+          <div className="animate-fade-slide-in step-delay-6 flex items-center justify-end gap-5 w-full max-w-5xl border-t border-gray-100 pt-8">
             <button
               type="button"
               onClick={onBack}
@@ -135,12 +138,12 @@ export default function ProductTypeStep({
               <span className="material-symbols-outlined text-lg">arrow_back</span>
               Go Back
             </button>
-            <button
-              type="button"
-              onClick={onContinue}
-              disabled={!value}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+                <button
+                  type="button"
+                  onClick={onContinue}
+                  disabled={!value || submitting}
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
               Continue
               <ArrowRight className="w-4 h-4" />
             </button>
