@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { generateReportForSession } from "@/lib/report/generateReportForSession";
 import { REPORT_VERSION } from "@/lib/constants";
 import type { GenerateReportRequest } from "@/lib/types/api";
+
+export const maxDuration = 300;
 
 type Body = GenerateReportRequest;
 
@@ -42,23 +45,20 @@ async function markReportFailed(sessionId: string, error: unknown) {
   }
 }
 
-function enqueueReportGeneration(sessionId: string) {
+function enqueueReportGeneration(sessionId: string, requestStartedAt: number) {
   const backgroundStartedAt = Date.now();
   console.log(`[generate] Background report generation started (sessionId=${sessionId})`);
 
-  void generateReportForSession(sessionId, { reason: "generate" })
-    .then((result) => {
-      console.log(
-        `[generate] Background report generation completed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${result.updatedAt})`
-      );
-    })
-    .catch(async (error: unknown) => {
-      console.error(
-        `[generate] Background report generation failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
-        error
-      );
-      await markReportFailed(sessionId, error);
-    });
+  waitUntil(
+    generateReportForSession(sessionId, { reason: "generate" })
+      .then((result) => {
+        logGenerateRoute(sessionId, requestStartedAt, `Background completed: ${result.updatedAt}`);
+      })
+      .catch(async (error: unknown) => {
+        console.error(`[generate] Background failed (sessionId=${sessionId}):`, error);
+        await markReportFailed(sessionId, error);
+      })
+  );
 }
 
 export async function POST(req: Request) {
@@ -164,7 +164,7 @@ export async function POST(req: Request) {
   }
 
   // 2) Kick off generation in background and return immediately.
-  enqueueReportGeneration(sessionId);
+  enqueueReportGeneration(sessionId, requestStartedAt);
   logGenerateRoute(sessionId, requestStartedAt, "Enqueued background generation and returning processing");
 
   return NextResponse.json({
