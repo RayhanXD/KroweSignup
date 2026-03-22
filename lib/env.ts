@@ -60,8 +60,21 @@ export const ENV = {
   OPENAI_API_KEY: env.openai.apiKey,
 } as const;
 
-/** Optional: base URL for platform app (Continue to dashboard). */
+/**
+ * Optional base URL for the platform app (dashboard / roadmap).
+ * Used for “Continue to dashboard” on the report page.
+ *
+ * Set in Vercel: Project → Settings → Environment Variables (Production and Preview).
+ * Tries `NEXT_PUBLIC_PLATFORM_URL` first, then `NEXT_PUBLIC_DASHBOARD_URL`.
+ */
 export function getOptionalPublicPlatformUrl(): string | undefined {
-  const v = process.env.NEXT_PUBLIC_PLATFORM_URL?.trim();
-  return v || undefined;
+  const raw =
+    process.env.NEXT_PUBLIC_PLATFORM_URL?.trim() ||
+    process.env.NEXT_PUBLIC_DASHBOARD_URL?.trim();
+  if (!raw) return undefined;
+  const withoutTrailingSlash = raw.replace(/\/$/, "");
+  if (/^https?:\/\//i.test(withoutTrailingSlash)) {
+    return withoutTrailingSlash;
+  }
+  return `https://${withoutTrailingSlash}`;
 }
