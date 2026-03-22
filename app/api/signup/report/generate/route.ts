@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { generateReportForSession } from "@/lib/report/generateReportForSession";
 import { generateCurriculumForSession } from "@/lib/curriculum/generateCurriculumForSession";
 import { CURRICULUM_JSON_VERSION } from "@/lib/curriculum/constants";
 import { REPORT_VERSION } from "@/lib/constants";
 import type { GenerateReportRequest } from "@/lib/types/api";
+
+export const maxDuration = 300;
 
 type Body = GenerateReportRequest;
 
@@ -124,54 +127,62 @@ async function upsertRoadmapProgress(sessionId: string) {
 function enqueueSignupEnrichment(
   sessionId: string,
   runReport: boolean,
-  runCurriculum: boolean
+  runCurriculum: boolean,
+  requestStartedAt: number
 ) {
   const backgroundStartedAt = Date.now();
   console.log(
     `[generate] Background enrichment started (sessionId=${sessionId}, runReport=${runReport}, runCurriculum=${runCurriculum})`
   );
 
-  void Promise.allSettled([
-    runReport
-      ? generateReportForSession(sessionId, { reason: "generate" })
-      : Promise.resolve(null),
-    runCurriculum
-      ? generateCurriculumForSession(sessionId, { reason: "generate" })
-      : Promise.resolve(null),
-  ]).then(async (results) => {
-    const [repResult, curResult] = results;
-    if (repResult.status === "fulfilled" && repResult.value) {
-      const v = repResult.value as Awaited<ReturnType<typeof generateReportForSession>>;
-      console.log(
-        `[generate] Report OK (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${v.updatedAt})`
-      );
-    } else if (repResult.status === "rejected") {
-      const err = repResult.reason;
-      console.error(
-        `[generate] Report failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
-        err
-      );
-      await markReportFailed(sessionId, err);
-    }
+  waitUntil(
+    Promise.allSettled([
+      runReport
+        ? generateReportForSession(sessionId, { reason: "generate" })
+        : Promise.resolve(null),
+      runCurriculum
+        ? generateCurriculumForSession(sessionId, { reason: "generate" })
+        : Promise.resolve(null),
+    ]).then(async (results) => {
+      const [repResult, curResult] = results;
+      if (repResult.status === "fulfilled" && repResult.value) {
+        const v = repResult.value as Awaited<ReturnType<typeof generateReportForSession>>;
+        console.log(
+          `[generate] Report OK (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${v.updatedAt})`
+        );
+        logGenerateRoute(
+          sessionId,
+          requestStartedAt,
+          `Background report completed: ${v.updatedAt}`
+        );
+      } else if (repResult.status === "rejected") {
+        const err = repResult.reason;
+        console.error(
+          `[generate] Report failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
+          err
+        );
+        await markReportFailed(sessionId, err);
+      }
 
-    if (curResult.status === "fulfilled" && curResult.value) {
-      const v = curResult.value as Awaited<ReturnType<typeof generateCurriculumForSession>>;
-      console.log(
-        `[generate] Curriculum OK (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${v.updatedAt})`
-      );
-    } else if (curResult.status === "rejected") {
-      const err = curResult.reason;
-      console.error(
-        `[generate] Curriculum failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
-        err
-      );
-      await markCurriculumFailed(sessionId, err);
-    }
+      if (curResult.status === "fulfilled" && curResult.value) {
+        const v = curResult.value as Awaited<ReturnType<typeof generateCurriculumForSession>>;
+        console.log(
+          `[generate] Curriculum OK (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${v.updatedAt})`
+        );
+      } else if (curResult.status === "rejected") {
+        const err = curResult.reason;
+        console.error(
+          `[generate] Curriculum failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
+          err
+        );
+        await markCurriculumFailed(sessionId, err);
+      }
 
-    console.log(
-      `[generate] Background enrichment settled (sessionId=${sessionId}, totalMs=${elapsedMs(backgroundStartedAt)})`
-    );
-  });
+      console.log(
+        `[generate] Background enrichment settled (sessionId=${sessionId}, totalMs=${elapsedMs(backgroundStartedAt)})`
+      );
+    })
+  );
 }
 
 export async function POST(req: Request) {
@@ -356,7 +367,7 @@ export async function POST(req: Request) {
     }
   }
 
-  enqueueSignupEnrichment(sessionId, runRep, runCur);
+  enqueueSignupEnrichment(sessionId, runRep, runCur, requestStartedAt);
   logGenerateRoute(sessionId, requestStartedAt, "Enqueued background enrichment and returning processing");
 
   return NextResponse.json({
