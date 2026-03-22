@@ -5,7 +5,7 @@ type Props = {
 
 export function ContinueToDashboardButton({ sessionId, platformBaseUrl }: Props) {
   const base = platformBaseUrl.replace(/\/$/, "");
-  const href = `${base}/roadmap?session_id=${encodeURIComponent(sessionId)}`;
+  const href = `${base}/dashboard?session_id=${encodeURIComponent(sessionId)}`;
 
   return (
     <a

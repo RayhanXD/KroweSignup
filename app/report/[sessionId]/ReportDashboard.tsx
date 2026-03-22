@@ -19,6 +19,7 @@ import {
   parseMvpScopeList,
 } from "@/lib/report/formatReportForUI";
 import { ProgressScreen } from "./ProgressScreen";
+import { ContinueToDashboardButton } from "./ContinueToDashboardButton";
 
 // Minimal type for report payload the Dashboard expects (matches stored report.data)
 interface ReportDataForUI {
@@ -91,6 +92,9 @@ interface ReportDataForUI {
 export interface ReportDashboardProps {
   report: { data?: ReportDataForUI; markdown?: string };
   status?: string;
+  /** When set with `platformBaseUrl`, shows “Continue to dashboard” next to the report title. */
+  sessionId?: string;
+  platformBaseUrl?: string;
 }
 
 function Tooltip({
@@ -230,7 +234,12 @@ function ExpandableText({
   );
 }
 
-export function ReportDashboard({ report, status }: ReportDashboardProps) {
+export function ReportDashboard({
+  report,
+  status,
+  sessionId,
+  platformBaseUrl,
+}: ReportDashboardProps) {
   const router = useRouter();
   const data = report?.data;
 
@@ -282,11 +291,21 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        <header className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-semibold text-black tracking-tight">
-            Krowe Pre-Seed Advisor Report
-          </h1>
-          <p className="text-gray-600 mt-1">Startup readiness analysis</p>
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-semibold text-black tracking-tight">
+              Krowe Pre-Seed Advisor Report
+            </h1>
+            <p className="text-gray-600 mt-1">Startup readiness analysis</p>
+          </div>
+          {platformBaseUrl && sessionId ? (
+            <div className="shrink-0 sm:pt-0.5">
+              <ContinueToDashboardButton
+                sessionId={sessionId}
+                platformBaseUrl={platformBaseUrl}
+              />
+            </div>
+          ) : null}
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 md:gap-6">

@@ -2,7 +2,6 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { getOptionalPublicPlatformUrl } from "@/lib/env";
 import { RefreshReportButton } from "./RefreshReportButton";
 import { ReportDashboard } from "./ReportDashboard";
-import { ContinueToDashboardButton } from "./ContinueToDashboardButton";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +44,15 @@ export default async function ReportPage({
       <div className="border-b border-border bg-card px-4 py-3 flex flex-wrap items-center justify-between gap-4">
         <span className="text-sm text-muted-foreground">Session: {sessionId}</span>
         <div className="flex flex-wrap items-center gap-3">
-          {platformUrl ? (
-            <ContinueToDashboardButton sessionId={sessionId} platformBaseUrl={platformUrl} />
-          ) : null}
           <RefreshReportButton sessionId={sessionId} />
         </div>
       </div>
-      <ReportDashboard report={data.report ?? {}} status={data.status} />
+      <ReportDashboard
+        report={data.report ?? {}}
+        status={data.status}
+        sessionId={sessionId}
+        platformBaseUrl={platformUrl}
+      />
     </div>
   );
 }
