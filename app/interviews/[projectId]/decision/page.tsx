@@ -92,7 +92,7 @@ export default async function DecisionPage({
     supabase
       .from("problem_clusters")
       .select(
-        "id, canonical_problem, frequency, avg_intensity, consistency_score, score, supporting_quotes, member_problem_ids"
+        "id, canonical_problem, frequency, avg_intensity, consistency_score, score, supporting_quotes, member_problem_ids, category"
       )
       .eq("project_id", projectId)
       .order("score", { ascending: false }),
@@ -227,38 +227,60 @@ export default async function DecisionPage({
           </section>
         )}
 
-        {/* All Clusters */}
-        {allClusters.length > 1 && (
-          <section className="border border-border rounded-xl p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              All Problem Clusters
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-muted-foreground border-b border-border">
-                    <th className="pb-2 pr-4 font-medium">Problem</th>
-                    <th className="pb-2 pr-4 font-medium text-right">Freq</th>
-                    <th className="pb-2 pr-4 font-medium text-right">Intensity</th>
-                    <th className="pb-2 font-medium text-right">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allClusters.map((cluster) => (
-                    <tr key={cluster.id} className="border-b border-border/50 last:border-0">
-                      <td className="py-2.5 pr-4 font-medium">{cluster.canonical_problem}</td>
-                      <td className="py-2.5 pr-4 text-right text-muted-foreground">{cluster.frequency}</td>
-                      <td className="py-2.5 pr-4 text-right text-muted-foreground">
-                        {cluster.avg_intensity.toFixed(1)}
-                      </td>
-                      <td className="py-2.5 text-right font-medium">{cluster.score.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+        {/* All Clusters — grouped by category */}
+        {allClusters.length > 1 && (() => {
+          const categoryOrder: string[] = [];
+          const byCategory = new Map<string, ClusterWithId[]>();
+          for (const cluster of allClusters) {
+            const cat = cluster.category ?? "General Problems";
+            if (!byCategory.has(cat)) {
+              byCategory.set(cat, []);
+              categoryOrder.push(cat);
+            }
+            byCategory.get(cat)!.push(cluster);
+          }
+          return (
+            <section className="border border-border rounded-xl p-6 space-y-6">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                All Problem Clusters
+              </h2>
+              {categoryOrder.map((cat) => {
+                const clusters = byCategory.get(cat)!;
+                return (
+                  <div key={cat}>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 pb-1 border-b border-border">
+                      {cat}
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-xs text-muted-foreground">
+                            <th className="pb-2 pr-4 font-medium">Problem</th>
+                            <th className="pb-2 pr-4 font-medium text-right">Freq</th>
+                            <th className="pb-2 pr-4 font-medium text-right">Intensity</th>
+                            <th className="pb-2 font-medium text-right">Score</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {clusters.map((cluster) => (
+                            <tr key={cluster.id} className="border-t border-border/50">
+                              <td className="py-2.5 pr-4 font-medium">{cluster.canonical_problem}</td>
+                              <td className="py-2.5 pr-4 text-right text-muted-foreground">{cluster.frequency}</td>
+                              <td className="py-2.5 pr-4 text-right text-muted-foreground">
+                                {cluster.avg_intensity.toFixed(1)}
+                              </td>
+                              <td className="py-2.5 text-right font-medium">{cluster.score.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
+          );
+        })()}
 
         {/* Feature Specs */}
         {sortedFeatures.length > 0 && (

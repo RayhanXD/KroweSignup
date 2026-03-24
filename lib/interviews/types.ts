@@ -39,6 +39,7 @@ export type ProblemCluster = {
   score: number;
   supporting_quotes: SupportingQuote[];
   member_problem_ids: string[];
+  category: string;
 };
 
 export type FeatureSpec = {

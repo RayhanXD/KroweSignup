@@ -3,7 +3,9 @@ import { structureInterview } from "./structureInterview";
 import { extractProblems } from "./extractProblems";
 import { embedProblems, clusterByCosineSimilarity } from "./clusterProblems";
 import { scoreCluster } from "./scoreProblems";
+import { mergeCluster } from "./mergeClusters";
 import { generateDecision } from "./generateDecision";
+import { categorizeClusterGroups } from "./categorizeClusterGroups";
 import type {
   ExtractedProblemWithEmbedding,
   ProblemCluster,
@@ -222,35 +224,50 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     }
 
     // 7. Cluster
-    const clusters = clusterByCosineSimilarity(problemsForClustering, 0.85);
+    const clusters = clusterByCosineSimilarity(problemsForClustering);
 
     console.log(`[pipeline] clusters formed: ${clusters.length}`);
 
-    // 8. Score each cluster
-    const scoredClusters = clusters.map((members) => {
-      const scores = scoreCluster(members);
-      const canonical = members.reduce((best, p) =>
-        p.confidence > best.confidence ? p : best
-      );
-      const supportingQuotes: SupportingQuote[] = members
-        .map((m) => ({
-          text: m.supporting_quote,
-          interview_id: m.interview_id,
-          problem_id: m.id,
-        }))
-        .filter((q) => q.text);
+    // 8. Merge + score each cluster
+    const totalProblems = problemsForClustering.length;
+    const totalInterviews = allInterviewIds.length;
 
-      const cluster: ProblemCluster = {
-        canonical_problem: canonical.problem_text,
-        frequency: scores.frequency,
-        avg_intensity: scores.avg_intensity,
-        consistency_score: scores.consistency_score,
-        score: scores.score,
-        supporting_quotes: supportingQuotes,
-        member_problem_ids: members.map((m) => m.id),
-      };
-      return cluster;
-    });
+    console.time("[pipeline] merge");
+    const scoredClusters = await Promise.all(
+      clusters.map(async (members) => {
+        const canonicalStatement = await mergeCluster(members);
+        console.log(
+          `[pipeline] cluster merge: [${members.map((m) => m.problem_text).join(" | ")}] → "${canonicalStatement}"`
+        );
+
+        const scores = scoreCluster(members, totalInterviews, totalProblems);
+        const supportingQuotes: SupportingQuote[] = members
+          .map((m) => ({
+            text: m.supporting_quote,
+            interview_id: m.interview_id,
+            problem_id: m.id,
+          }))
+          .filter((q) => q.text);
+
+        const cluster: ProblemCluster = {
+          canonical_problem: canonicalStatement,
+          frequency: scores.frequency,
+          avg_intensity: scores.avg_intensity,
+          consistency_score: scores.consistency_score,
+          score: scores.score,
+          supporting_quotes: supportingQuotes,
+          member_problem_ids: members.map((m) => m.id),
+          category: "General Problems",
+        };
+        return cluster;
+      })
+    );
+    console.timeEnd("[pipeline] merge");
+
+    // 8b. Categorize clusters
+    console.time("[pipeline] categorize");
+    const categorizedClusters = await categorizeClusterGroups(scoredClusters);
+    console.timeEnd("[pipeline] categorize");
 
     // 9. Delete old clusters, insert new ones — run in parallel with founder context query
     let insertedClusters: Array<{ id: string; score: number }> = [];
@@ -261,7 +278,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         const { data } = await supabase
           .from("problem_clusters")
           .insert(
-            scoredClusters.map((c) => ({
+            categorizedClusters.map((c) => ({
               project_id: projectId,
               canonical_problem: c.canonical_problem,
               frequency: c.frequency,
@@ -270,6 +287,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
               score: c.score,
               supporting_quotes: c.supporting_quotes,
               member_problem_ids: c.member_problem_ids,
+              category: c.category,
             }))
           )
           .select("id, score");
@@ -284,17 +302,27 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         : Promise.resolve({ data: null }),
     ]);
 
-    // Merge inserted IDs into scored clusters in memory (no re-fetch needed)
-    const allClustersWithIds = scoredClusters.map((c, i) => ({
+    // Merge inserted IDs into categorized clusters in memory (no re-fetch needed)
+    const allClustersWithIds = categorizedClusters.map((c, i) => ({
       ...c,
       id: insertedClusters[i]?.id,
     })) as Array<ProblemCluster & { id: string }>;
 
-    // 10. Sort clusters by score to find top cluster
+    // 10. Sort clusters by score, apply sanity check to find top cluster
     const sorted = [...allClustersWithIds].sort((a, b) => b.score - a.score);
 
-    const topCluster = sorted[0];
+    const topCluster =
+      sorted.find((c) => {
+        const uniqueInterviewCount = new Set(
+          c.supporting_quotes.map((q) => q.interview_id)
+        ).size;
+        return uniqueInterviewCount >= 2 || c.avg_intensity >= 4.5;
+      }) ?? sorted[0];
+
     const topClusterId = topCluster.id;
+    console.log(
+      `[pipeline] top cluster selected: "${topCluster.canonical_problem}" (score=${topCluster.score.toFixed(2)}, freq=${topCluster.frequency})`
+    );
 
     // 11. Resolve founder context from parallel query result
     let founderContext: {

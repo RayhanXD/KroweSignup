@@ -54,7 +54,7 @@ function computeCentroid(embeddings: number[][]): number[] {
 
 export function clusterByCosineSimilarity(
   problems: ExtractedProblemWithEmbedding[],
-  threshold = 0.85
+  threshold = 0.70
 ): ExtractedProblemWithEmbedding[][] {
   const clusters: ExtractedProblemWithEmbedding[][] = [];
   const centroids: number[][] = [];
