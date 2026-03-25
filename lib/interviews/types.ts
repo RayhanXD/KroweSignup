@@ -14,6 +14,7 @@ export type ExtractedProblem = {
   problem_text: string;
   customer_type: string;
   context: string;
+  root_cause: string;
   intensity_score: number;
   confidence: number;
   supporting_quote: string;
@@ -67,7 +68,7 @@ export type SuccessMetric = {
 export type DecisionOutput = {
   project_id: string;
   selected_cluster_id: string | null;
-  reasoning: string;
+  reasoning: string[];
   feature_specs: FeatureSpec[];
   user_flows: UserFlow[];
   edge_cases: EdgeCase[];

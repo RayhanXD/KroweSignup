@@ -5,7 +5,7 @@ import type { ExtractedProblemWithEmbedding } from "./types";
 const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
 export async function embedProblems(
-  problems: { id: string; problem_text: string }[]
+  problems: { id: string; text: string }[]
 ): Promise<{ id: string; embedding: number[] }[]> {
   const results: { id: string; embedding: number[] }[] = [];
   const batchSize = 20;
@@ -14,7 +14,7 @@ export async function embedProblems(
     const batch = problems.slice(i, i + batchSize);
     const resp = await client.embeddings.create({
       model: "text-embedding-3-small",
-      input: batch.map((p) => p.problem_text),
+      input: batch.map((p) => p.text),
     });
 
     for (let j = 0; j < batch.length; j++) {
@@ -54,7 +54,7 @@ function computeCentroid(embeddings: number[][]): number[] {
 
 export function clusterByCosineSimilarity(
   problems: ExtractedProblemWithEmbedding[],
-  threshold = 0.70
+  threshold = 0.82
 ): ExtractedProblemWithEmbedding[][] {
   const clusters: ExtractedProblemWithEmbedding[][] = [];
   const centroids: number[][] = [];

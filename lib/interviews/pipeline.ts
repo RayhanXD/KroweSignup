@@ -4,6 +4,7 @@ import { extractProblems } from "./extractProblems";
 import { embedProblems, clusterByCosineSimilarity } from "./clusterProblems";
 import { scoreCluster } from "./scoreProblems";
 import { mergeCluster } from "./mergeClusters";
+import { mergeClusterGroups } from "./mergeClusterGroups";
 import { generateDecision } from "./generateDecision";
 import { categorizeClusterGroups } from "./categorizeClusterGroups";
 import type {
@@ -106,6 +107,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
                 problem_text: p.problem_text,
                 customer_type: p.customer_type,
                 context: p.context,
+                root_cause: p.root_cause ?? null,
                 intensity_score: p.intensity_score,
                 confidence: p.confidence,
                 supporting_quote: p.supporting_quote ?? null,
@@ -131,7 +133,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     // 4. Load all extracted problems for project (reuse allInterviewIds)
     const { data: allProblemsRaw } = await supabase
       .from("extracted_problems")
-      .select("id, interview_id, problem_text, customer_type, context, intensity_score, confidence, supporting_quote, embedding")
+      .select("id, interview_id, problem_text, customer_type, context, root_cause, intensity_score, confidence, supporting_quote, embedding")
       .in("interview_id", allInterviewIds);
 
     const allProblems = allProblemsRaw ?? [];
@@ -142,9 +144,9 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     const needsEmbedding = allProblems.filter((p: { embedding: unknown }) => !p.embedding);
     if (needsEmbedding.length > 0) {
       const embeddings = await embedProblems(
-        needsEmbedding.map((p: { id: string; problem_text: string }) => ({
+        needsEmbedding.map((p: { id: string; problem_text: string; root_cause?: string | null }) => ({
           id: p.id,
-          problem_text: p.problem_text,
+          text: p.root_cause ?? p.problem_text,
         }))
       );
       await Promise.all(
@@ -161,7 +163,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     // 6. Reload all problems with embeddings (reuse allInterviewIds)
     const { data: problemsWithEmbeddings } = await supabase
       .from("extracted_problems")
-      .select("id, interview_id, problem_text, customer_type, context, intensity_score, confidence, supporting_quote, embedding")
+      .select("id, interview_id, problem_text, customer_type, context, root_cause, intensity_score, confidence, supporting_quote, embedding")
       .in("interview_id", allInterviewIds)
       .not("embedding", "is", null);
 
@@ -172,6 +174,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         problem_text: string;
         customer_type: string;
         context: string;
+        root_cause: string | null;
         intensity_score: number;
         confidence: number;
         supporting_quote: string;
@@ -182,6 +185,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         problem_text: p.problem_text,
         customer_type: p.customer_type,
         context: p.context,
+        root_cause: p.root_cause ?? "",
         intensity_score: p.intensity_score,
         confidence: p.confidence,
         supporting_quote: p.supporting_quote,
@@ -224,7 +228,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     }
 
     // 7. Cluster
-    const clusters = clusterByCosineSimilarity(problemsForClustering);
+    const clusters = clusterByCosineSimilarity(problemsForClustering, 0.82);
 
     console.log(`[pipeline] clusters formed: ${clusters.length}`);
 
@@ -264,9 +268,25 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     );
     console.timeEnd("[pipeline] merge");
 
-    // 8b. Categorize clusters
+    // 8b. Global merge: reduce to max 6 decisive clusters
+    console.time("[pipeline] global-merge");
+    const clustersWithMembers = scoredClusters.map((cluster, i) => ({
+      ...cluster,
+      _members: clusters[i],
+    }));
+    const mergedClusters = await mergeClusterGroups(
+      clustersWithMembers,
+      totalInterviews,
+      totalProblems,
+      6
+    );
+    const finalClusters = mergedClusters.sort((a, b) => b.score - a.score).slice(0, 6);
+    console.log(`[pipeline] clusters after global merge: ${finalClusters.length}`);
+    console.timeEnd("[pipeline] global-merge");
+
+    // 8c. Categorize clusters
     console.time("[pipeline] categorize");
-    const categorizedClusters = await categorizeClusterGroups(scoredClusters);
+    const categorizedClusters = await categorizeClusterGroups(finalClusters);
     console.timeEnd("[pipeline] categorize");
 
     // 9. Delete old clusters, insert new ones — run in parallel with founder context query

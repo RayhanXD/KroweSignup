@@ -11,7 +11,9 @@ export async function extractProblems(
 ): Promise<ExtractedProblem[]> {
   const systemPrompt =
     "Extract normalized problems from these interview segments. Each must be a specific friction point " +
-    "(not a feature request, not vague). Merge duplicates. Each must include a supporting_quote that is a concise summary or paraphrase capturing the essence of the pain point from the interview — do not look for exact verbatim wording.";
+    "(not a feature request, not vague). Merge duplicates. Each must include a supporting_quote that is a concise summary or paraphrase capturing the essence of the pain point from the interview — do not look for exact verbatim wording. " +
+    "For root_cause: identify the underlying reason this problem exists — must be broader than problem_text, explain WHY it occurs, not just that it occurs. " +
+    "E.g., if the problem is 'users can't find their saved items', root_cause might be 'no persistent state management between sessions'. root_cause must not repeat problem_text wording.";
 
   const userContent = JSON.stringify({ segments });
 
@@ -44,6 +46,7 @@ export async function extractProblems(
                       problem_text: { type: "string" },
                       customer_type: { type: "string" },
                       context: { type: "string" },
+                      root_cause: { type: "string" },
                       intensity_score: { type: "number" },
                       confidence: { type: "number" },
                       supporting_quote: { type: "string" },
@@ -52,6 +55,7 @@ export async function extractProblems(
                       "problem_text",
                       "customer_type",
                       "context",
+                      "root_cause",
                       "intensity_score",
                       "confidence",
                       "supporting_quote",

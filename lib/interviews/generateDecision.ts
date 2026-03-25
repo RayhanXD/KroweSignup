@@ -27,7 +27,7 @@ export async function generateDecision(
   const { cluster, allClusters, founderContext } = params;
 
   const systemPrompt =
-    "You are a senior product strategist. Generate a complete product specification grounded in real user data.";
+    "You are a senior product strategist. Generate a complete product specification grounded in real user data. For the reasoning field, return 3–5 short bullet-point strings (no bullet characters) — each under 15 words, terse and direct.";
 
   const runnerUps = allClusters
     .filter((c) => c.id !== cluster.id)
@@ -84,7 +84,7 @@ export async function generateDecision(
               type: "object",
               additionalProperties: false,
               properties: {
-                reasoning: { type: "string" },
+                reasoning: { type: "array", items: { type: "string" } },
                 confidence_score: { type: "number" },
                 feature_specs: {
                   type: "array",
@@ -164,7 +164,7 @@ export async function generateDecision(
       }
 
       const parsed = JSON.parse(raw) as {
-        reasoning: string;
+        reasoning: string[];
         confidence_score: number;
         feature_specs: FeatureSpec[];
         user_flows: UserFlow[];
