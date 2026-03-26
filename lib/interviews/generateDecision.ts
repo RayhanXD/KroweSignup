@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { ENV } from "../env";
 import { extractResponseText } from "../report/marketSizeUtils";
 import type { ProblemCluster, DecisionOutput, FeatureSpec, UserFlow, EdgeCase, SuccessMetric } from "./types";
+import type { OnboardingData, AssumptionVsEvidenceReport, AssumptionAnalysis } from "@/lib/analysis/assumptionMatching";
 
 const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
@@ -14,6 +15,15 @@ type GenerateDecisionParams = {
     targetCustomer: string | null;
     industry: string | null;
   } | null;
+  onboarding?: OnboardingData;
+  assumptionAnalysis?: AssumptionVsEvidenceReport | null;
+  featureValidation?: {
+    mustBuild: string[];
+    irrelevant: string[];
+    missing: string[];
+  } | null;
+  confidenceScore?: number;
+  confidenceLevel?: "LOW" | "MEDIUM" | "HIGH";
 };
 
 type GenerateDecisionResult = Omit<
@@ -21,13 +31,24 @@ type GenerateDecisionResult = Omit<
   "project_id" | "selected_cluster_id" | "status" | "created_at"
 >;
 
+function formatAlignment(a: AssumptionAnalysis): string {
+  return `${a.assumptionText} → ${a.alignment} (similarity: ${a.bestSimilarity.toFixed(2)})`;
+}
+
 export async function generateDecision(
   params: GenerateDecisionParams
 ): Promise<GenerateDecisionResult> {
-  const { cluster, allClusters, founderContext } = params;
+  const { cluster, allClusters, founderContext, onboarding, assumptionAnalysis, featureValidation, confidenceScore, confidenceLevel } = params;
 
-  const systemPrompt =
-    "You are a senior product strategist. Generate a complete product specification grounded in real user data. For the reasoning field, return 3–5 short bullet-point strings (no bullet characters) — each under 15 words, terse and direct.";
+  const systemPrompt = [
+    "You are a senior product strategist. Generate a complete product specification grounded in real user data.",
+    "For the reasoning field, return 3–5 short bullet-point strings (no bullet characters) — each under 15 words, terse and direct.",
+    confidenceLevel === "LOW"
+      ? "IMPORTANT: Confidence is LOW. Do NOT present a strong recommendation. Highlight uncertainty and suggest more interviews in your reasoning."
+      : confidenceLevel === "HIGH"
+      ? "IMPORTANT: Confidence is HIGH. Be decisive. Recommend exact features to build based on the evidence."
+      : null,
+  ].filter(Boolean).join(" ");
 
   const runnerUps = allClusters
     .filter((c) => c.id !== cluster.id)
@@ -51,6 +72,60 @@ export async function generateDecision(
         .join("\n")
     : null;
 
+  const assumptionsText = onboarding
+    ? [
+        "FOUNDER ASSUMPTIONS:",
+        onboarding.problem ? `- Problem: ${onboarding.problem}` : null,
+        onboarding.target_customer ? `- Target Customer: ${onboarding.target_customer}` : null,
+        onboarding.features ? `- Features: ${onboarding.features}` : null,
+        onboarding.competitors ? `- Competitors: ${onboarding.competitors}` : null,
+        onboarding.alternatives ? `- Alternatives: ${onboarding.alternatives}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : null;
+
+  const validationText = assumptionAnalysis
+    ? [
+        "ASSUMPTION VALIDATION:",
+        `- Problem: ${formatAlignment(assumptionAnalysis.problem)}`,
+        `- Target Customer: ${formatAlignment(assumptionAnalysis.targetCustomer)}`,
+        assumptionAnalysis.features.length > 0
+          ? `- Features: ${assumptionAnalysis.features.map(formatAlignment).join("; ")}`
+          : null,
+        assumptionAnalysis.competitors?.length
+          ? `- Competitors: ${assumptionAnalysis.competitors.map(formatAlignment).join("; ")}`
+          : null,
+        assumptionAnalysis.alternatives?.length
+          ? `- Alternatives: ${assumptionAnalysis.alternatives.map(formatAlignment).join("; ")}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : null;
+
+  const featureText = featureValidation
+    ? [
+        "FEATURE VALIDATION:",
+        `Must Build:\n${(featureValidation.mustBuild || []).map(f => `- ${f}`).join("\n") || "None"}`,
+        `Irrelevant:\n${(featureValidation.irrelevant || []).map(f => `- ${f}`).join("\n") || "None"}`,
+        `Missing:\n${(featureValidation.missing || []).map(f => `- ${f}`).join("\n") || "None"}`,
+      ].join("\n")
+    : null;
+
+  const confidenceText = confidenceLevel
+    ? [
+        "DECISION CONFIDENCE:",
+        `Level: ${confidenceLevel}`,
+        `Score: ${confidenceScore?.toFixed(2)}`,
+        "",
+        "Interpretation:",
+        "- LOW → Not enough signal; surface uncertainty and recommend more interviews",
+        "- MEDIUM → Some signal, but hedged; acknowledge gaps",
+        "- HIGH → Strong consistent signal; be decisive and specific",
+      ].join("\n")
+    : null;
+
   const userPrompt = [
     `TOP PROBLEM: ${cluster.canonical_problem}`,
     `Score: ${cluster.score.toFixed(2)} | Frequency: ${cluster.frequency} | Avg Intensity: ${cluster.avg_intensity.toFixed(1)}/5 | Consistency: ${cluster.consistency_score.toFixed(2)}`,
@@ -60,6 +135,10 @@ export async function generateDecision(
     "",
     runnerUps.length > 0 ? `Runner-up problems:\n${runnerUps.join("\n")}` : null,
     founderText ? `\nFounder Context:\n${founderText}` : null,
+    assumptionsText ? `\n${assumptionsText}` : null,
+    validationText ? `\n${validationText}` : null,
+    featureText ? `\n${featureText}` : null,
+    confidenceText ? `\n${confidenceText}` : null,
   ]
     .filter((x) => x !== null)
     .join("\n");

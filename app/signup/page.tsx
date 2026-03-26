@@ -1,9 +1,6 @@
 'use client'
 
-import type React from "react"
-import { useState } from 'react'
-import FixNeededCard from './FixNeededCard'
-import { SignupFixBannerProvider } from './SignupFixBannerContext'
+import { useState, type ReactNode } from 'react'
 import { SignupFormProvider } from './SignupFormContext'
 import {
   IdeaStep,
@@ -44,12 +41,8 @@ function sleepPreloaderMin(startTime: number) {
 
 export default function SignupPage() {
   const { loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer, sessionId } = useSignupSession();
-  const [issues, setIssues] = useState<{ code: string; message: string; severity?: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
-  const [aiReason, setAiReason] = useState<string | null>(null);
-  const [canContinueAnyway, setCanContinueAnyway] = useState(false);
   const router = useRouter();
   const [finishing, setFinishing] = useState(false)
 
@@ -106,31 +99,21 @@ export default function SignupPage() {
     return result;
   }
 
-  async function saveAndNext(step: StepKey, v: unknown, force = false) {
+  async function saveAndNext(step: StepKey, v: unknown) {
     if (saving || submitting) return;
     const start = Date.now();
     setSubmitting(true);
 
     try {
       const serialized = typeof v === "string" ? v : JSON.stringify(v);
-      const res = await submitAnswer(step, serialized, force);
-
-      setIssues(res.issues || []);
-      setCanContinueAnyway(Boolean(res.canContinueWithWarning));
-      setAiSuggestion(res.aiSuggestion ?? null);
-      setAiReason(res.aiReason ?? null);
-
-      if (res.validationStatus === "ok") {
-        setSubmitting(false);
-        setSaving(true);
-        await confirmAndMaybeFinish(step, serialized, "original");
-        clearFixUI();
-        setOverrideStepKey(null);
-        await sleepPreloaderMin(start);
-      }
+      await submitAnswer(step, serialized);
+      setSubmitting(false);
+      setSaving(true);
+      await confirmAndMaybeFinish(step, serialized, "original");
+      setOverrideStepKey(null);
+      await sleepPreloaderMin(start);
     } catch (error: any) {
       console.error("Error in saveAndNext:", error);
-      setIssues([{ code: "ERROR", message: error?.message || "An error occurred. Please try again." }]);
     } finally {
       setSubmitting(false);
       setSaving(false);
@@ -138,6 +121,7 @@ export default function SignupPage() {
   }
 
   // Context-aware back navigation (handles interview_count skip logic)
+
   function goBack() {
     const interviewCount = Number(answersByStepKey['interview_count'] ?? 0)
     const prev = getPrevStepKeyForContext(stepKey, { interviewCount })
@@ -156,70 +140,10 @@ export default function SignupPage() {
     }
   }
 
-  const continueAnyway = async () => {
-    if (!canContinueAnyway) return
-    const start = Date.now();
-    setSaving(true)
-    try {
-      await confirmAndMaybeFinish(stepKey, value, 'original')
-      clearFixUI()
-      setOverrideStepKey(null)
-    } finally {
-      await sleepPreloaderMin(start);
-      setSaving(false)
-    }
-  }
-
-  const clearFixUI = () => {
-    setIssues([]);
-    setAiSuggestion(null);
-    setAiReason(null);
-    setCanContinueAnyway(false);
-  }
-
-  function renderWithIssues(ui: React.ReactNode) {
-    const showFixCard = issues.length > 0 || aiSuggestion
-    const fixBanner = showFixCard ? (
-      <FixNeededCard
-        issues={issues}
-        aiSuggestion={aiSuggestion}
-        aiReason={aiReason}
-        canContinueAnyway={canContinueAnyway}
-        saving={saving}
-        finishing={finishing}
-        onUseSuggestion={async () => {
-          const start = Date.now();
-          setSaving(true)
-          try {
-            await confirmAndMaybeFinish(stepKey, aiSuggestion!, 'ai_suggested')
-            clearFixUI()
-            setOverrideStepKey(null)
-          } finally {
-            await sleepPreloaderMin(start);
-            setSaving(false)
-          }
-        }}
-        onEditSuggestion={() => setLocal(stepKey, aiSuggestion!)}
-        onSaveMyEdit={async () => {
-          const start = Date.now();
-          setSaving(true)
-          try {
-            await confirmAndMaybeFinish(stepKey, value, 'user_edited')
-            clearFixUI()
-            setOverrideStepKey(null)
-          } finally {
-            await sleepPreloaderMin(start);
-            setSaving(false)
-          }
-        }}
-        onContinueAnyway={continueAnyway}
-      />
-    ) : null
+  function wrap(ui: ReactNode) {
     return (
       <SignupFormProvider value={{ submitting }}>
-        <SignupFixBannerProvider value={fixBanner}>
-          {ui}
-        </SignupFixBannerProvider>
+        {ui}
       </SignupFormProvider>
     )
   }
@@ -228,7 +152,7 @@ export default function SignupPage() {
 
   if (stepKey === 'idea') {
     const ideaValue = raw || ''
-    return renderWithIssues(
+    return wrap(
       <IdeaStep
         value={ideaValue}
         onChange={(v: string) => setLocal('idea', v)}
@@ -241,7 +165,7 @@ export default function SignupPage() {
 
   if (stepKey === 'product_type') {
     const productTypeValue = (raw || null) as ProductType
-    return renderWithIssues(
+    return wrap(
       <ProductTypeStep
         value={productTypeValue}
         onChange={(v: ProductType) => setLocal('product_type', v ?? '')}
@@ -257,7 +181,7 @@ export default function SignupPage() {
 
   if (stepKey === 'features') {
     const featuresValue = safeJson<string[]>(raw) ?? []
-    return renderWithIssues(
+    return wrap(
       <FeaturesStep
         value={featuresValue}
         onChange={(v: string[]) => setLocal('features', v)}
@@ -270,7 +194,7 @@ export default function SignupPage() {
 
   if (stepKey === 'problem') {
     const problemValue = raw || ''
-    return renderWithIssues(
+    return wrap(
       <ProblemStep
         value={problemValue}
         onChange={(v: string) => setLocal('problem', v)}
@@ -283,7 +207,7 @@ export default function SignupPage() {
 
   if (stepKey === 'target_customer') {
     const targetCustomerValue = raw || ''
-    return renderWithIssues(
+    return wrap(
       <TargetCustomerStep
         value={targetCustomerValue}
         onChange={(v: string) => setLocal('target_customer', v)}
@@ -302,7 +226,7 @@ export default function SignupPage() {
     const industryValue = parsed.industry
     const industryOtherValue = parsed.other ?? ''
 
-    return renderWithIssues(
+    return wrap(
       <IndustryStep
         value={industryValue}
         otherValue={industryOtherValue}
@@ -325,7 +249,7 @@ export default function SignupPage() {
 
   if (stepKey === 'competitors') {
     const competitorsValue = safeJson<string[]>(raw) ?? []
-    return renderWithIssues(
+    return wrap(
       <CompetitorsStep
         value={competitorsValue}
         onChange={(v: string[]) => setLocal('competitors', v)}
@@ -339,7 +263,7 @@ export default function SignupPage() {
 
   if (stepKey === 'alternatives') {
     const alternativesValue = safeJson<string[]>(raw) ?? []
-    return renderWithIssues(
+    return wrap(
       <AlternativesStep
         value={alternativesValue}
         onChange={(v: string[]) => setLocal('alternatives', v)}
@@ -353,7 +277,7 @@ export default function SignupPage() {
 
   if (stepKey === 'pricing_model') {
     const pricingValue = safeJson<PricingModelValue>(raw) ?? { pricingModels: [], estimatedPrice: null }
-    return renderWithIssues(
+    return wrap(
       <PricingModelStep
         value={pricingValue}
         onChange={(v: PricingModelValue) => setLocal('pricing_model', v)}
@@ -366,7 +290,7 @@ export default function SignupPage() {
 
   if (stepKey === 'interview_count') {
     const countValue = raw ? Number(raw) : 0
-    return renderWithIssues(
+    return wrap(
       <InterviewCountStep
         value={countValue}
         onChange={(v: number) => setLocal('interview_count', String(v))}
@@ -385,7 +309,7 @@ export default function SignupPage() {
 
   if (stepKey === 'interview_upload') {
     const uploadedFiles = safeJson<UploadedFile[]>(raw) ?? []
-    return renderWithIssues(
+    return wrap(
       <InterviewUploadStep
         value={uploadedFiles}
         sessionId={sessionId}
@@ -402,7 +326,7 @@ export default function SignupPage() {
   if (stepKey === 'startup_stage') {
     type StartupStage = 'idea' | 'validation' | 'pre-mvp' | 'mvp' | 'early-traction' | 'growth'
     const stageValue = (raw || null) as StartupStage | null
-    return renderWithIssues(
+    return wrap(
       <StartupStageStep
         value={stageValue}
         onChange={(v: StartupStage) => setLocal('startup_stage', v)}

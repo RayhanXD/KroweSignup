@@ -1,3 +1,4 @@
+import OpenAI from "openai";
 import { createServerSupabaseClient } from "../supabaseServer";
 import { structureInterview } from "./structureInterview";
 import { extractProblems } from "./extractProblems";
@@ -8,11 +9,134 @@ import { mergeClusterGroups } from "./mergeClusterGroups";
 import { generateDecision } from "./generateDecision";
 import { categorizeClusterGroups } from "./categorizeClusterGroups";
 import { generateMetaClusters } from "./generateMetaClusters";
+import { runAssumptionMatching } from "@/lib/analysis/assumptionMatching";
+import type { OnboardingData, AssumptionVsEvidenceReport } from "@/lib/analysis/assumptionMatching";
+import { ENV } from "../env";
+import { extractResponseText } from "../report/marketSizeUtils";
 import type {
   ExtractedProblemWithEmbedding,
   ProblemCluster,
   PipelineResult,
 } from "./types";
+
+const openaiClient = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
+
+function parseFeatures(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+}
+
+async function computeAlignmentScore(clusterText: string, founderProblem: string): Promise<number> {
+  if (!clusterText || !founderProblem) return 0;
+  try {
+    const resp = await openaiClient.responses.create({
+      model: "gpt-5.4-mini",
+      input: [{
+        role: "user",
+        content: `Score semantic alignment between these two statements from 0 to 1.\n\nFOUNDER PROBLEM:\n${founderProblem}\n\nUSER PROBLEM CLUSTER:\n${clusterText}\n\nReturn ONLY a JSON object with a single field "score" (number 0–1).`
+      }],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "alignment_score",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: { score: { type: "number" } },
+            required: ["score"],
+          },
+        },
+      },
+    });
+    const raw = extractResponseText(resp);
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw) as { score: number };
+    return Math.max(0, Math.min(1, parsed.score));
+  } catch {
+    return 0;
+  }
+}
+
+function computeConfidence(interviewCount: number, topScore: number, secondScore: number | null): number {
+  const volumeScore = Math.min(interviewCount / 10, 1);
+  const dominance = secondScore !== null
+    ? (topScore - secondScore) / (topScore || 1)
+    : 1;
+  return Math.max(0, Math.min(1, 0.5 * volumeScore + 0.5 * dominance));
+}
+
+function confidenceLabel(score: number): "LOW" | "MEDIUM" | "HIGH" {
+  if (score < 0.3) return "LOW";
+  if (score < 0.7) return "MEDIUM";
+  return "HIGH";
+}
+
+async function validateFeatures(features: string[], problems: string[]): Promise<{
+  mustBuild: string[];
+  irrelevant: string[];
+  missing: string[];
+}> {
+  const empty = { mustBuild: [], irrelevant: [], missing: [] };
+  if (!features.length || !problems.length) return empty;
+
+  const prompt = `
+You are analyzing startup features against real user problems.
+
+FEATURES:
+${features.map((f, i) => `${i + 1}. ${f}`).join("\n")}
+
+USER PROBLEMS:
+${problems.map((p, i) => `${i + 1}. ${p}`).join("\n")}
+
+TASK:
+1. MUST-BUILD: features clearly supported by user problems
+2. IRRELEVANT: features not supported by evidence (founder bias)
+3. MISSING: strong problems with no corresponding feature
+
+Return JSON: { "mustBuild": string[], "irrelevant": string[], "missing": string[] }
+Be strict. Only include if clearly justified.
+`.trim();
+
+  const maxAttempts = 3;
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const resp = await openaiClient.responses.create({
+        model: "gpt-5.4-mini",
+        input: [{ role: "user", content: prompt }],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "feature_validation",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                mustBuild: { type: "array", items: { type: "string" } },
+                irrelevant: { type: "array", items: { type: "string" } },
+                missing: { type: "array", items: { type: "string" } },
+              },
+              required: ["mustBuild", "irrelevant", "missing"],
+            },
+          },
+        },
+      });
+      const raw = extractResponseText(resp);
+      if (!raw) throw new Error("empty model output");
+      return JSON.parse(raw) as typeof empty;
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, 500 * attempt));
+        continue;
+      }
+    }
+  }
+  console.error("[pipeline] validateFeatures failed:", lastError);
+  return empty;
+}
 
 export async function runDecisionPipeline(projectId: string, force = false): Promise<PipelineResult> {
   const supabase = createServerSupabaseClient();
@@ -325,7 +449,10 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
             .from("signup_answers")
             .select("step_key, final_answer")
             .eq("session_id", project.session_id)
-            .in("step_key", ["idea", "problem", "target_customer", "industry"])
+            .in("step_key", [
+              "idea", "problem", "target_customer", "industry",
+              "features", "competitors", "alternatives", "pricing_model",
+            ])
         : Promise.resolve({ data: null }),
     ]);
 
@@ -365,9 +492,8 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         return uniqueInterviewCount >= 2 || c.avg_intensity >= 4.5;
       }) ?? sorted[0];
 
-    const topClusterId = topCluster.id;
     console.log(
-      `[pipeline] top cluster selected: "${topCluster.canonical_problem}" (score=${topCluster.score.toFixed(2)}, freq=${topCluster.frequency})`
+      `[pipeline] top cluster selected (pre-alignment): "${topCluster.canonical_problem}" (score=${topCluster.score.toFixed(2)}, freq=${topCluster.frequency})`
     );
 
     // 11. Resolve founder context from parallel query result
@@ -377,26 +503,109 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       targetCustomer: string | null;
       industry: string | null;
     } | null = null;
+    let onboarding: OnboardingData | undefined;
 
     const founderAnswers = (founderAnswerResult as { data: Array<{ step_key: string; final_answer: unknown }> | null }).data;
     if (founderAnswers && founderAnswers.length > 0) {
       const byKey = Object.fromEntries(
         founderAnswers.map((a) => [a.step_key, a.final_answer])
       );
+      const get = (key: string) => (byKey[key] as string) ?? null;
       founderContext = {
-        idea: (byKey["idea"] as string) ?? null,
-        problem: (byKey["problem"] as string) ?? null,
-        targetCustomer: (byKey["target_customer"] as string) ?? null,
-        industry: (byKey["industry"] as string) ?? null,
+        idea: get("idea"),
+        problem: get("problem"),
+        targetCustomer: get("target_customer"),
+        industry: get("industry"),
+      };
+      onboarding = {
+        idea: get("idea"),
+        problem: get("problem"),
+        target_customer: get("target_customer"),
+        industry: get("industry"),
+        features: get("features"),
+        competitors: get("competitors"),
+        alternatives: get("alternatives"),
+        pricing_model: get("pricing_model"),
       };
     }
+
+    // 11b. Run assumption matching (non-blocking)
+    let assumptionAnalysis: AssumptionVsEvidenceReport | null = null;
+    if (onboarding) {
+      try {
+        assumptionAnalysis = await runAssumptionMatching(onboarding, allClustersWithIds);
+      } catch (err) {
+        console.error("[pipeline] assumptionMatching failed, continuing:", err);
+      }
+    }
+
+    // 11c. Run feature validation (non-blocking)
+    let featureValidation: { mustBuild: string[]; irrelevant: string[]; missing: string[] } | null = null;
+    if (onboarding) {
+      try {
+        const features = parseFeatures(onboarding.features);
+        const problems = allClustersWithIds.map(c => c.canonical_problem).filter(Boolean);
+        featureValidation = await validateFeatures(features, problems);
+        console.log(`[pipeline] featureValidation: mustBuild=${featureValidation.mustBuild.length}, irrelevant=${featureValidation.irrelevant.length}, missing=${featureValidation.missing.length}`);
+      } catch (err) {
+        console.error("[pipeline] featureValidation failed, continuing:", err);
+      }
+    }
+
+    // 11d. Alignment re-ranking: blend existing score (70%) with founder alignment (30%)
+    let alignedTopCluster = topCluster; // fallback to existing selection
+    let pipelineConfidenceScore = 0;
+    let pipelineConfidenceLevel: "LOW" | "MEDIUM" | "HIGH" = "LOW";
+
+    if (founderContext?.problem) {
+      const alignmentScores = await Promise.all(
+        allClustersWithIds.map(c => computeAlignmentScore(c.canonical_problem, founderContext!.problem!))
+      );
+      const alignedClusters = allClustersWithIds.map((c, i) => ({
+        ...c,
+        finalScore: 0.7 * c.score + 0.3 * alignmentScores[i],
+      }));
+      alignedClusters.sort((a, b) => b.finalScore - a.finalScore);
+      console.log(`[pipeline] alignment re-ranking complete`);
+
+      alignedTopCluster =
+        alignedClusters.find((c) => {
+          const uniqueCount = new Set(c.supporting_quotes.map(q => q.interview_id)).size;
+          return uniqueCount >= 2 || c.avg_intensity >= 4.5;
+        }) ?? alignedClusters[0];
+
+      const secondScore = alignedClusters[1]?.finalScore ?? null;
+      pipelineConfidenceScore = computeConfidence(
+        allInterviewIds.length,
+        alignedClusters[0].finalScore,
+        secondScore
+      );
+      pipelineConfidenceLevel = confidenceLabel(pipelineConfidenceScore);
+      console.log(`[pipeline] confidence: ${pipelineConfidenceLevel} (${pipelineConfidenceScore.toFixed(2)})`);
+    } else {
+      // No founder problem to align against — use interview count + existing dominance
+      const sorted2 = [...allClustersWithIds].sort((a, b) => b.score - a.score);
+      pipelineConfidenceScore = computeConfidence(
+        allInterviewIds.length,
+        sorted2[0]?.score ?? 0,
+        sorted2[1]?.score ?? null
+      );
+      pipelineConfidenceLevel = confidenceLabel(pipelineConfidenceScore);
+    }
+
+    const topClusterId = alignedTopCluster.id;
 
     // 12. Generate decision
     console.time("[pipeline] decision");
     const decision = await generateDecision({
-      cluster: topCluster,
+      cluster: alignedTopCluster,
       allClusters: allClustersWithIds,
       founderContext,
+      onboarding,
+      assumptionAnalysis,
+      featureValidation,
+      confidenceScore: pipelineConfidenceScore,
+      confidenceLevel: pipelineConfidenceLevel,
     });
     console.timeEnd("[pipeline] decision");
     console.log(`[pipeline] decision generated: confidence=${decision.confidence_score}`);
