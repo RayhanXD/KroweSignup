@@ -13,6 +13,8 @@ export function MetaClusterCard({
 }) {
   const [open, setOpen] = useState(false);
   const relatedClusters = allClusters.filter((c) => mc.cluster_ids.includes(c.id));
+  const clustersToShow = relatedClusters.length > 0 ? relatedClusters : allClusters;
+  const isStaleData = relatedClusters.length === 0 && allClusters.length > 0;
 
   return (
     <>
@@ -26,7 +28,7 @@ export function MetaClusterCard({
           <span className="text-xs px-2 py-0.5 rounded-full bg-foreground text-background">
             Score: {mc.score.toFixed(2)}
           </span>
-          {relatedClusters.length > 0 && (
+          {allClusters.length > 0 && (
             <button
               onClick={() => setOpen(true)}
               className="ml-auto text-xs px-2 py-0.5 rounded border border-border hover:bg-muted transition-colors"
@@ -48,6 +50,9 @@ export function MetaClusterCard({
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-base">{mc.title}</h2>
+              {isStaleData && (
+                <span className="text-xs text-muted-foreground">(rerun analysis to filter by theme)</span>
+              )}
               <button
                 onClick={() => setOpen(false)}
                 className="text-muted-foreground hover:text-foreground text-lg leading-none"
@@ -65,7 +70,7 @@ export function MetaClusterCard({
                 </tr>
               </thead>
               <tbody>
-                {relatedClusters.map((c) => (
+                {clustersToShow.map((c) => (
                   <tr key={c.id} className="border-t border-border/50">
                     <td className="py-2.5 pr-4 font-medium">{c.canonical_problem}</td>
                     <td className="py-2.5 pr-4 text-right text-muted-foreground">{c.frequency}</td>

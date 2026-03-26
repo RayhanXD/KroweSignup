@@ -297,7 +297,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     console.timeEnd("[pipeline] categorize");
 
     // 9. Delete old clusters, insert new ones — run in parallel with founder context query
-    let insertedClusters: Array<{ id: string; score: number }> = [];
+    let insertedClusters: Array<{ id: string; canonical_problem: string }> = [];
 
     const [, founderAnswerResult] = await Promise.all([
       (async () => {
@@ -317,8 +317,8 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
               category: c.category,
             }))
           )
-          .select("id, score");
-        insertedClusters = (data ?? []) as Array<{ id: string; score: number }>;
+          .select("id, canonical_problem");
+        insertedClusters = (data ?? []) as Array<{ id: string; canonical_problem: string }>;
       })(),
       project.session_id
         ? supabase
@@ -329,10 +329,14 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         : Promise.resolve({ data: null }),
     ]);
 
-    // Merge inserted IDs into categorized clusters in memory (no re-fetch needed)
-    const allClustersWithIds = categorizedClusters.map((c, i) => ({
+    // Merge inserted IDs into categorized clusters using canonical_problem as key
+    // (index-zip is unreliable — Supabase does not guarantee insertion-return order)
+    const canonicalToId = new Map<string, string>(
+      insertedClusters.map((r) => [r.canonical_problem, r.id])
+    );
+    const allClustersWithIds = categorizedClusters.map((c) => ({
       ...c,
-      id: insertedClusters[i]?.id,
+      id: canonicalToId.get(c.canonical_problem) ?? "",
     })) as Array<ProblemCluster & { id: string }>;
 
     // Remap meta cluster cluster_ids from "cluster_N" index strings to real DB IDs.

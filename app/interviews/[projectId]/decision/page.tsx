@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MetaClusterCard } from "./MetaClusterCard";
+import { AllProblemsButton } from "./AllProblemsButton";
 import type {
   ProblemCluster,
   FeatureSpec,
@@ -36,12 +37,19 @@ function ScoreBar({ label, value, max = 1 }: { label: string; value: number; max
 function QuoteCard({
   quote,
   interviewLabel,
+  rankLabel,
 }: {
   quote: ProblemCluster["supporting_quotes"][number];
   interviewLabel: string;
+  rankLabel?: string;
 }) {
   return (
     <div className="flex flex-col justify-between border border-border rounded-xl p-5 bg-card min-h-[120px]">
+      {rankLabel && (
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+          {rankLabel}
+        </span>
+      )}
       <p className="text-sm italic leading-relaxed text-foreground/90">
         &ldquo;{quote.text}&rdquo;
       </p>
@@ -281,18 +289,39 @@ export default async function DecisionPage({
             </ul>
           </DashboardCard>
 
-          {/* Supporting Quotes */}
-          {topCluster && topCluster.supporting_quotes.length > 0 && (
+          {/* Supporting Quotes — always render 3 slots */}
+          {topCluster && (
             <div className="lg:col-span-12 md:col-span-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                 Voice of the Customer
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {topCluster.supporting_quotes.map((q, i) => {
-                  const idx = interviewsSortedIds.indexOf(q.interview_id);
-                  const label = idx >= 0 ? `Interview #${idx + 1}` : "Interview";
-                  return <QuoteCard key={i} quote={q} interviewLabel={label} />;
-                })}
+                {(() => {
+                  const rankLabels = ["Weakest Signal", "Moderate Signal", "Strongest Signal"];
+                  // quotes are in descending score order; reverse so strongest is on the right
+                  const quotes = [...topCluster.supporting_quotes.slice(0, 3)].reverse();
+                  return [0, 1, 2].map((i) => {
+                    const q = quotes[i];
+                    if (!q) {
+                      return (
+                        <div
+                          key={i}
+                          className="flex flex-col justify-center items-center border border-dashed border-border rounded-xl p-5 bg-card min-h-[120px]"
+                        >
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                            {rankLabels[i]}
+                          </span>
+                          <span className="text-xs text-muted-foreground/50">No quote available</span>
+                        </div>
+                      );
+                    }
+                    const idx = interviewsSortedIds.indexOf(q.interview_id);
+                    const label = idx >= 0 ? `Interview #${idx + 1}` : "Interview";
+                    return (
+                      <QuoteCard key={i} quote={q} interviewLabel={label} rankLabel={rankLabels[i]} />
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
@@ -300,7 +329,10 @@ export default async function DecisionPage({
           {/* Meta Clusters */}
           {metaClusters.length > 0 && (
             <DashboardCard className="lg:col-span-12 space-y-4">
-              <SectionHeading>Problem Meta-Themes</SectionHeading>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Problem Meta-Themes</h2>
+                {allClusters.length > 0 && <AllProblemsButton allClusters={allClusters} />}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {metaClusters.map((mc) => (
                   <MetaClusterCard key={mc.id} mc={mc} allClusters={allClusters} />
@@ -308,59 +340,6 @@ export default async function DecisionPage({
               </div>
             </DashboardCard>
           )}
-
-          {/* All Clusters — grouped by category */}
-          {allClusters.length > 1 && (() => {
-            const categoryOrder: string[] = [];
-            const byCategory = new Map<string, ClusterWithId[]>();
-            for (const cluster of allClusters) {
-              const cat = cluster.category ?? "General Problems";
-              if (!byCategory.has(cat)) {
-                byCategory.set(cat, []);
-                categoryOrder.push(cat);
-              }
-              byCategory.get(cat)!.push(cluster);
-            }
-            return (
-              <DashboardCard className="lg:col-span-7 space-y-6">
-                <SectionHeading>All Problem Clusters</SectionHeading>
-                {categoryOrder.map((cat) => {
-                  const clusters = byCategory.get(cat)!;
-                  return (
-                    <div key={cat}>
-                      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 pb-1 border-b border-border">
-                        {cat}
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="text-left text-xs text-muted-foreground">
-                              <th className="pb-2 pr-4 font-medium">Problem</th>
-                              <th className="pb-2 pr-4 font-medium text-right">Freq</th>
-                              <th className="pb-2 pr-4 font-medium text-right">Intensity</th>
-                              <th className="pb-2 font-medium text-right">Score</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {clusters.map((cluster) => (
-                              <tr key={cluster.id} className="border-t border-border/50">
-                                <td className="py-2.5 pr-4 font-medium">{cluster.canonical_problem}</td>
-                                <td className="py-2.5 pr-4 text-right text-muted-foreground">{cluster.frequency}</td>
-                                <td className="py-2.5 pr-4 text-right text-muted-foreground">
-                                  {cluster.avg_intensity.toFixed(1)}
-                                </td>
-                                <td className="py-2.5 text-right font-medium">{cluster.score.toFixed(2)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })}
-              </DashboardCard>
-            );
-          })()}
 
           {/* Feature Specs */}
           {sortedFeatures.length > 0 && (
@@ -449,12 +428,10 @@ export default async function DecisionPage({
               <SectionHeading>Success Metrics</SectionHeading>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {successMetrics.map((m, i) => (
-                  <div key={i} className="border border-border rounded-lg p-4 overflow-hidden">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <span className="font-medium text-sm min-w-0 break-words">{m.metric}</span>
-                      <span className="text-sm font-semibold shrink-0 text-right">{m.target}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground break-words">{m.rationale}</p>
+                  <div key={i} className="border border-border rounded-lg p-4 space-y-1.5">
+                    <p className="font-medium text-sm">{m.metric}</p>
+                    <p className="text-sm font-bold">{m.target}</p>
+                    <p className="text-xs text-muted-foreground">{m.rationale}</p>
                   </div>
                 ))}
               </div>
