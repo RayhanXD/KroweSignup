@@ -77,7 +77,7 @@ export default function InterviewDetailClient({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-10">
+      <div className="max-w-screen-2xl mx-auto px-2 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left: transcript */}
           <div className="lg:col-span-7">
@@ -217,9 +217,9 @@ export default function InterviewDetailClient({
                     : "No strong quotes found in this interview."}
                 </p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="flex flex-row gap-2">
                   {topQuotes.map((q, i) => (
-                    <div key={i} className="border border-border rounded-lg p-4">
+                    <div key={i} className="border border-border rounded-lg p-3 flex-1">
                       <p className="text-sm italic leading-relaxed text-foreground/90">
                         &ldquo;{q.displayQuote}&rdquo;
                       </p>
