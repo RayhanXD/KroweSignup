@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
-import type { AnalysisInput, AnalysisResult } from "@/lib/analysis/hypothesisVsReality";
+import type { AnalysisInput, AnalysisResult, AnalysisContext, QuoteSlim } from "@/lib/analysis/hypothesisVsReality";
 import type { FeatureSpec } from "@/lib/interviews/types";
 
 function isMissingAnalysisColumnsError(message: string): boolean {
@@ -90,18 +90,7 @@ export async function GET(
       ? (decision.analysis_basis_updated_at as string | null)
       : null;
 
-  if (
-    decision &&
-    decisionUpdatedAt &&
-    analysisResult &&
-    analysisBasisUpdatedAt &&
-    new Date(analysisBasisUpdatedAt).toISOString() === decisionUpdatedAt
-  ) {
-    console.info(`[analysis] cache hit for project ${projectId}`);
-    return NextResponse.json(analysisResult);
-  }
-
-  // 3. Build AnalysisInput
+  // 3. Build AnalysisInput (hoisted so it's available for cache hits too)
   const getAnswer = (key: string) =>
     answers.find((a) => a.step_key === key)?.final_answer ?? "";
 
@@ -134,6 +123,38 @@ export async function GET(
       ? decision.reasoning
       : []
     : [];
+
+  const topQuotesSlim: QuoteSlim[] = (topCluster?.supporting_quotes ?? [])
+    .slice(0, 2)
+    .map((q: { text: string; interview_id: string }) => ({ text: q.text, interview_id: q.interview_id }));
+
+  const featureSpecsSlim = decision?.feature_specs
+    ? (decision.feature_specs as FeatureSpec[]).map((f) => ({ name: f.name, description: f.description, priority: f.priority }))
+    : [];
+
+  function buildContext(customerInsight: string): AnalysisContext {
+    return {
+      founderProblem: getAnswer("problem"),
+      founderCustomer: getAnswer("target_customer"),
+      founderFeatures: featuresArray,
+      topProblem,
+      topQuotes: topQuotesSlim,
+      customerInsight,
+      featureSpecs: featureSpecsSlim,
+    };
+  }
+
+  if (
+    decision &&
+    decisionUpdatedAt &&
+    analysisResult &&
+    analysisBasisUpdatedAt &&
+    new Date(analysisBasisUpdatedAt).toISOString() === decisionUpdatedAt
+  ) {
+    console.info(`[analysis] cache hit for project ${projectId}`);
+    const context = buildContext(analysisResult.breakdown.customerAlignment.reasoning);
+    return NextResponse.json({ ...analysisResult, context });
+  }
 
   const analysisInput: AnalysisInput = {
     onboarding: {
@@ -177,13 +198,14 @@ export async function GET(
         new Date(persisted.analysis_basis_updated_at).toISOString() === decisionUpdatedAt
       ) {
         console.info(`[analysis] generated and persisted for project ${projectId}`);
-        return NextResponse.json(persisted.analysis_result as AnalysisResult);
+        const persistedResult = persisted.analysis_result as AnalysisResult;
+        return NextResponse.json({ ...persistedResult, context: buildContext(persistedResult.breakdown.customerAlignment.reasoning) });
       } else {
         console.info(`[analysis] basis mismatch while persisting for project ${projectId}`);
       }
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, context: buildContext(result.breakdown.customerAlignment.reasoning) });
   } catch (err) {
     console.error("Analysis failed:", err);
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });

@@ -13,6 +13,13 @@ interface TopQuote {
   displayQuote: string;
 }
 
+interface Segment {
+  type: "pain" | "context" | "emotion" | "intensity";
+  text: string;
+  quote?: string;
+  intensity?: number;
+}
+
 interface Interview {
   id: string;
   raw_text: string;
@@ -27,7 +34,20 @@ interface Props {
   summary: string | null;
   topQuotes: TopQuote[];
   painCount: number;
+  structuredSegments: Segment[] | null;
 }
+
+function segmentColor(type: string): string {
+  switch (type) {
+    case "pain":      return "border-red-200 bg-red-50/60 dark:bg-red-950/20 dark:border-red-900";
+    case "emotion":   return "border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-900";
+    case "context":   return "border-blue-200 bg-blue-50/60 dark:bg-blue-950/20 dark:border-blue-900";
+    case "intensity": return "border-purple-200 bg-purple-50/60 dark:bg-purple-950/20 dark:border-purple-900";
+    default:          return "border-border bg-muted/20";
+  }
+}
+
+type TranscriptTab = "raw" | "structured";
 
 export default function InterviewDetailClient({
   interview,
@@ -35,12 +55,14 @@ export default function InterviewDetailClient({
   summary,
   topQuotes,
   painCount,
+  structuredSegments,
 }: Props) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(interview.raw_text);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [transcriptTab, setTranscriptTab] = useState<TranscriptTab>("raw");
 
   const charCount = editText.trim().length;
   const isValid = charCount >= 100;
@@ -116,7 +138,7 @@ export default function InterviewDetailClient({
                 </span>
                 {!isEditing && (
                   <button
-                    onClick={() => setIsEditing(true)}
+                    onClick={() => { setIsEditing(true); setTranscriptTab("raw"); }}
                     className="text-xs px-3 py-1 rounded border border-border hover:bg-muted transition-colors"
                   >
                     Edit
@@ -162,10 +184,53 @@ export default function InterviewDetailClient({
                 </div>
               </div>
             ) : (
-              <div className="border border-border rounded-xl p-6 bg-muted/20">
-                <pre className="text-sm whitespace-pre-wrap font-mono text-foreground leading-relaxed">
-                  {editText}
-                </pre>
+              <div>
+                {interview.status === "structured" && structuredSegments && (
+                  <div className="flex gap-1 mb-4 border-b border-border">
+                    {(["raw", "structured"] as TranscriptTab[]).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setTranscriptTab(tab)}
+                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px capitalize ${
+                          transcriptTab === tab
+                            ? "border-foreground text-foreground"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {transcriptTab === "raw" && (
+                  <div className="border border-border rounded-xl p-6 bg-muted/20">
+                    <pre className="text-sm whitespace-pre-wrap font-mono text-foreground leading-relaxed">
+                      {editText}
+                    </pre>
+                  </div>
+                )}
+
+                {transcriptTab === "structured" && structuredSegments && (
+                  <div className="flex flex-col gap-3">
+                    {structuredSegments.map((seg, i) => (
+                      <div key={i} className={`border rounded-xl p-4 ${segmentColor(seg.type)}`}>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide mb-2 block opacity-70">
+                          {seg.type}
+                        </span>
+                        <p className="text-sm leading-relaxed">{seg.text}</p>
+                        {seg.quote && seg.quote !== seg.text && (
+                          <p className="text-xs italic mt-2 opacity-80">&ldquo;{seg.quote}&rdquo;</p>
+                        )}
+                        {seg.intensity && seg.intensity >= 4 && (
+                          <span className="mt-2 inline-block text-[10px] font-semibold uppercase tracking-wide text-red-600">
+                            High intensity
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -42,6 +42,31 @@ export type AnalysisResult = {
   recommendation: string[];
 };
 
+export type QuoteSlim = {
+  text: string;
+  interview_id: string;
+};
+
+export type FeatureSpecSlim = {
+  name: string;
+  description: string;
+  priority: string;
+};
+
+export type AnalysisContext = {
+  founderProblem: string;
+  founderCustomer: string;
+  founderFeatures: string[];
+  topProblem: string;
+  topQuotes: QuoteSlim[];
+  customerInsight: string;
+  featureSpecs: FeatureSpecSlim[];
+};
+
+export type AnalysisResponse = AnalysisResult & {
+  context: AnalysisContext;
+};
+
 export function buildAnalysisPrompt(input: AnalysisInput): string {
   const { onboarding, interviewData } = input;
   return [

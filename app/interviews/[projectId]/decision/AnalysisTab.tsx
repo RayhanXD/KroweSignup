@@ -1,23 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { AnalysisResult } from "@/lib/analysis/hypothesisVsReality";
+import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
 
-const DECISION_LABELS: Record<AnalysisResult["decision"], string> = {
+const DECISION_LABELS: Record<AnalysisResponse["decision"], string> = {
   proceed: "Proceed",
   refine: "Refine",
   pivot: "Pivot",
   rethink: "Rethink",
 };
 
-const DECISION_COLORS: Record<AnalysisResult["decision"], string> = {
+const DECISION_COLORS: Record<AnalysisResponse["decision"], string> = {
   proceed: "bg-green-100 text-green-800 border-green-200",
   refine: "bg-yellow-100 text-yellow-800 border-yellow-200",
   pivot: "bg-orange-100 text-orange-800 border-orange-200",
   rethink: "bg-red-100 text-red-800 border-red-200",
 };
 
-const DECISION_BAR_COLORS: Record<AnalysisResult["decision"], string> = {
+const DECISION_BAR_COLORS: Record<AnalysisResponse["decision"], string> = {
   proceed: "bg-green-500",
   refine: "bg-yellow-500",
   pivot: "bg-orange-500",
@@ -83,7 +83,7 @@ function SectionCard({
 
 export function AnalysisTab({ projectId }: { projectId: string }) {
   const [state, setState] = useState<"loading" | "error" | "ready">("loading");
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const requestIdRef = useRef(0);
 
@@ -96,7 +96,7 @@ export function AnalysisTab({ projectId }: { projectId: string }) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
-        return res.json() as Promise<AnalysisResult>;
+        return res.json() as Promise<AnalysisResponse>;
       })
       .then((data) => {
         if (opts?.signal?.aborted) return;
@@ -151,7 +151,7 @@ export function AnalysisTab({ projectId }: { projectId: string }) {
   if (!result) return null;
 
   const confidencePct = Math.round(result.confidence * 100);
-  const { breakdown } = result;
+  const { breakdown, context } = result;
 
   return (
     <div className="space-y-6">
@@ -190,6 +190,125 @@ export function AnalysisTab({ projectId }: { projectId: string }) {
           </div>
         </div>
       </div>
+
+      {/* Assumption Cards */}
+      {context && (
+        <div className="space-y-4">
+          {/* Card 1 — The Problem */}
+          <div className="border border-border rounded-xl overflow-hidden bg-card">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/30">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">The Problem</h3>
+              <StatusBadge
+                label={MATCH_STATUS_LABELS[breakdown.problemMatch.status]}
+                className={MATCH_STATUS_STYLES[breakdown.problemMatch.status]}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border">
+              <div className="p-5 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">You assumed</p>
+                <p className="text-sm text-foreground/80 leading-relaxed">{context.founderProblem || "—"}</p>
+              </div>
+              <div className="p-5 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Interviews showed</p>
+                {context.topProblem && (
+                  <p className="text-sm text-foreground/80 leading-relaxed">{context.topProblem}</p>
+                )}
+                {context.topQuotes.map((q, i) => (
+                  <p key={i} className="text-xs italic text-muted-foreground border-l-2 border-border pl-3">
+                    &ldquo;{q.text}&rdquo;
+                  </p>
+                ))}
+                {!context.topProblem && context.topQuotes.length === 0 && (
+                  <p className="text-xs text-muted-foreground/50">No interview data</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2 — The Customer */}
+          <div className="border border-border rounded-xl overflow-hidden bg-card">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/30">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">The Customer</h3>
+              <StatusBadge
+                label={ALIGNMENT_STATUS_LABELS[breakdown.customerAlignment.status]}
+                className={ALIGNMENT_STATUS_STYLES[breakdown.customerAlignment.status]}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border">
+              <div className="p-5 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">You assumed</p>
+                <p className="text-sm text-foreground/80 leading-relaxed">{context.founderCustomer || "—"}</p>
+              </div>
+              <div className="p-5 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Interviews showed</p>
+                <p className="text-sm text-foreground/80 leading-relaxed">{context.customerInsight || "—"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3 — The Solution */}
+          <div className="border border-border rounded-xl overflow-hidden bg-card">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/30">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">The Solution</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border">
+              <div className="p-5 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">You planned</p>
+                {context.founderFeatures.length > 0 ? (
+                  <ul className="space-y-1">
+                    {context.founderFeatures.map((f, i) => (
+                      <li key={i} className="text-sm text-foreground/80">{f}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-muted-foreground/50">No features listed</p>
+                )}
+              </div>
+              <div className="p-5 space-y-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">What interviews showed</p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-green-600 mb-1">Must-build</p>
+                    {breakdown.featureRelevance.relevant.length > 0 ? (
+                      <ul className="space-y-0.5">
+                        {breakdown.featureRelevance.relevant.map((f, i) => (
+                          <li key={i} className="text-xs text-foreground/80">{f}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground/50">None</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-yellow-600 mb-1">Missing</p>
+                    {breakdown.featureRelevance.missing.length > 0 ? (
+                      <ul className="space-y-0.5">
+                        {breakdown.featureRelevance.missing.map((f, i) => (
+                          <li key={i} className="text-xs text-foreground/80">{f}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground/50">None</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-red-600 mb-1">Cut</p>
+                    {breakdown.featureRelevance.unnecessary.length > 0 ? (
+                      <ul className="space-y-0.5">
+                        {breakdown.featureRelevance.unnecessary.map((f, i) => (
+                          <li key={i} className="text-xs text-foreground/80">{f}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground/50">None</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Breakdown grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

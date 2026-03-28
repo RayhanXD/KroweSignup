@@ -49,6 +49,7 @@ export default async function InterviewDetailPage({
       summary={summary}
       topQuotes={topQuotes}
       painCount={painCount}
+      structuredSegments={segments.length > 0 ? (segments as Array<{ type: "pain" | "context" | "emotion" | "intensity"; text: string; quote?: string; intensity?: number }>) : null}
     />
   );
 }
