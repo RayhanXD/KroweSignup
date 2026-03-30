@@ -8,6 +8,24 @@ export async function PATCH(
   const { interviewId } = await params;
   const supabase = createServerSupabaseClient();
   const body = await req.json();
+
+  // Handle interviewee metadata update (independent of transcript update)
+  if ("intervieweeName" in body || "intervieweeContext" in body) {
+    const metaUpdate: Record<string, string | null> = {};
+    if ("intervieweeName" in body) metaUpdate.interviewee_name = body.intervieweeName ?? null;
+    if ("intervieweeContext" in body) metaUpdate.interviewee_context = body.intervieweeContext ?? null;
+
+    const { error: metaErr } = await supabase
+      .from("interviews")
+      .update(metaUpdate)
+      .eq("id", interviewId);
+
+    if (metaErr) {
+      return NextResponse.json({ error: metaErr.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   const rawText = (body.rawText ?? "").trim();
 
   if (rawText.length < 100) {

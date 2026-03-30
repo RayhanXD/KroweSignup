@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
-import type { AnalysisInput, AnalysisResult, AnalysisContext, QuoteSlim } from "@/lib/analysis/hypothesisVsReality";
+import type { AnalysisInput, AnalysisResult, AnalysisContext, QuoteSlim, SignalStrengthMetrics } from "@/lib/analysis/hypothesisVsReality";
 import type { FeatureSpec } from "@/lib/interviews/types";
 
 function isMissingAnalysisColumnsError(message: string): boolean {
@@ -39,7 +39,7 @@ export async function GET(
   }
 
   // 2. Fetch all needed data in parallel
-  const [answersRes, decisionResWithAnalysisCols, clustersRes] = await Promise.all([
+  const [answersRes, decisionResWithAnalysisCols, clustersRes, interviewCountRes] = await Promise.all([
     supabase
       .from("signup_answers")
       .select("step_key, final_answer")
@@ -55,10 +55,14 @@ export async function GET(
       .limit(1),
     supabase
       .from("problem_clusters")
-      .select("canonical_problem, supporting_quotes, score")
+      .select("canonical_problem, supporting_quotes, score, frequency, avg_intensity, consistency_score")
       .eq("project_id", projectId)
       .order("score", { ascending: false })
       .limit(10),
+    supabase
+      .from("interviews")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", projectId),
   ]);
 
   let decisionRes = decisionResWithAnalysisCols;
@@ -81,6 +85,21 @@ export async function GET(
   const decision = decisionRows[0] ?? null;
   const clusters = clustersRes.data ?? [];
   const decisionUpdatedAt = decision?.updated_at ? new Date(decision.updated_at).toISOString() : null;
+
+  // Compute signal metrics from top cluster (always live, not cached)
+  const topClusterForMetrics = clusters[0];
+  const allQuotes: Array<{ interview_id?: string }> = topClusterForMetrics?.supporting_quotes ?? [];
+  const uniqueIntervieweeSet = new Set(allQuotes.map((q) => q.interview_id).filter(Boolean));
+  const signalMetrics: SignalStrengthMetrics | null = topClusterForMetrics
+    ? {
+        interviewCount: interviewCountRes.count ?? 0,
+        uniqueInterviewees: uniqueIntervieweeSet.size,
+        consistencyScore: topClusterForMetrics.consistency_score ?? 0,
+        avgIntensity: topClusterForMetrics.avg_intensity ?? 0,
+        frequency: topClusterForMetrics.frequency ?? 0,
+        clusterScore: topClusterForMetrics.score ?? 0,
+      }
+    : null;
 
   // Return persisted snapshot when it matches the current decision version.
   const analysisResult =
@@ -153,7 +172,7 @@ export async function GET(
   ) {
     console.info(`[analysis] cache hit for project ${projectId}`);
     const context = buildContext(analysisResult.breakdown.customerAlignment.reasoning);
-    return NextResponse.json({ ...analysisResult, context });
+    return NextResponse.json({ ...analysisResult, context, signalMetrics });
   }
 
   const analysisInput: AnalysisInput = {
@@ -199,13 +218,13 @@ export async function GET(
       ) {
         console.info(`[analysis] generated and persisted for project ${projectId}`);
         const persistedResult = persisted.analysis_result as AnalysisResult;
-        return NextResponse.json({ ...persistedResult, context: buildContext(persistedResult.breakdown.customerAlignment.reasoning) });
+        return NextResponse.json({ ...persistedResult, context: buildContext(persistedResult.breakdown.customerAlignment.reasoning), signalMetrics });
       } else {
         console.info(`[analysis] basis mismatch while persisting for project ${projectId}`);
       }
     }
 
-    return NextResponse.json({ ...result, context: buildContext(result.breakdown.customerAlignment.reasoning) });
+    return NextResponse.json({ ...result, context: buildContext(result.breakdown.customerAlignment.reasoning), signalMetrics });
   } catch (err) {
     console.error("Analysis failed:", err);
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });

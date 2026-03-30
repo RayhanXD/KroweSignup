@@ -63,8 +63,18 @@ export type AnalysisContext = {
   featureSpecs: FeatureSpecSlim[];
 };
 
+export type SignalStrengthMetrics = {
+  interviewCount: number;
+  uniqueInterviewees: number;
+  consistencyScore: number;
+  avgIntensity: number;
+  frequency: number;
+  clusterScore: number;
+};
+
 export type AnalysisResponse = AnalysisResult & {
   context: AnalysisContext;
+  signalMetrics: SignalStrengthMetrics | null;
 };
 
 export function buildAnalysisPrompt(input: AnalysisInput): string {

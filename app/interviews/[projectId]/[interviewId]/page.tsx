@@ -14,7 +14,7 @@ export default async function InterviewDetailPage({
 
   const { data: interview, error } = await supabase
     .from("interviews")
-    .select("id, raw_text, status, created_at, structured_segments")
+    .select("id, raw_text, status, created_at, structured_segments, interviewee_name, interviewee_context")
     .eq("id", interviewId)
     .eq("project_id", projectId)
     .single();
@@ -22,6 +22,14 @@ export default async function InterviewDetailPage({
   if (error || !interview) {
     notFound();
   }
+
+  const { data: siblings } = await supabase
+    .from("interviews")
+    .select("id")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: true });
+
+  const interviewNumber = siblings ? siblings.findIndex((s) => s.id === interviewId) + 1 : null;
 
   const structured = interview.structured_segments as {
     summary?: string;
@@ -42,6 +50,12 @@ export default async function InterviewDetailPage({
     .slice(0, 3)
     .map((s) => ({ ...s, displayQuote: s.quote?.trim() || s.text }));
 
+  const { data: extractedProblems } = await supabase
+    .from("extracted_problems")
+    .select("problem_text, root_cause, customer_type, confidence, supporting_quote, intensity_score")
+    .eq("interview_id", interviewId)
+    .order("intensity_score", { ascending: false });
+
   return (
     <InterviewDetailClient
       interview={interview}
@@ -49,7 +63,11 @@ export default async function InterviewDetailPage({
       summary={summary}
       topQuotes={topQuotes}
       painCount={painCount}
+      interviewNumber={interviewNumber}
       structuredSegments={segments.length > 0 ? (segments as Array<{ type: "pain" | "context" | "emotion" | "intensity"; text: string; quote?: string; intensity?: number }>) : null}
+      extractedProblems={extractedProblems ?? []}
+      intervieweeName={interview.interviewee_name ?? null}
+      intervieweeContext={interview.interviewee_context ?? null}
     />
   );
 }

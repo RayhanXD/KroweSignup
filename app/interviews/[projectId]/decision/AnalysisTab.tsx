@@ -48,11 +48,37 @@ const ALIGNMENT_STATUS_LABELS: Record<string, string> = {
   misaligned: "Misaligned",
 };
 
-const INSIGHT_STRENGTH_STYLES: Record<string, string> = {
-  weak: "bg-red-100 text-red-700 border-red-200",
-  moderate: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  strong: "bg-green-100 text-green-700 border-green-200",
+function deriveSignalLabel(score: number): "Strong" | "Moderate" | "Weak" {
+  if (score >= 0.65) return "Strong";
+  if (score >= 0.35) return "Moderate";
+  return "Weak";
+}
+
+const SIGNAL_LABEL_STYLES: Record<string, string> = {
+  Strong: "bg-green-100 text-green-700 border-green-200",
+  Moderate: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  Weak: "bg-red-100 text-red-700 border-red-200",
 };
+
+function MetricBar({ label, value, max = 1, displayValue }: {
+  label: string; value: number; max?: number; displayValue: string;
+}) {
+  const pct = Math.min((value / max) * 100, 100);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-xs font-medium">{displayValue}</span>
+      </div>
+      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className="h-full bg-foreground/70 rounded-full transition-all" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+// Module-level cache: survives tab switches without refetching
+const analysisCache = new Map<string, AnalysisResponse>();
 
 function StatusBadge({ label, className }: { label: string; className: string }) {
   return (
@@ -82,8 +108,11 @@ function SectionCard({
 }
 
 export function AnalysisTab({ projectId }: { projectId: string }) {
-  const [state, setState] = useState<"loading" | "error" | "ready">("loading");
-  const [result, setResult] = useState<AnalysisResponse | null>(null);
+  const cached = analysisCache.get(projectId) ?? null;
+  const [state, setState] = useState<"loading" | "error" | "ready">(
+    cached ? "ready" : "loading"
+  );
+  const [result, setResult] = useState<AnalysisResponse | null>(cached);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const requestIdRef = useRef(0);
 
@@ -101,6 +130,7 @@ export function AnalysisTab({ projectId }: { projectId: string }) {
       .then((data) => {
         if (opts?.signal?.aborted) return;
         if (requestId !== requestIdRef.current) return;
+        analysisCache.set(projectId, data);
         setResult(data);
         setState("ready");
       })
@@ -113,6 +143,7 @@ export function AnalysisTab({ projectId }: { projectId: string }) {
   };
 
   useEffect(() => {
+    if (analysisCache.has(projectId)) return;
     const controller = new AbortController();
     const requestId = ++requestIdRef.current;
     fetchAnalysis({ signal: controller.signal, requestId });
@@ -139,7 +170,10 @@ export function AnalysisTab({ projectId }: { projectId: string }) {
         </p>
         <p className="text-xs text-muted-foreground">{errorMsg}</p>
         <button
-          onClick={() => fetchAnalysis()}
+          onClick={() => {
+            analysisCache.delete(projectId);
+            fetchAnalysis();
+          }}
           className="mt-2 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
         >
           Retry
@@ -388,23 +422,25 @@ export function AnalysisTab({ projectId }: { projectId: string }) {
           </div>
         </SectionCard>
 
-        {/* Insight Strength */}
+        {/* Interview Signal Strength */}
         <SectionCard heading="Interview Signal Strength">
-          <StatusBadge
-            label={
-              breakdown.insightStrength.charAt(0).toUpperCase() +
-              breakdown.insightStrength.slice(1)
-            }
-            className={INSIGHT_STRENGTH_STYLES[breakdown.insightStrength]}
-          />
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {breakdown.insightStrength === "strong" &&
-              "The interviews produced clear, consistent signal with high evidence quality."}
-            {breakdown.insightStrength === "moderate" &&
-              "The interviews show some patterns but signal is mixed or limited in volume."}
-            {breakdown.insightStrength === "weak" &&
-              "Interview data is sparse or inconsistent — consider running more interviews."}
-          </p>
+          {result.signalMetrics ? (() => {
+            const m = result.signalMetrics;
+            const label = deriveSignalLabel(m.clusterScore);
+            return (
+              <div className="space-y-3">
+                <StatusBadge label={label} className={SIGNAL_LABEL_STYLES[label]} />
+                <div className="space-y-3 pt-1">
+                  <MetricBar label="Spread" value={m.uniqueInterviewees} max={Math.max(m.interviewCount, 1)} displayValue={`${m.uniqueInterviewees} of ${m.interviewCount} interviews`} />
+                  <MetricBar label="Consistency" value={m.consistencyScore} max={1} displayValue={`${Math.round(m.consistencyScore * 100)}%`} />
+                  <MetricBar label="Avg Intensity" value={m.avgIntensity} max={5} displayValue={`${m.avgIntensity.toFixed(1)} / 5`} />
+                  <MetricBar label="Problem Mentions" value={Math.min(m.frequency / 10, 1)} max={1} displayValue={String(m.frequency)} />
+                </div>
+              </div>
+            );
+          })() : (
+            <p className="text-sm text-muted-foreground">No cluster data available.</p>
+          )}
         </SectionCard>
       </div>
 
