@@ -547,14 +547,14 @@ export default function InterviewDetailClient({
                   <h2 className="text-2xl font-bold text-on-surface mb-6">Alternatives Found</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="bg-white p-5 rounded-lg border border-zinc-100 shadow-sm flex flex-col">
-                      <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Competitors Used</h4>
+                      <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Competitors Mentioned</h4>
                       {interview.status !== "structured" ? (
                         <p className="text-sm text-muted-foreground italic">
-                          Analysis pending — run the pipeline to detect competitor tools/products.
+                          Analysis pending — run the pipeline to detect competitors mentioned.
                         </p>
                       ) : currentMethods.length === 0 ? (
                         <p className="text-sm text-muted-foreground italic">
-                          No competitor tools/products mentioned.
+                          No competitors mentioned.
                         </p>
                       ) : (
                         <div className="space-y-3 flex-1">

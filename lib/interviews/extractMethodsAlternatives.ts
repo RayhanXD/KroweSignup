@@ -24,14 +24,30 @@ function dedupeAndCap(values: string[], max = 8): string[] {
   return out;
 }
 
-export async function extractMethodsAlternatives(rawText: string): Promise<MethodsAlternativesExtraction> {
-  const systemPrompt = [
-    "Extract methods and alternatives explicitly mentioned in this interview transcript.",
-    "competitors_used: Other online tools/products they currently use or have used as substitutes.",
-    "alternatives_used: Manual or non-automated workflows they use as workarounds (spreadsheets, notes, DMs, etc.).",
-    "Return short normalized phrases only (2-8 words each).",
-    "Do not infer. If not explicitly stated, return an empty array.",
-  ].join(" ");
+export async function extractMethodsAlternatives(
+  rawText: string,
+  context?: { idea?: string; problem?: string }
+): Promise<MethodsAlternativesExtraction> {
+  const contextPrefix =
+    context?.idea || context?.problem
+      ? [
+          context.idea ? `The founder is building: ${context.idea}.` : "",
+          context.problem ? `They are solving: ${context.problem}.` : "",
+          "Use this to distinguish competitors (tools that do the same job as the founder's idea) from manual workarounds (spreadsheets, notes, DMs, etc.).",
+        ]
+          .filter(Boolean)
+          .join(" ") + " "
+      : "";
+
+  const systemPrompt =
+    contextPrefix +
+    [
+      "Extract methods and alternatives explicitly mentioned in this interview transcript.",
+      "competitors_used: Other online tools/products they currently use or have used as substitutes.",
+      "alternatives_used: Manual or non-automated workflows they use as workarounds (spreadsheets, notes, DMs, etc.).",
+      "Return short normalized phrases only (2-8 words each).",
+      "Do not infer. If not explicitly stated, return an empty array.",
+    ].join(" ");
 
   const empty: MethodsAlternativesExtraction = { competitors_used: [], alternatives_used: [] };
   const maxAttempts = 3;

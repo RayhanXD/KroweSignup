@@ -155,6 +155,22 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
 
     if (!project) throw new Error("Project not found");
 
+    // Fetch founder context early to improve competitor extraction accuracy
+    let earlyFounderIdea: string | null = null;
+    let earlyFounderProblem: string | null = null;
+    if (project.session_id) {
+      const { data: earlyAnswers } = await supabase
+        .from("signup_answers")
+        .select("step_key, final_answer")
+        .eq("session_id", project.session_id)
+        .in("step_key", ["idea", "problem"]);
+      if (earlyAnswers) {
+        const byKey = Object.fromEntries(earlyAnswers.map((a: { step_key: string; final_answer: string }) => [a.step_key, a.final_answer]));
+        earlyFounderIdea = typeof byKey.idea === "string" ? byKey.idea : null;
+        earlyFounderProblem = typeof byKey.problem === "string" ? byKey.problem : null;
+      }
+    }
+
     if (project.interview_count < 3) {
       const [insufficientDecisionResult] = await Promise.all([
         supabase
@@ -218,7 +234,12 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       interviewsToProcess.map(async (interview) => {
         try {
           const structured = await structureInterview(interview.raw_text);
-          const methodsAndAlternatives = await extractMethodsAlternatives(interview.raw_text);
+          const methodsAndAlternatives = await extractMethodsAlternatives(
+            interview.raw_text,
+            earlyFounderIdea || earlyFounderProblem
+              ? { idea: earlyFounderIdea ?? undefined, problem: earlyFounderProblem ?? undefined }
+              : undefined
+          );
           await supabase
             .from("interviews")
             .update({
