@@ -10,6 +10,7 @@ import { generateDecision } from "./generateDecision";
 import { categorizeClusterGroups } from "./categorizeClusterGroups";
 import { generateMetaClusters } from "./generateMetaClusters";
 import { extractMethodsAlternatives } from "./extractMethodsAlternatives";
+import { classifyCompetitors } from "./classifyCompetitors";
 import { runAssumptionMatching } from "@/lib/analysis/assumptionMatching";
 import type { OnboardingData, AssumptionVsEvidenceReport } from "@/lib/analysis/assumptionMatching";
 import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
@@ -222,7 +223,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
             .from("interviews")
             .update({
               structured_segments: structured,
-              current_methods: methodsAndAlternatives.current_methods,
+              competitors_used: methodsAndAlternatives.competitors_used,
               alternatives_used: methodsAndAlternatives.alternatives_used,
               status: "structured",
             })
@@ -467,7 +468,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         : Promise.resolve({ data: null }),
       supabase
         .from("interviews")
-        .select("current_methods, alternatives_used")
+        .select("competitors_used, alternatives_used")
         .eq("project_id", projectId),
     ]);
 
@@ -519,19 +520,19 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       industry: string | null;
     } | null = null;
     let onboarding: OnboardingData | undefined;
-    const projectCurrentMethods = new Map<string, number>();
+    const projectCompetitorsUsed = new Map<string, number>();
     const projectAlternativesUsed = new Map<string, number>();
 
     const interviewMethodsRows = (interviewMethodsResult as {
-      data: Array<{ current_methods: unknown; alternatives_used: unknown }> | null;
+      data: Array<{ competitors_used: unknown; alternatives_used: unknown }> | null;
     }).data ?? [];
     for (const row of interviewMethodsRows) {
-      const currentMethods = Array.isArray(row.current_methods) ? row.current_methods : [];
+      const competitorsUsed = Array.isArray(row.competitors_used) ? row.competitors_used : [];
       const alternativesUsed = Array.isArray(row.alternatives_used) ? row.alternatives_used : [];
-      for (const method of currentMethods) {
-        if (typeof method !== "string" || !method.trim()) continue;
-        const key = method.trim();
-        projectCurrentMethods.set(key, (projectCurrentMethods.get(key) ?? 0) + 1);
+      for (const competitor of competitorsUsed) {
+        if (typeof competitor !== "string" || !competitor.trim()) continue;
+        const key = competitor.trim();
+        projectCompetitorsUsed.set(key, (projectCompetitorsUsed.get(key) ?? 0) + 1);
       }
       for (const alternative of alternativesUsed) {
         if (typeof alternative !== "string" || !alternative.trim()) continue;
@@ -539,7 +540,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         projectAlternativesUsed.set(key, (projectAlternativesUsed.get(key) ?? 0) + 1);
       }
     }
-    const topCurrentMethods = [...projectCurrentMethods.entries()]
+    const topCompetitorsUsed = [...projectCompetitorsUsed.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([text]) => text);
@@ -638,6 +639,22 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
 
     const topClusterId = alignedTopCluster.id;
 
+    // 11e. Classify competitors vs online workarounds
+    let directCompetitors = topCompetitorsUsed;
+    let onlineWorkarounds: string[] = [];
+    if (topCompetitorsUsed.length > 0 && onboarding?.idea && onboarding?.problem) {
+      try {
+        const classification = await classifyCompetitors(
+          topCompetitorsUsed, onboarding.idea, onboarding.problem
+        );
+        directCompetitors = classification.directCompetitors;
+        onlineWorkarounds = classification.onlineWorkarounds;
+        console.log(`[pipeline] classifyCompetitors: direct=${directCompetitors.length}, workarounds=${onlineWorkarounds.length}`);
+      } catch (err) {
+        console.error("[pipeline] classifyCompetitors failed, falling back:", err);
+      }
+    }
+
     // 12. Generate decision
     console.time("[pipeline] decision");
     const decision = await generateDecision({
@@ -647,7 +664,8 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       onboarding,
       assumptionAnalysis,
       featureValidation,
-      currentMethods: topCurrentMethods,
+      directCompetitors,
+      onlineWorkarounds,
       alternativesUsed: topAlternativesUsed,
       confidenceScore: pipelineConfidenceScore,
       confidenceLevel: pipelineConfidenceLevel,
@@ -699,7 +717,8 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
               .map((q: { text: string }) => q.text),
             featureSpecs: decision.feature_specs?.map((f: { name: string }) => f.name) ?? [],
             reasoning: Array.isArray(decision.reasoning) ? decision.reasoning : [],
-            currentMethods: topCurrentMethods,
+            directCompetitors,
+            onlineWorkarounds,
             alternativesUsed: topAlternativesUsed,
           },
         };

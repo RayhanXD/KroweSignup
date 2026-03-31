@@ -22,7 +22,8 @@ type GenerateDecisionParams = {
     irrelevant: string[];
     missing: string[];
   } | null;
-  currentMethods?: string[];
+  directCompetitors?: string[];
+  onlineWorkarounds?: string[];
   alternativesUsed?: string[];
   confidenceScore?: number;
   confidenceLevel?: "LOW" | "MEDIUM" | "HIGH";
@@ -47,7 +48,8 @@ export async function generateDecision(
     onboarding,
     assumptionAnalysis,
     featureValidation,
-    currentMethods,
+    directCompetitors,
+    onlineWorkarounds,
     alternativesUsed,
     confidenceScore,
     confidenceLevel,
@@ -140,11 +142,14 @@ export async function generateDecision(
     : null;
 
   const transcriptAlternativesText =
-    (currentMethods && currentMethods.length > 0) || (alternativesUsed && alternativesUsed.length > 0)
+    (directCompetitors && directCompetitors.length > 0) ||
+    (onlineWorkarounds && onlineWorkarounds.length > 0) ||
+    (alternativesUsed && alternativesUsed.length > 0)
       ? [
-          "TRANSCRIPT-DERIVED METHODS & ALTERNATIVES:",
-          `Current methods:\n${(currentMethods ?? []).map((m) => `- ${m}`).join("\n") || "None"}`,
-          `Alternatives used:\n${(alternativesUsed ?? []).map((a) => `- ${a}`).join("\n") || "None"}`,
+          "TRANSCRIPT-DERIVED TOOL LANDSCAPE:",
+          `Direct competitors (same product category as founder's idea):\n${(directCompetitors ?? []).map((m) => `- ${m}`).join("\n") || "None"}`,
+          `Online workarounds (used because no ideal solution exists — not direct competition):\n${(onlineWorkarounds ?? []).map((m) => `- ${m}`).join("\n") || "None"}`,
+          `Manual alternatives (spreadsheets, DMs, notes, etc.):\n${(alternativesUsed ?? []).map((a) => `- ${a}`).join("\n") || "None"}`,
         ].join("\n")
       : null;
 

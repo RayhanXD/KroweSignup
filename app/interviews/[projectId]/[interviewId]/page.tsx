@@ -5,7 +5,11 @@ import InterviewDetailClient from "./InterviewDetailClient";
 export const dynamic = "force-dynamic";
 
 function isMissingMethodsColumnsError(message: string): boolean {
-  return message.includes("current_methods") || message.includes("alternatives_used");
+  return (
+    message.includes("competitors_used") ||
+    message.includes("current_methods") ||
+    message.includes("alternatives_used")
+  );
 }
 
 export default async function InterviewDetailPage({
@@ -18,7 +22,7 @@ export default async function InterviewDetailPage({
 
   const interviewResWithMethods = await supabase
     .from("interviews")
-    .select("id, raw_text, status, created_at, structured_segments, interviewee_name, interviewee_context, current_methods, alternatives_used")
+    .select("id, raw_text, status, created_at, structured_segments, interviewee_name, interviewee_context, competitors_used, alternatives_used")
     .eq("id", interviewId)
     .eq("project_id", projectId)
     .single();
@@ -35,6 +39,7 @@ export default async function InterviewDetailPage({
   }
 
   const interview = interviewRes.data as (typeof interviewResWithMethods.data & {
+    competitors_used?: unknown;
     current_methods?: unknown;
     alternatives_used?: unknown;
   }) | null;
@@ -76,8 +81,13 @@ export default async function InterviewDetailPage({
     .eq("interview_id", interviewId)
     .order("intensity_score", { ascending: false });
 
-  const currentMethods = Array.isArray(interview.current_methods)
-    ? interview.current_methods.filter((v): v is string => typeof v === "string").slice(0, 8)
+  const competitorsUsedRaw = Array.isArray(interview.competitors_used)
+    ? interview.competitors_used
+    : Array.isArray(interview.current_methods)
+      ? interview.current_methods
+      : [];
+  const competitorsUsed = Array.isArray(competitorsUsedRaw)
+    ? competitorsUsedRaw.filter((v): v is string => typeof v === "string").slice(0, 8)
     : [];
   const alternativesUsed = Array.isArray(interview.alternatives_used)
     ? interview.alternatives_used.filter((v): v is string => typeof v === "string").slice(0, 8)
@@ -96,7 +106,7 @@ export default async function InterviewDetailPage({
       intervieweeName={interview.interviewee_name ?? null}
       intervieweeContext={interview.interviewee_context ?? null}
       alternativesUsed={alternativesUsed}
-      currentMethods={currentMethods}
+      currentMethods={competitorsUsed}
     />
   );
 }

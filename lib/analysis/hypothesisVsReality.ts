@@ -17,7 +17,8 @@ export type AnalysisInput = {
     supportingQuotes: string[];
     featureSpecs: string[];
     reasoning: string[];
-    currentMethods?: string[];
+    directCompetitors?: string[];
+    onlineWorkarounds?: string[];
     alternativesUsed?: string[];
   };
 };
@@ -96,8 +97,9 @@ export function buildAnalysisPrompt(input: AnalysisInput): string {
     `- Problem clusters: ${interviewData.problemClusters.join("; ") || "none"}`,
     `- Supporting quotes: ${interviewData.supportingQuotes.map((q) => `"${q}"`).join(" | ") || "none"}`,
     `- Derived feature specs: ${interviewData.featureSpecs.join(", ") || "none"}`,
-    `- Current methods used: ${interviewData.currentMethods?.join(", ") || "none"}`,
-    `- Alternatives used/tried: ${interviewData.alternativesUsed?.join(", ") || "none"}`,
+    `- Direct competitors: ${interviewData.directCompetitors?.join(", ") || "none"}`,
+    `- Online workarounds (not direct competitors): ${interviewData.onlineWorkarounds?.join(", ") || "none"}`,
+    `- Manual alternatives used/tried: ${interviewData.alternativesUsed?.join(", ") || "none"}`,
     "",
     "Tasks:",
     "1. Compare founder problem vs real problems",

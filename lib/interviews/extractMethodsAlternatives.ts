@@ -5,7 +5,7 @@ import { extractResponseText } from "../report/marketSizeUtils";
 const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
 export type MethodsAlternativesExtraction = {
-  current_methods: string[];
+  competitors_used: string[];
   alternatives_used: string[];
 };
 
@@ -27,13 +27,13 @@ function dedupeAndCap(values: string[], max = 8): string[] {
 export async function extractMethodsAlternatives(rawText: string): Promise<MethodsAlternativesExtraction> {
   const systemPrompt = [
     "Extract methods and alternatives explicitly mentioned in this interview transcript.",
-    "current_methods: How the interviewee currently handles the problem (tools, workflows, manual workarounds).",
-    "alternatives_used: Named products, substitutes, or alternatives they tried/switched to/from.",
+    "competitors_used: Other online tools/products they currently use or have used as substitutes.",
+    "alternatives_used: Manual or non-automated workflows they use as workarounds (spreadsheets, notes, DMs, etc.).",
     "Return short normalized phrases only (2-8 words each).",
     "Do not infer. If not explicitly stated, return an empty array.",
   ].join(" ");
 
-  const empty: MethodsAlternativesExtraction = { current_methods: [], alternatives_used: [] };
+  const empty: MethodsAlternativesExtraction = { competitors_used: [], alternatives_used: [] };
   const maxAttempts = 3;
   let lastError: Error | null = null;
 
@@ -54,7 +54,7 @@ export async function extractMethodsAlternatives(rawText: string): Promise<Metho
               type: "object",
               additionalProperties: false,
               properties: {
-                current_methods: {
+                competitors_used: {
                   type: "array",
                   items: { type: "string" },
                 },
@@ -63,7 +63,7 @@ export async function extractMethodsAlternatives(rawText: string): Promise<Metho
                   items: { type: "string" },
                 },
               },
-              required: ["current_methods", "alternatives_used"],
+              required: ["competitors_used", "alternatives_used"],
             },
           },
         },
@@ -73,7 +73,7 @@ export async function extractMethodsAlternatives(rawText: string): Promise<Metho
       if (!raw) throw new Error("extractMethodsAlternatives: empty model output");
       const parsed = JSON.parse(raw) as MethodsAlternativesExtraction;
       return {
-        current_methods: dedupeAndCap(parsed.current_methods ?? []),
+        competitors_used: dedupeAndCap(parsed.competitors_used ?? []),
         alternatives_used: dedupeAndCap(parsed.alternatives_used ?? []),
       };
     } catch (e) {

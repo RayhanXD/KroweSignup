@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
 import type { AnalysisInput, AnalysisResult, AnalysisContext, QuoteSlim, SignalStrengthMetrics } from "@/lib/analysis/hypothesisVsReality";
 import type { FeatureSpec } from "@/lib/interviews/types";
+import { classifyCompetitors } from "@/lib/interviews/classifyCompetitors";
 
 function isMissingAnalysisColumnsError(message: string): boolean {
   return (
@@ -10,6 +11,10 @@ function isMissingAnalysisColumnsError(message: string): boolean {
     message.includes("analysis_generated_at") ||
     message.includes("analysis_result")
   );
+}
+
+function isMissingMethodsColumnsError(message: string): boolean {
+  return message.includes("competitors_used") || message.includes("current_methods");
 }
 
 export async function GET(
@@ -39,7 +44,7 @@ export async function GET(
   }
 
   // 2. Fetch all needed data in parallel
-  const [answersRes, decisionResWithAnalysisCols, clustersRes, interviewCountRes, interviewMethodsRes] = await Promise.all([
+  const [answersRes, decisionResWithAnalysisCols, clustersRes, interviewCountRes, interviewMethodsResRaw] = await Promise.all([
     supabase
       .from("signup_answers")
       .select("step_key, final_answer")
@@ -65,7 +70,7 @@ export async function GET(
       .eq("project_id", projectId),
     supabase
       .from("interviews")
-      .select("current_methods, alternatives_used")
+      .select("competitors_used, alternatives_used")
       .eq("project_id", projectId),
   ]);
 
@@ -83,6 +88,14 @@ export async function GET(
       .limit(1)) as unknown as typeof decisionResWithAnalysisCols;
   }
 
+  let interviewMethodsRes = interviewMethodsResRaw;
+  if (interviewMethodsResRaw.error && isMissingMethodsColumnsError(interviewMethodsResRaw.error.message)) {
+    interviewMethodsRes = await supabase
+      .from("interviews")
+      .select("current_methods, alternatives_used")
+      .eq("project_id", projectId);
+  }
+
   const answers = answersRes.data ?? [];
   const decisionRows = decisionRes.data ?? [];
   const decision = decisionRows[0] ?? null;
@@ -93,7 +106,11 @@ export async function GET(
   const methodsCounts = new Map<string, number>();
   const alternativesCounts = new Map<string, number>();
   for (const row of interviewMethodsRows) {
-    const methods = Array.isArray(row.current_methods) ? row.current_methods : [];
+    const methods = Array.isArray(row.competitors_used)
+      ? row.competitors_used
+      : Array.isArray(row.current_methods)
+        ? row.current_methods
+        : [];
     const alternatives = Array.isArray(row.alternatives_used) ? row.alternatives_used : [];
     for (const m of methods) {
       if (typeof m !== "string" || !m.trim()) continue;
@@ -114,6 +131,19 @@ export async function GET(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
     .map(([text]) => text);
+
+  // Classify competitors vs online workarounds
+  let directCompetitors = currentMethods;
+  let onlineWorkarounds: string[] = [];
+  const idea = answers.find((a) => a.step_key === "idea")?.final_answer ?? "";
+  const problem = answers.find((a) => a.step_key === "problem")?.final_answer ?? "";
+  if (currentMethods.length > 0 && idea && problem) {
+    try {
+      const cls = await classifyCompetitors(currentMethods, String(idea), String(problem));
+      directCompetitors = cls.directCompetitors;
+      onlineWorkarounds = cls.onlineWorkarounds;
+    } catch { /* fallback stays */ }
+  }
 
   // Compute signal metrics from top cluster (always live, not cached)
   const topClusterForMetrics = clusters[0];
@@ -217,7 +247,8 @@ export async function GET(
       supportingQuotes,
       featureSpecs,
       reasoning,
-      currentMethods,
+      directCompetitors,
+      onlineWorkarounds,
       alternativesUsed,
     },
   };
