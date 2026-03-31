@@ -48,6 +48,8 @@ interface Props {
   extractedProblems: ExtractedProblem[];
   intervieweeName: string | null;
   intervieweeContext: string | null;
+  competitorMentions: string[];
+  currentMethods: string[];
 }
 
 function segmentBorder(type: string): string {
@@ -131,6 +133,8 @@ export default function InterviewDetailClient({
   extractedProblems,
   intervieweeName,
   intervieweeContext,
+  competitorMentions,
+  currentMethods,
 }: Props) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -249,8 +253,11 @@ export default function InterviewDetailClient({
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-bold mb-1">
-                  Interview{interviewNumber ? ` #${interviewNumber}` : ""}
+                  {savedName ?? (interviewNumber ? `Interview #${interviewNumber}` : "Interview")}
                 </h1>
+                {savedContext && (
+                  <p className="text-sm text-muted-foreground mb-0.5">{savedContext}</p>
+                )}
                 <p className="text-sm text-muted-foreground">
                   Submitted on{" "}
                   {new Date(interview.created_at).toLocaleDateString("en-US", {
@@ -550,6 +557,58 @@ export default function InterviewDetailClient({
                       View all {extractedProblems.length} problems →
                     </button>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Competitors Mentioned */}
+            <div className="border border-border rounded-xl p-6 bg-card">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Competitors Mentioned
+              </h2>
+              {interview.status !== "structured" ? (
+                <p className="text-sm text-muted-foreground italic">
+                  Analysis pending — run the pipeline to detect competitors.
+                </p>
+              ) : competitorMentions.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">
+                  No competitors mentioned in this interview.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {competitorMentions.map((mention, i) => (
+                    <div key={i} className="border border-border rounded-lg px-3 py-2.5 bg-muted/20">
+                      <p className="text-xs italic text-foreground/80 leading-relaxed">
+                        &ldquo;{mention}&rdquo;
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Current / Alternative Methods */}
+            <div className="border border-border rounded-xl p-6 bg-card">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Current Methods Used
+              </h2>
+              {interview.status !== "structured" ? (
+                <p className="text-sm text-muted-foreground italic">
+                  Analysis pending — run the pipeline to detect current methods.
+                </p>
+              ) : currentMethods.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">
+                  No current methods or workarounds mentioned.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {currentMethods.map((method, i) => (
+                    <div key={i} className="border border-border rounded-lg px-3 py-2.5 bg-muted/20">
+                      <p className="text-xs italic text-foreground/80 leading-relaxed">
+                        &ldquo;{method}&rdquo;
+                      </p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

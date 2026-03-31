@@ -56,6 +56,22 @@ export default async function InterviewDetailPage({
     .eq("interview_id", interviewId)
     .order("intensity_score", { ascending: false });
 
+  // Extract competitor mentions from structured segments
+  const competitorPattern = /\b(competitor|competition|rival|alternative|similar to|use [A-Z]\w+|using [A-Z]\w+|tried [A-Z]\w+|switched (from|to)|vs\.?|versus|compared to|instead of|like [A-Z]\w+)\b/;
+  const competitorMentions = segments
+    .filter(s => competitorPattern.test(s.text) || (s.quote && competitorPattern.test(s.quote)))
+    .map(s => s.quote?.trim() || s.text)
+    .filter(Boolean)
+    .slice(0, 3) as string[];
+
+  // Extract current/alternative methods from structured segments
+  const currentMethodPattern = /\b(currently|right now|at the moment|we use|i use|manually|by hand|spreadsheet|excel|google sheets|email|pen and paper|sticky notes|whiteboard|workaround|track by|manage by|do it by|our (current|existing) (process|workflow|system|solution)|today (i|we))\b/i;
+  const currentMethods = segments
+    .filter(s => currentMethodPattern.test(s.text) || (s.quote && currentMethodPattern.test(s.quote)))
+    .map(s => s.quote?.trim() || s.text)
+    .filter(Boolean)
+    .slice(0, 3) as string[];
+
   return (
     <InterviewDetailClient
       interview={interview}
@@ -68,6 +84,8 @@ export default async function InterviewDetailPage({
       extractedProblems={extractedProblems ?? []}
       intervieweeName={interview.interviewee_name ?? null}
       intervieweeContext={interview.interviewee_context ?? null}
+      competitorMentions={competitorMentions}
+      currentMethods={currentMethods}
     />
   );
 }

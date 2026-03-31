@@ -11,6 +11,8 @@ import { categorizeClusterGroups } from "./categorizeClusterGroups";
 import { generateMetaClusters } from "./generateMetaClusters";
 import { runAssumptionMatching } from "@/lib/analysis/assumptionMatching";
 import type { OnboardingData, AssumptionVsEvidenceReport } from "@/lib/analysis/assumptionMatching";
+import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
+import type { AnalysisInput } from "@/lib/analysis/hypothesisVsReality";
 import { ENV } from "../env";
 import { extractResponseText } from "../report/marketSizeUtils";
 import type {
@@ -616,6 +618,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     console.log(`[pipeline] decision generated: confidence=${decision.confidence_score}`);
 
     // 13. Upsert decision output
+    const decisionUpdatedAt = new Date().toISOString();
     const { data: decisionRow, error: decisionErr } = await supabase
       .from("decision_outputs")
       .upsert(
@@ -630,7 +633,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
           confidence_score: decision.confidence_score,
           meta_clusters: metaClustersWithRealIds,
           status: "ready",
-          updated_at: new Date().toISOString(),
+          updated_at: decisionUpdatedAt,
         },
         { onConflict: "project_id" }
       )
@@ -639,6 +642,45 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
 
     if (decisionErr) throw new Error(`Failed to save decision output: ${decisionErr.message}`);
     console.log(`[pipeline] decision output saved: id=${decisionRow?.id}`);
+
+    // 14b. Run hypothesis vs reality analysis and persist to decision_outputs (non-blocking)
+    if (onboarding) {
+      try {
+        const analysisInput: AnalysisInput = {
+          onboarding: {
+            idea: onboarding.idea ?? "",
+            problem: onboarding.problem ?? "",
+            target_customer: onboarding.target_customer ?? "",
+            features: parseFeatures(onboarding.features),
+          },
+          interviewData: {
+            topProblem: alignedTopCluster.canonical_problem,
+            problemClusters: allClustersWithIds.map(c => c.canonical_problem),
+            supportingQuotes: (alignedTopCluster.supporting_quotes ?? [])
+              .slice(0, 5)
+              .map((q: { text: string }) => q.text),
+            featureSpecs: decision.feature_specs?.map((f: { name: string }) => f.name) ?? [],
+            reasoning: Array.isArray(decision.reasoning) ? decision.reasoning : [],
+          },
+        };
+
+        const analysisResult = await analyzeHypothesisVsReality(analysisInput);
+        const nowIso = new Date().toISOString();
+
+        await supabase
+          .from("decision_outputs")
+          .update({
+            analysis_result: analysisResult,
+            analysis_basis_updated_at: decisionUpdatedAt,
+            analysis_generated_at: nowIso,
+          })
+          .eq("project_id", projectId);
+
+        console.log(`[pipeline] hypothesis vs reality analysis stored for project ${projectId}`);
+      } catch (err) {
+        console.error("[pipeline] hypothesisVsReality failed, continuing:", err);
+      }
+    }
 
     // 14. Update project status
     await supabase
