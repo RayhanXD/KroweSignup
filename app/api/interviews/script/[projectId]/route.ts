@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { generateScript } from "@/lib/interviews/generateScript";
 
 export async function GET(
@@ -7,7 +7,9 @@ export async function GET(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const regenerate = searchParams.get("regenerate") === "true";
 

@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ interviewId: string }> }
 ) {
   const { interviewId } = await params;
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
 
   // Handle interviewee metadata update (independent of transcript update)

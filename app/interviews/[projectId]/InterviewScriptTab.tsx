@@ -83,7 +83,7 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
       <div className="py-12 flex flex-col items-center gap-3 text-muted-foreground">
         <p className="text-sm text-red-500">{error}</p>
         <button
-          onClick={fetchScript}
+          onClick={() => fetchScript()}
           className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors"
         >
           Retry

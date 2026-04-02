@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
 import { ProjectPageClient } from "./ProjectPageClient";
 
@@ -28,7 +28,7 @@ export default async function ProjectPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
 
   const [projectRes, interviewsRes] = await Promise.all([
     supabase

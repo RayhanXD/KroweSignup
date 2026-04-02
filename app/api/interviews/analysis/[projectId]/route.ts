@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
 import type { AnalysisInput, AnalysisResult, AnalysisContext, QuoteSlim, SignalStrengthMetrics } from "@/lib/analysis/hypothesisVsReality";
 import type { FeatureSpec } from "@/lib/interviews/types";
@@ -22,7 +22,9 @@ export async function GET(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // 1. Fetch project to get session_id
   const projectRes = await supabase
@@ -90,10 +92,10 @@ export async function GET(
 
   let interviewMethodsRes = interviewMethodsResRaw;
   if (interviewMethodsResRaw.error && isMissingMethodsColumnsError(interviewMethodsResRaw.error.message)) {
-    interviewMethodsRes = await supabase
+    interviewMethodsRes = (await supabase
       .from("interviews")
       .select("current_methods, alternatives_used")
-      .eq("project_id", projectId);
+      .eq("project_id", projectId)) as unknown as typeof interviewMethodsResRaw;
   }
 
   const answers = answersRes.data ?? [];
@@ -105,7 +107,7 @@ export async function GET(
 
   const methodsCounts = new Map<string, number>();
   const alternativesCounts = new Map<string, number>();
-  for (const row of interviewMethodsRows) {
+  for (const row of interviewMethodsRows as Array<Record<string, unknown>>) {
     const methods = Array.isArray(row.competitors_used)
       ? row.competitors_used
       : Array.isArray(row.current_methods)

@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [projectRes, interviewsRes, clustersRes] = await Promise.all([
     supabase
