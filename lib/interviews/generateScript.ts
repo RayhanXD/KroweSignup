@@ -22,6 +22,11 @@ type OnboardingData = {
   features: string[];
 };
 
+type InterviewerInfo = {
+  name: string | null;
+  context: string | null;
+};
+
 const GENERIC_SCRIPT: InterviewScript = {
   intro:
     "Hi, thanks so much for taking the time to chat with me. I'm doing some research to better understand how people deal with [the problem area]. I'm not here to pitch anything — I just want to learn from your experience. There are no right or wrong answers, and feel free to tell me if something doesn't apply to you.",
@@ -111,7 +116,7 @@ const GENERIC_SCRIPT: InterviewScript = {
     "That's really helpful — thank you. Before I let you go, is there anything else you think I should know about this problem? Also, would it be okay if I follow up with you as I learn more? I'd love to share what I find and get your reaction.",
 };
 
-export async function generateScript(onboarding: OnboardingData | null): Promise<InterviewScript> {
+export async function generateScript(onboarding: OnboardingData | null, interviewer?: InterviewerInfo | null): Promise<InterviewScript> {
   if (!onboarding || (!onboarding.idea && !onboarding.problem && !onboarding.target_customer)) {
     return GENERIC_SCRIPT;
   }
@@ -132,13 +137,20 @@ export async function generateScript(onboarding: OnboardingData | null): Promise
     .map((f) => `Feature: "${f}" → probe: How do you handle this today? What do you do after this step?`)
     .join("\n");
 
+  const interviewerLines = interviewer
+    ? [
+        interviewer.name ? `- Interviewer Name: ${interviewer.name}` : null,
+        interviewer.context ? `- Interviewer Context: ${interviewer.context}` : null,
+      ].filter(Boolean).join("\n")
+    : null;
+
   const prompt = `You are generating a customer interview script for a first-time founder using "The Mom Test" principles.
 
 INPUT:
 - Idea: ${onboarding.idea}
 - Problem: ${onboarding.problem}
 - Target Customer: ${onboarding.target_customer}
-- Features: ${featuresStr}
+- Features: ${featuresStr}${interviewerLines ? `\n\nINTERVIEWER:\n${interviewerLines}\n\nUse the interviewer name in the intro (e.g. "Hi, I'm [name]..."). Use the interviewer context to make questions feel natural given their background — but do NOT pitch or reveal the solution.` : ""}
 
 QUESTION FOCUS RULES:
 ${focusPriority}

@@ -10,6 +10,12 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
+  // Interviewer info form
+  const [interviewerName, setInterviewerName] = useState("");
+  const [interviewerContext, setInterviewerContext] = useState("");
+  const [savingInterviewer, setSavingInterviewer] = useState(false);
+  const [interviewerSaved, setInterviewerSaved] = useState(false);
+
   async function fetchScript(regenerate = false) {
     if (regenerate) setRegenerating(true);
     else setLoading(true);
@@ -34,7 +40,43 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
     }
   }
 
+  async function fetchInterviewerInfo() {
+    try {
+      const res = await fetch(`/api/interviews/project/${projectId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.project?.interviewer_name) setInterviewerName(data.project.interviewer_name);
+      if (data.project?.interviewer_context) setInterviewerContext(data.project.interviewer_context);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleSaveInterviewer() {
+    setSavingInterviewer(true);
+    try {
+      const res = await fetch(`/api/interviews/project/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          interviewer_name: interviewerName,
+          interviewer_context: interviewerContext,
+        }),
+      });
+      if (!res.ok) return;
+      setInterviewerSaved(true);
+      setTimeout(() => setInterviewerSaved(false), 2000);
+      // Regenerate script with new interviewer info
+      fetchScript(true);
+    } catch {
+      // ignore
+    } finally {
+      setSavingInterviewer(false);
+    }
+  }
+
   useEffect(() => {
+    fetchInterviewerInfo();
     fetchScript();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
@@ -96,6 +138,40 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
 
   return (
     <div className="max-w-2xl">
+      {/* Interviewer Info */}
+      <div className="mb-6 border border-border rounded-xl p-5 bg-card">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-3">Interviewer Info</p>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Your name</label>
+            <input
+              type="text"
+              value={interviewerName}
+              onChange={(e) => setInterviewerName(e.target.value)}
+              placeholder="e.g. Alex"
+              className="w-full text-sm px-3 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">About you / context <span className="text-muted-foreground/50">(optional)</span></label>
+            <textarea
+              value={interviewerContext}
+              onChange={(e) => setInterviewerContext(e.target.value)}
+              placeholder="e.g. Former teacher researching edtech tools for K-12 classrooms"
+              rows={2}
+              className="w-full text-sm px-3 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+            />
+          </div>
+          <button
+            onClick={handleSaveInterviewer}
+            disabled={savingInterviewer || regenerating}
+            className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            {savingInterviewer ? "Saving…" : interviewerSaved ? "Saved!" : "Save & Regenerate Script"}
+          </button>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-base font-semibold">Interview Script</h2>

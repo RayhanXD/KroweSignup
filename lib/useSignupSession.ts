@@ -1,12 +1,10 @@
 "use client";
 
 import {useEffect, useMemo, useState} from "react";
+import { useRouter } from "next/navigation";
 import {StepKey, getFirstStepKey} from "@/lib/signupSteps"
-import { STORAGE_KEYS } from "@/lib/constants"
 import type { SessionState } from "@/lib/types/session";
 import type { SubmitAnswerResponse, ConfirmAnswerResponse } from "@/lib/types/answers";
-
-const STORAGE_KEY = STORAGE_KEYS.SESSION_ID
 
 const PRELOADER_MIN_MS = 2500
 
@@ -17,6 +15,7 @@ function sleepRemaining(startTime: number, minMs: number) {
 }
 
 export function useSignupSession(){
+    const router = useRouter();
     const [state, setState] = useState<SessionState>({
         sessionId: null,
         currentStepKey: getFirstStepKey(),
@@ -26,57 +25,28 @@ export function useSignupSession(){
     });
 
     useEffect(() => {
-        const startTime = Date.now()
-        const existing = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY): null;
-
-        async function startNew(){
-            const res = await fetch("/api/signup/session/start", {method: "POST"});
-            const json = await res.json();
-
-            if (!res.ok) throw new Error(json?.error || "failed to start session");
-
-            localStorage.setItem(STORAGE_KEY, json.sessionId);
-            await sleepRemaining(startTime, PRELOADER_MIN_MS);
-            setState((s) => ({
-                ...s,
-                sessionId: json.sessionId,
-                currentStepKey: (json.currentStepKey ?? getFirstStepKey()),
-                loading: false,
-                error: null,
-            }));
-        }
-
-        async function resume(sessionId: string){
-            const res = await fetch (`/api/signup/session/${sessionId}`);
-            const json = await res.json();
-
-            if (!res.ok){
-                localStorage.removeItem(STORAGE_KEY);
-                return startNew();
-            }
-
-            await sleepRemaining(startTime, PRELOADER_MIN_MS);
-            setState((s) => ({
-                ...s,
-                sessionId,
-                currentStepKey: json.currentStepKey,
-                answersByStepKey: json.answersByStepKey || {},
-                loading: false,
-                error: null,
-            }));
-        }
-
+        const startTime = Date.now();
         (async () => {
             try {
-                if (existing) await resume(existing);
-                else await startNew();
-            } catch (e: any){
+                const res = await fetch("/api/signup/session/start", { method: "POST" });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json?.error || "failed to start session");
+                if (json.status === "completed") {
+                    router.replace("/interviews");
+                    return;
+                }
                 await sleepRemaining(startTime, PRELOADER_MIN_MS);
                 setState((s) => ({
                     ...s,
+                    sessionId: json.sessionId,
+                    currentStepKey: json.currentStepKey ?? getFirstStepKey(),
+                    answersByStepKey: json.answersByStepKey || {},
                     loading: false,
-                    error: e?.message || "unknown error",
+                    error: null,
                 }));
+            } catch (e: any) {
+                await sleepRemaining(startTime, PRELOADER_MIN_MS);
+                setState((s) => ({ ...s, loading: false, error: e?.message || "unknown error" }));
             }
         })();
     }, []);

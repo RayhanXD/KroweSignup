@@ -8,6 +8,10 @@ export async function GET(request: Request) {
     const supabase = await createInterviewAuthClient();
     const { error, data } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
+      const next = searchParams.get("next");
+      if (next && next.startsWith("/")) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
       const { data: existing } = await supabase
         .from("interview_projects")
         .select("id")

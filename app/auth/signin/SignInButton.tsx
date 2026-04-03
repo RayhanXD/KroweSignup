@@ -1,15 +1,18 @@
 "use client";
 import { createBrowserClient } from "@supabase/ssr";
 
-export default function SignInButton() {
+export default function SignInButton({ redirectTo }: { redirectTo?: string }) {
   async function handleGoogleSignIn() {
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
+    const callbackUrl = redirectTo
+      ? `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      : `${window.location.origin}/api/auth/callback`;
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+      options: { redirectTo: callbackUrl },
     });
   }
   return (

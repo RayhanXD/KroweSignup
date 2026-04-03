@@ -15,9 +15,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing project name" }, { status: 400 });
   }
 
-  // Only accept sessionId from admin
+  // Only accept sessionId from admin; auto-lookup for regular users
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
-  const sessionId = isAdmin ? ((body.sessionId ?? "").trim() || null) : null;
+  let sessionId: string | null = isAdmin ? ((body.sessionId ?? "").trim() || null) : null;
+
+  if (!isAdmin) {
+    const { data: session } = await supabase
+      .from("signup_sessions")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    sessionId = session?.id ?? null;
+  }
 
   // Prevent duplicate project per user
   const { data: existing } = await supabase

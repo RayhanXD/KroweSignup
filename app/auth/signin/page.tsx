@@ -5,14 +5,14 @@ import SignInButton from "./SignInButton";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; redirectTo?: string }>;
 }) {
   const supabase = await createInterviewAuthClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect("/interviews");
-  const { error } = await searchParams;
+  const { error, redirectTo } = await searchParams;
+  if (user) redirect(redirectTo?.startsWith("/") ? redirectTo : "/interviews");
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="max-w-sm w-full px-4">
@@ -25,7 +25,7 @@ export default async function SignInPage({
             Sign-in failed. Please try again.
           </p>
         )}
-        <SignInButton />
+        <SignInButton redirectTo={redirectTo} />
       </div>
     </div>
   );

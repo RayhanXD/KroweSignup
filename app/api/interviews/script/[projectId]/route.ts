@@ -16,7 +16,7 @@ export async function GET(
   // 1. Fetch project row
   const projectRes = await supabase
     .from("interview_projects")
-    .select("id, session_id, interview_script")
+    .select("id, session_id, interview_script, interviewer_name, interviewer_context")
     .eq("id", projectId)
     .single();
 
@@ -24,9 +24,11 @@ export async function GET(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const { session_id, interview_script } = projectRes.data as {
+  const { session_id, interview_script, interviewer_name, interviewer_context } = projectRes.data as {
     session_id: string | null;
     interview_script: unknown;
+    interviewer_name: string | null;
+    interviewer_context: string | null;
   };
 
   // 2. Cache hit — return stored script (unless regeneration requested)
@@ -68,8 +70,11 @@ export async function GET(
   }
 
   // 4. Generate script via LLM
+  const interviewerInfo = (interviewer_name || interviewer_context)
+    ? { name: interviewer_name, context: interviewer_context }
+    : null;
   try {
-    const script = await generateScript(onboardingData);
+    const script = await generateScript(onboardingData, interviewerInfo);
 
     // 5. Persist to DB
     await supabase

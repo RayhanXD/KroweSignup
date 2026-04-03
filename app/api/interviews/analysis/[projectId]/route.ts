@@ -29,7 +29,7 @@ export async function GET(
   // 1. Fetch project to get session_id
   const projectRes = await supabase
     .from("interview_projects")
-    .select("id, session_id")
+    .select("id, session_id, user_id")
     .eq("id", projectId)
     .single();
 
@@ -37,7 +37,17 @@ export async function GET(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const sessionId = projectRes.data.session_id;
+  let sessionId = projectRes.data.session_id as string | null;
+
+  if (!sessionId) {
+    const { data: fallbackSession } = await supabase
+      .from("signup_sessions")
+      .select("id")
+      .eq("user_id", projectRes.data.user_id)
+      .maybeSingle();
+    sessionId = fallbackSession?.id ?? null;
+  }
+
   if (!sessionId) {
     return NextResponse.json(
       { error: "No onboarding data linked" },
