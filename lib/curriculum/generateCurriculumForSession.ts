@@ -18,7 +18,7 @@ import {
 const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
 /** Model for structured curriculum JSON; override via env in future if needed */
-const CURRICULUM_MODEL = "gpt-4o-mini";
+const CURRICULUM_MODEL = "gpt-5.4-mini";
 
 export type GenerateCurriculumOptions = {
   reason?: "generate" | "refresh";

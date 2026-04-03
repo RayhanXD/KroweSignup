@@ -6,7 +6,7 @@ const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 const SHOULD_LOG_TOKEN_DEBUG =
   process.env.DEBUG_OPENAI_TOKENS === "true" &&
   process.env.NODE_ENV !== "production";
-const PRIMARY_MODEL = "gpt-5-nano";
+const PRIMARY_MODEL = "gpt-5.4-mini";
 const VALIDATION_CONFIDENCE_THRESHOLD = 0.35;
 const MAX_IDEA_CHARS = 260;
 const MAX_LINE_CHARS = 120;

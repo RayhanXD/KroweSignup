@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
-import { getNextStepKey, isValidStepKey, StepKey } from "@/lib/signupSteps";
+import { getNextStepKeyForContext, isValidStepKey, StepKey } from "@/lib/signupSteps";
 import type { ConfirmAnswerRequest } from "@/lib/types/api";
 
 type Body = ConfirmAnswerRequest;
@@ -35,8 +35,9 @@ export async function POST(req: Request) {
 
     if (upErr) return NextResponse.json({error: upErr.message}, {status: 500});
 
-    // 2) advance session
-    const next = getNextStepKey(stepKey);
+    // 2) advance session (skip interview upload when interview_count is 0)
+    const interviewCount = stepKey === "interview_count" ? Number(finalAnswer) : undefined;
+    const next = getNextStepKeyForContext(stepKey, { interviewCount });
     if (next) {
         const {error: sessErr} = await supabase
         .from("signup_sessions")

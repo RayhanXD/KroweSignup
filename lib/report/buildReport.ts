@@ -1,4 +1,3 @@
-import { StepKey } from "../signupSteps";
 import type { Competitor } from "./findCompetitors";
 import type { MvpCostEstimate } from "./estimateMvpCost";
 import { costEfficiencyEstimate, productTypeScore, startupAdvantageScore } from "./scoring";

@@ -5,7 +5,12 @@ import type { CompleteSignupRequest } from "@/lib/types/api";
 
 type Body = CompleteSignupRequest;
 
-const REQUIRED_STEPS: StepKey [] = SIGNUP_STEPS; //tigthen here for optional steps
+function getRequiredSteps(interviewCount: number): StepKey[] {
+    if (interviewCount === 0) {
+        return SIGNUP_STEPS.filter((step) => step !== "interview_upload");
+    }
+    return SIGNUP_STEPS;
+}
 
 export async function POST(req: Request) {
     const supabase = createServerSupabaseClient();
@@ -27,10 +32,13 @@ export async function POST(req: Request) {
             byKey[a.step_key] = a;
         }
     
-    // 2) ensure required finals exist 
+    // 2) ensure required finals exist
+    const interviewCountRaw = byKey["interview_count"]?.final_answer;
+    const interviewCount = Number(interviewCountRaw);
+    const requiredSteps = getRequiredSteps(Number.isFinite(interviewCount) ? interviewCount : 0);
 
     const missing: StepKey[] = [];
-    for (const k of REQUIRED_STEPS) {
+    for (const k of requiredSteps) {
         const final = byKey[k]?.final_answer;
         if(!final || !String(final).trim()) missing.push(k);
     }
@@ -44,7 +52,7 @@ export async function POST(req: Request) {
 
     // 3) build final payload (final final to build tasks on after)  aka leagcy response
     const payload: Record<string, any> = {};
-    for(const k of REQUIRED_STEPS) {
+    for(const k of requiredSteps) {
         payload[k] = {
             final: byKey[k].final_answer,
             source: byKey[k].final_source,

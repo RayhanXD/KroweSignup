@@ -2,14 +2,13 @@
  * Helper utilities for report building
  */
 
-import { StepKey } from "../../signupSteps";
 import type { SignupPayload } from "../../types/report";
 import { safeNumber } from "../../utils/parsing";
 
 /**
  * Extract final answer from payload for a given step key
  */
-export function getFinal(payload: SignupPayload, key: StepKey): string | null {
+export function getFinal(payload: SignupPayload, key: string): string | null {
   const v = payload?.[key]?.final;
   if (typeof v === "string" && v.trim()) return v.trim();
   return null;

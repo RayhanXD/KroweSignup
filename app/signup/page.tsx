@@ -1,34 +1,32 @@
 'use client'
 
-import type React from "react"
-import { useState } from 'react'
-import FixNeededCard from './FixNeededCard'
-import { SignupFixBannerProvider } from './SignupFixBannerContext'
+import { useState, type ReactNode } from 'react'
 import { SignupFormProvider } from './SignupFormContext'
 import {
-  AgeStep,
   IdeaStep,
   ProductTypeStep,
+  FeaturesStep,
   ProblemStep,
   TargetCustomerStep,
   IndustryStep,
-  IndustryExperienceStep,
-  SkillsStep,
-  TeamSizeStep,
-  HoursCommitmentStep,
+  CompetitorsStep,
+  AlternativesStep,
+  PricingModelStep,
+  InterviewCountStep,
+  InterviewUploadStep,
+  StartupStageStep,
   type IndustryId,
+  type PricingModelValue,
+  type UploadedFile,
 } from './Steps'
 import { useRouter } from "next/navigation"
 
 import { useSignupSession } from '@/lib/useSignupSession'
-import { StepKey, getProgressPercent, getPrevStepKey } from '@/lib/signupSteps'
-import { STORAGE_KEYS, DEFAULT_VALUES } from '@/lib/constants'
+import { StepKey, getProgressPercent, getPrevStepKeyForContext } from '@/lib/signupSteps'
 import { safeJson } from '@/lib/utils/parsing'
 import type { ProductType } from '@/lib/types/answers'
 import type { FinalAnswerSource } from '@/lib/types/answers'
 import SpiralPreloader from '@/app/components/SpiralPreloader'
-
-const STORAGE_KEY = STORAGE_KEYS.SESSION_ID
 
 const PRELOADER_MIN_MS = 2250
 
@@ -40,16 +38,11 @@ function sleepPreloaderMin(startTime: number) {
 
 export default function SignupPage() {
   const { loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer, sessionId } = useSignupSession();
-  const [issues, setIssues] = useState<{ code: string; message: string; severity?: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
-  const [aiReason, setAiReason] = useState<string | null>(null);
-  const [canContinueAnyway, setCanContinueAnyway] = useState(false);
   const router = useRouter();
   const [finishing, setFinishing] = useState(false)
 
-  //Slice 1: Optional client only back nav (NOT persisted if user refreshes)
   const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
   if (loading) return <SpiralPreloader className="animate-fade-in" />;
@@ -82,11 +75,7 @@ export default function SignupPage() {
         throw new Error(json?.error || "failed to compete signup");
       }
 
-      //this Clear resume token so /signup doesnt reopen a completed session
-      localStorage.removeItem(STORAGE_KEY);
-
-      //Redirect after the signup 
-      router.replace(`/signup/complete?sessionId=${sessionId}`); //when final platform put dashboard here
+      router.replace(`/interviews`);
     } finally {
       await sleepPreloaderMin(start);
       setFinishing(false);
@@ -95,161 +84,70 @@ export default function SignupPage() {
 
   async function confirmAndMaybeFinish(step: StepKey, finalAnswer: string, finalSource: FinalAnswerSource) {
     const result = await confirmAnswer(step, finalAnswer, finalSource);
-
-    // confirmAnswer MUST return { ok: true, nextStepKey: StepKey | null }
     const nextStepKey = result?.nextStepKey ?? null;
 
     if (!nextStepKey) {
-      const sid = sessionId || localStorage.getItem(STORAGE_KEY);
-      if (!sid) throw new Error("Missing sessionId at finalize");
-      await finalizeSignup(sid);
+      if (!sessionId) throw new Error("Missing sessionId at finalize");
+      await finalizeSignup(sessionId);
     }
 
     return result;
   }
 
-
-
-  async function saveAndNext(step: StepKey, v: unknown, force = false) {
+  async function saveAndNext(step: StepKey, v: unknown) {
     if (saving || submitting) return;
     const start = Date.now();
     setSubmitting(true);
 
     try {
       const serialized = typeof v === "string" ? v : JSON.stringify(v);
-      const res = await submitAnswer(step, serialized, force);
-
-      setIssues(res.issues || []);
-      setCanContinueAnyway(Boolean(res.canContinueWithWarning));
-      setAiSuggestion(res.aiSuggestion ?? null);
-      setAiReason(res.aiReason ?? null);
-
-      if (res.validationStatus === "ok") {
-        setSubmitting(false);
-        setSaving(true);
-        await confirmAndMaybeFinish(step, serialized, "original");
-        clearFixUI();
-        setOverrideStepKey(null);
-        await sleepPreloaderMin(start);
-      }
+      await submitAnswer(step, serialized);
+      setSubmitting(false);
+      setSaving(true);
+      await confirmAndMaybeFinish(step, serialized, "original");
+      setOverrideStepKey(null);
+      await sleepPreloaderMin(start);
     } catch (error: any) {
       console.error("Error in saveAndNext:", error);
-      setIssues([{ code: "ERROR", message: error?.message || "An error occurred. Please try again." }]);
     } finally {
       setSubmitting(false);
       setSaving(false);
     }
   }
 
+  // Context-aware back navigation (handles interview_count skip logic)
+
   function goBack() {
-    const prev = getPrevStepKey(stepKey)
+    const interviewCount = Number(answersByStepKey['interview_count'] ?? 0)
+    const prev = getPrevStepKeyForContext(stepKey, { interviewCount })
     if (!prev) return
     setOverrideStepKey(prev)
   }
 
-  const continueAnyway = async () => {
-    if (!canContinueAnyway) return // safety
-    const start = Date.now();
+  // Skip an optional step by saving empty array and advancing
+  async function skipStep(step: StepKey) {
     setSaving(true)
     try {
-      // confirm the users current value and advance
-      await confirmAndMaybeFinish(stepKey, value, 'original')
-      clearFixUI()
+      await confirmAndMaybeFinish(step, '[]', 'original')
       setOverrideStepKey(null)
     } finally {
-      await sleepPreloaderMin(start);
       setSaving(false)
     }
   }
 
-  const clearFixUI = () => {
-    setIssues([]);
-    setAiSuggestion(null);
-    setAiReason(null);
-    setCanContinueAnyway(false);
-  }
-
-  function renderWithIssues(ui: React.ReactNode) {
-    const showFixCard = issues.length > 0 || aiSuggestion
-    const fixBanner = showFixCard ? (
-      <FixNeededCard
-        issues={issues}
-        aiSuggestion={aiSuggestion}
-        aiReason={aiReason}
-        canContinueAnyway={canContinueAnyway}
-        saving={saving}
-        finishing={finishing}
-        onUseSuggestion={async () => {
-          const start = Date.now();
-          setSaving(true)
-          try {
-            await confirmAndMaybeFinish(stepKey, aiSuggestion!, 'ai_suggested')
-            clearFixUI()
-            setOverrideStepKey(null)
-          } finally {
-            await sleepPreloaderMin(start);
-            setSaving(false)
-          }
-        }}
-        onEditSuggestion={() => setLocal(stepKey, aiSuggestion!)}
-        onSaveMyEdit={async () => {
-          const start = Date.now();
-          setSaving(true)
-          try {
-            await confirmAndMaybeFinish(stepKey, value, 'user_edited')
-            clearFixUI()
-            setOverrideStepKey(null)
-          } finally {
-            await sleepPreloaderMin(start);
-            setSaving(false)
-          }
-        }}
-        onContinueAnyway={continueAnyway}
-      />
-    ) : null
+  function wrap(ui: ReactNode) {
     return (
       <SignupFormProvider value={{ submitting }}>
-        <SignupFixBannerProvider value={fixBanner}>
-          {ui}
-        </SignupFixBannerProvider>
+        {ui}
       </SignupFormProvider>
     )
   }
 
-
-  async function sendToApi(message: string) {
-    const res = await fetch('/api/signup/next', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
-    })
-
-    if (!res.ok) {
-      const errorText = await res.text()
-      throw new Error(`API error: ${res.status} - ${errorText}`)
-    }
-
-    const data = await res.json()
-    return data
-  }
-
-  if (stepKey === 'age') {
-    const ageValue = raw ? Number(raw) : DEFAULT_VALUES.AGE
-    return renderWithIssues(
-      <AgeStep
-        value={ageValue}
-        onChange={(v: number) => setLocal('age', String(v))}
-        onBack={goBack}
-        onContinue={() => saveAndNext('age', String(ageValue))}
-        progressPercent={progressPercent}
-      />
-    )
-  }
+  // ── Step renderers ────────────────────────────────────────────────────────
 
   if (stepKey === 'idea') {
     const ideaValue = raw || ''
-
-    return renderWithIssues(
+    return wrap(
       <IdeaStep
         value={ideaValue}
         onChange={(v: string) => setLocal('idea', v)}
@@ -262,13 +160,12 @@ export default function SignupPage() {
 
   if (stepKey === 'product_type') {
     const productTypeValue = (raw || null) as ProductType
-    return renderWithIssues(
+    return wrap(
       <ProductTypeStep
         value={productTypeValue}
         onChange={(v: ProductType) => setLocal('product_type', v ?? '')}
         onBack={goBack}
         onContinue={() => {
-          // allow null selection to be blocked by UI (same as your old code)
           if (!productTypeValue) return
           return saveAndNext('product_type', productTypeValue)
         }}
@@ -276,11 +173,23 @@ export default function SignupPage() {
       />
     )
   }
+
+  if (stepKey === 'features') {
+    const featuresValue = safeJson<string[]>(raw) ?? []
+    return wrap(
+      <FeaturesStep
+        value={featuresValue}
+        onChange={(v: string[]) => setLocal('features', v)}
+        onBack={goBack}
+        onContinue={() => saveAndNext('features', featuresValue)}
+        progressPercent={progressPercent}
+      />
+    )
+  }
+
   if (stepKey === 'problem') {
     const problemValue = raw || ''
-
-
-    return renderWithIssues(
+    return wrap(
       <ProblemStep
         value={problemValue}
         onChange={(v: string) => setLocal('problem', v)}
@@ -289,16 +198,11 @@ export default function SignupPage() {
         progressPercent={progressPercent}
       />
     )
-
-
-
   }
 
   if (stepKey === 'target_customer') {
     const targetCustomerValue = raw || ''
-
-
-    return renderWithIssues(
+    return wrap(
       <TargetCustomerStep
         value={targetCustomerValue}
         onChange={(v: string) => setLocal('target_customer', v)}
@@ -307,28 +211,21 @@ export default function SignupPage() {
         progressPercent={progressPercent}
       />
     )
-
-
-
   }
 
   if (stepKey === 'industry') {
-    // Stored as JSON: { industry: IndustryId|null, other: string }
     const parsed = safeJson<{ industry: IndustryId | null; other: string }>(raw) ?? {
       industry: null,
       other: '',
     }
-
-
     const industryValue = parsed.industry
     const industryOtherValue = parsed.other ?? ''
 
-    return renderWithIssues(
+    return wrap(
       <IndustryStep
         value={industryValue}
         otherValue={industryOtherValue}
         onChange={(v: IndustryId | null) => {
-          // mimic your old behavior: clear OTHER text when not "other"
           const nextOther = v !== 'other' ? '' : industryOtherValue
           setLocal('industry', { industry: v, other: nextOther })
         }}
@@ -343,76 +240,102 @@ export default function SignupPage() {
         progressPercent={progressPercent}
       />
     )
-
-
-
   }
 
-  if (stepKey === 'industry_experience') {
-    const industryExperienceValue = raw || ''
-
-
-    return renderWithIssues(
-      <IndustryExperienceStep
-        value={industryExperienceValue}
-        onChange={(v: string) => setLocal('industry_experience', v)}
+  if (stepKey === 'competitors') {
+    const competitorsValue = safeJson<string[]>(raw) ?? []
+    return wrap(
+      <CompetitorsStep
+        value={competitorsValue}
+        onChange={(v: string[]) => setLocal('competitors', v)}
         onBack={goBack}
-        onContinue={() => saveAndNext('industry_experience', industryExperienceValue)}
-        progressPercent={progressPercent}
-      />
-    )
-
-
-
-  }
-
-  if (stepKey === 'skills') {
-    // Stored as JSON array: ["dev","marketing",...]
-    const skillsValue = safeJson<Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>>(raw) ?? []
-
-    return renderWithIssues(
-      <SkillsStep
-        value={skillsValue}
-        onChange={(v: Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>) =>
-          setLocal('skills', v)
-        }
-        onBack={goBack}
-        onContinue={() => saveAndNext('skills', skillsValue)}
+        onContinue={() => saveAndNext('competitors', competitorsValue)}
+        onSkip={() => skipStep('competitors')}
         progressPercent={progressPercent}
       />
     )
   }
 
-  if (stepKey === 'team_size') {
-    const teamSizeValue = raw ? Number(raw) : DEFAULT_VALUES.TEAM_SIZE
-
-
-    return renderWithIssues(
-      <TeamSizeStep
-        value={teamSizeValue}
-        onChange={(v: number) => setLocal('team_size', String(v))}
+  if (stepKey === 'alternatives') {
+    const alternativesValue = safeJson<string[]>(raw) ?? []
+    return wrap(
+      <AlternativesStep
+        value={alternativesValue}
+        onChange={(v: string[]) => setLocal('alternatives', v)}
         onBack={goBack}
-        onContinue={() => saveAndNext('team_size', String(teamSizeValue))}
-        progressPercent={progressPercent}
-      />
-    )
-
-  }
-
-  if (stepKey === 'hours') {
-    const hoursValue = raw ? Number(raw) : DEFAULT_VALUES.HOURS
-    return renderWithIssues(
-      <HoursCommitmentStep
-        value={hoursValue}
-        onChange={(v: number) => setLocal('hours', String(v))}
-        onBack={goBack}
-        onContinue={() => saveAndNext('hours', String(hoursValue))}
+        onContinue={() => saveAndNext('alternatives', alternativesValue)}
+        onSkip={() => skipStep('alternatives')}
         progressPercent={progressPercent}
       />
     )
   }
 
-  //fallback
+  if (stepKey === 'pricing_model') {
+    const pricingValue = safeJson<PricingModelValue>(raw) ?? { pricingModels: [], estimatedPrice: null }
+    return wrap(
+      <PricingModelStep
+        value={pricingValue}
+        onChange={(v: PricingModelValue) => setLocal('pricing_model', v)}
+        onBack={goBack}
+        onContinue={() => saveAndNext('pricing_model', pricingValue)}
+        progressPercent={progressPercent}
+      />
+    )
+  }
+
+  if (stepKey === 'interview_count') {
+    const countValue = raw ? Number(raw) : 0
+    return wrap(
+      <InterviewCountStep
+        value={countValue}
+        onChange={(v: number) => setLocal('interview_count', String(v))}
+        onBack={goBack}
+        onContinue={async () => {
+          await saveAndNext('interview_count', String(countValue))
+          // After confirming, skip interview_upload if count is 0
+          if (countValue === 0) {
+            setOverrideStepKey('startup_stage')
+          }
+        }}
+        progressPercent={progressPercent}
+      />
+    )
+  }
+
+  if (stepKey === 'interview_upload') {
+    const uploadedFiles = safeJson<UploadedFile[]>(raw) ?? []
+    return wrap(
+      <InterviewUploadStep
+        value={uploadedFiles}
+        sessionId={sessionId}
+        onBack={goBack}
+        onContinue={async (files: UploadedFile[]) => {
+          await saveAndNext('interview_upload', files)
+        }}
+        onSkip={() => skipStep('interview_upload')}
+        progressPercent={progressPercent}
+      />
+    )
+  }
+
+  if (stepKey === 'startup_stage') {
+    type StartupStage = 'idea' | 'validation' | 'pre-mvp' | 'mvp' | 'early-traction' | 'growth'
+    const stageValue = (raw || null) as StartupStage | null
+    return wrap(
+      <StartupStageStep
+        value={stageValue}
+        onChange={(v: StartupStage) => setLocal('startup_stage', v)}
+        onBack={goBack}
+        onContinue={() => {
+          if (!stageValue) return
+          return saveAndNext('startup_stage', stageValue)
+        }}
+        progressPercent={progressPercent}
+      />
+    )
+  }
+
+  // Fallback
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="p-6 border rounded-lg bg-white">

@@ -36,7 +36,7 @@ export async function aiRewrite(stepKey: StepKey, rawAnswer: string): Promise<Re
     `;
 
     const resp = await client.chat.completions.create({
-        model: "gpt-4.1-mini",
+        model: "gpt-5.4-mini",
         temperature: 0.2,
         messages: [
             {role: "system", content: system.trim()},

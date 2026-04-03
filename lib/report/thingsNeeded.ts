@@ -58,7 +58,7 @@ export async function computeThingsNeededLLM(params: {
 
     try {
         const response = await openai.responses.create({
-            model: "gpt-4o-mini",
+            model: "gpt-5.4-mini",
             input: [
                 {
                     role: "system",
