@@ -23,13 +23,10 @@ import { useRouter } from "next/navigation"
 
 import { useSignupSession } from '@/lib/useSignupSession'
 import { StepKey, getProgressPercent, getPrevStepKeyForContext } from '@/lib/signupSteps'
-import { STORAGE_KEYS } from '@/lib/constants'
 import { safeJson } from '@/lib/utils/parsing'
 import type { ProductType } from '@/lib/types/answers'
 import type { FinalAnswerSource } from '@/lib/types/answers'
 import SpiralPreloader from '@/app/components/SpiralPreloader'
-
-const STORAGE_KEY = STORAGE_KEYS.SESSION_ID
 
 const PRELOADER_MIN_MS = 2250
 
@@ -78,7 +75,6 @@ export default function SignupPage() {
         throw new Error(json?.error || "failed to compete signup");
       }
 
-      localStorage.removeItem(STORAGE_KEY);
       router.replace(`/interviews`);
     } finally {
       await sleepPreloaderMin(start);
@@ -91,9 +87,8 @@ export default function SignupPage() {
     const nextStepKey = result?.nextStepKey ?? null;
 
     if (!nextStepKey) {
-      const sid = sessionId || localStorage.getItem(STORAGE_KEY);
-      if (!sid) throw new Error("Missing sessionId at finalize");
-      await finalizeSignup(sid);
+      if (!sessionId) throw new Error("Missing sessionId at finalize");
+      await finalizeSignup(sessionId);
     }
 
     return result;

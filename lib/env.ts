@@ -10,6 +10,7 @@ type EnvConfig = {
   supabase: {
     url: string;
     anonKey: string;
+    serviceRoleKey: string | undefined;
   };
   openai: {
     apiKey: string;
@@ -38,6 +39,7 @@ function validateEnv(): EnvConfig {
     supabase: {
       url: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
       anonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || undefined,
     },
     openai: {
       apiKey: requireEnv("OPENAI_API_KEY"),
@@ -57,6 +59,7 @@ export const env = validateEnv();
 export const ENV = {
   SUPABASE_URL: env.supabase.url,
   SUPABASE_ANON_KEY: env.supabase.anonKey,
+  SUPABASE_SERVICE_ROLE_KEY: env.supabase.serviceRoleKey,
   OPENAI_API_KEY: env.openai.apiKey,
 } as const;
 

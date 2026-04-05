@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { runDecisionPipeline } from "@/lib/interviews/pipeline";
 
 export const maxDuration = 300;
@@ -15,7 +15,9 @@ function isStaleProcessing(updatedAt: string | null | undefined): boolean {
 }
 
 export async function POST(req: Request) {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const projectId = (body.projectId ?? "").trim();
   const force = body.force === true;

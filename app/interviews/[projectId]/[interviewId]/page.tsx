@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
 import InterviewDetailClient from "./InterviewDetailClient";
 
@@ -18,7 +18,7 @@ export default async function InterviewDetailPage({
   params: Promise<{ projectId: string; interviewId: string }>;
 }) {
   const { projectId, interviewId } = await params;
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
 
   const interviewResWithMethods = await supabase
     .from("interviews")

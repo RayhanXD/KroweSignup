@@ -1,4 +1,5 @@
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { redirect } from "next/navigation";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -29,13 +30,21 @@ function StatusBadge({ status }: { status: Project["status"] }) {
 }
 
 export default async function InterviewsPage() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data } = await supabase
     .from("interview_projects")
     .select("id, name, status, interview_count, created_at")
+    .eq("user_id", user!.id)
     .order("created_at", { ascending: false });
 
   const projects = (data ?? []) as Project[];
+  const hasProject = projects.length > 0;
+
+  if (!hasProject) redirect("/interviews/new");
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,12 +56,14 @@ export default async function InterviewsPage() {
               Turn user interviews into product decisions
             </p>
           </div>
-          <Link
-            href="/interviews/new"
-            className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            New Project
-          </Link>
+          {!hasProject && (
+            <Link
+              href="/interviews/new"
+              className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              New Project
+            </Link>
+          )}
         </div>
 
         {projects.length === 0 ? (

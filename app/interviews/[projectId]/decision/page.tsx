@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DecisionPageClient } from "./DecisionPageClient";
@@ -29,7 +29,7 @@ export default async function DecisionPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  const supabase = createServerSupabaseClient();
+  const supabase = await createInterviewAuthClient();
 
   const [projectRes, decisionRes, clustersRes, interviewsRes] = await Promise.all([
     supabase

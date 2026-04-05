@@ -459,7 +459,7 @@ export default function InterviewDetailClient({
                         </div>
                         <button
                           onClick={handleStartNameEdit}
-                          className="col-span-2 text-xs text-muted-foreground hover:text-foreground transition-colors text-left"
+                          className="col-span-2 text-xs px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors text-left"
                         >
                           Edit interviewee info
                         </button>
