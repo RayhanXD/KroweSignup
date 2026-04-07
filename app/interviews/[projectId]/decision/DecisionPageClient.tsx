@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import { MetaClusterCard } from "./MetaClusterCard";
 import { AllProblemsButton } from "./AllProblemsButton";
 import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
@@ -249,6 +251,7 @@ export function DecisionPageClient({
   groupedFeatures,
   interviewsSortedIds,
 }: Props) {
+  const router = useRouter();
   const [analysisState, setAnalysisState] = useState<"loading" | "error" | "ready">(
     analysisCache.has(projectId) ? "ready" : "loading"
   );
@@ -535,12 +538,24 @@ export function DecisionPageClient({
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12">
           <div className="lg:col-span-12 flex w-full flex-col gap-6 rounded-xl border border-border bg-muted/50 px-8 py-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <Link
-                href={`/interviews/${projectId}`}
-                className="mb-2 block text-xs text-muted-foreground hover:underline"
-              >
-                Back to project
-              </Link>
+              <div className="mb-2 flex items-center gap-3">
+                <Link
+                  href={`/interviews/${projectId}`}
+                  className="text-xs text-muted-foreground hover:underline"
+                >
+                  Back to project
+                </Link>
+                <span className="text-xs text-muted-foreground/40">·</span>
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    router.push("/auth/signin");
+                  }}
+                  className="text-xs text-muted-foreground hover:underline"
+                >
+                  Log out
+                </button>
+              </div>
               <h1 className="text-2xl font-bold">{project.name}</h1>
               <p className="text-sm text-muted-foreground">Product Decision Report</p>
             </div>

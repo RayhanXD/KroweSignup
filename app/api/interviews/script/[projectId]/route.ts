@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { generateScript } from "@/lib/interviews/generateScript";
+import {
+  buildScriptOnboardingFromRows,
+  fetchSignupAnswersForSession,
+  STEP_KEYS_SCRIPT,
+} from "@/lib/interviews/founderContextFromSignup";
 
 export async function GET(
   req: Request,
@@ -39,34 +44,12 @@ export async function GET(
   // 3. Fetch onboarding answers if session exists
   let onboardingData = null;
   if (session_id) {
-    const answersRes = await supabase
-      .from("signup_answers")
-      .select("step_key, final_answer")
-      .eq("session_id", session_id)
-      .in("step_key", ["idea", "problem", "target_customer", "features"]);
-
-    if (answersRes.data && answersRes.data.length > 0) {
-      const getAnswer = (key: string) =>
-        answersRes.data.find((a) => a.step_key === key)?.final_answer ?? "";
-
-      const featuresRaw = getAnswer("features");
-      let featuresArray: string[] = [];
-      if (featuresRaw) {
-        try {
-          const parsed = JSON.parse(featuresRaw);
-          featuresArray = Array.isArray(parsed) ? parsed.map(String) : [featuresRaw];
-        } catch {
-          featuresArray = [featuresRaw];
-        }
-      }
-
-      onboardingData = {
-        idea: getAnswer("idea"),
-        problem: getAnswer("problem"),
-        target_customer: getAnswer("target_customer"),
-        features: featuresArray,
-      };
-    }
+    const rows = await fetchSignupAnswersForSession(
+      supabase,
+      session_id,
+      STEP_KEYS_SCRIPT
+    );
+    onboardingData = buildScriptOnboardingFromRows(rows);
   }
 
   // 4. Generate script via LLM
