@@ -2,7 +2,6 @@
  * API request/response types
  */
 
-import { StepKey } from "../signupSteps";
 import { FinalAnswerSource } from "./answers";
 
 /**
@@ -32,9 +31,3 @@ export type CompleteSignupRequest = {
   sessionId: string;
 };
 
-/**
- * Request body for /api/signup/report/generate
- */
-export type GenerateReportRequest = {
-  sessionId: string;
-};

@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { ENV } from "../env";
-import { extractResponseText } from "../report/marketSizeUtils";
+import { extractResponseText } from "@/lib/openai/extractResponseText";
 import type { ExtractedProblemWithEmbedding, ProblemCluster, SupportingQuote } from "./types";
 
 const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });

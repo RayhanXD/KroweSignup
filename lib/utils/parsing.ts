@@ -1,25 +1,11 @@
 /**
- * Parsing utilities
- * 
- * Safe parsing functions that handle errors gracefully.
+ * Parse JSON from a string; return null if empty or invalid.
  */
-
-/**
- * Safely parse JSON string, returning null on error
- */
-export function safeJson<T = any>(s: string): T | null {
+export function safeJson<T>(raw: string | null | undefined): T | null {
+  if (raw == null || !String(raw).trim()) return null;
   try {
-    return JSON.parse(s) as T;
+    return JSON.parse(raw) as T;
   } catch {
     return null;
   }
-}
-
-/**
- * Safely convert string to number, returning null if invalid
- */
-export function safeNumber(v: string | null): number | null {
-  if (!v) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
 }

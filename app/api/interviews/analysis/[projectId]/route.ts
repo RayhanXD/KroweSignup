@@ -4,6 +4,11 @@ import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
 import type { AnalysisInput, AnalysisResult, AnalysisContext, QuoteSlim, SignalStrengthMetrics } from "@/lib/analysis/hypothesisVsReality";
 import type { FeatureSpec } from "@/lib/interviews/types";
 import { classifyCompetitors } from "@/lib/interviews/classifyCompetitors";
+import {
+  buildAnalysisAnswerHelpers,
+  fetchSignupAnswersForSession,
+  STEP_KEYS_SCRIPT,
+} from "@/lib/interviews/founderContextFromSignup";
 
 function isMissingAnalysisColumnsError(message: string): boolean {
   return (
@@ -56,12 +61,8 @@ export async function GET(
   }
 
   // 2. Fetch all needed data in parallel
-  const [answersRes, decisionResWithAnalysisCols, clustersRes, interviewCountRes, interviewMethodsResRaw] = await Promise.all([
-    supabase
-      .from("signup_answers")
-      .select("step_key, final_answer")
-      .eq("session_id", sessionId)
-      .in("step_key", ["idea", "problem", "target_customer", "features"]),
+  const [signupRows, decisionResWithAnalysisCols, clustersRes, interviewCountRes, interviewMethodsResRaw] = await Promise.all([
+    fetchSignupAnswersForSession(supabase, sessionId, STEP_KEYS_SCRIPT),
     supabase
       .from("decision_outputs")
       .select(
@@ -108,7 +109,7 @@ export async function GET(
       .eq("project_id", projectId)) as unknown as typeof interviewMethodsResRaw;
   }
 
-  const answers = answersRes.data ?? [];
+  const { getAnswer, featuresArray } = buildAnalysisAnswerHelpers(signupRows);
   const decisionRows = decisionRes.data ?? [];
   const decision = decisionRows[0] ?? null;
   const clusters = clustersRes.data ?? [];
@@ -147,8 +148,8 @@ export async function GET(
   // Classify competitors vs online workarounds
   let directCompetitors = currentMethods;
   let onlineWorkarounds: string[] = [];
-  const idea = answers.find((a) => a.step_key === "idea")?.final_answer ?? "";
-  const problem = answers.find((a) => a.step_key === "problem")?.final_answer ?? "";
+  const idea = getAnswer("idea");
+  const problem = getAnswer("problem");
   if (currentMethods.length > 0 && idea && problem) {
     try {
       const cls = await classifyCompetitors(currentMethods, String(idea), String(problem));
@@ -181,20 +182,6 @@ export async function GET(
       : null;
 
   // 3. Build AnalysisInput (hoisted so it's available for cache hits too)
-  const getAnswer = (key: string) =>
-    answers.find((a) => a.step_key === key)?.final_answer ?? "";
-
-  const featuresRaw = getAnswer("features");
-  let featuresArray: string[] = [];
-  if (featuresRaw) {
-    try {
-      const parsed = JSON.parse(featuresRaw);
-      featuresArray = Array.isArray(parsed) ? parsed.map(String) : [featuresRaw];
-    } catch {
-      featuresArray = [featuresRaw];
-    }
-  }
-
   const topCluster = clusters[0];
   const topProblem = topCluster?.canonical_problem ?? "";
 

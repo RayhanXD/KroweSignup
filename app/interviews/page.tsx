@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import Link from "next/link";
+import LogoutButton from "./LogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -56,14 +57,17 @@ export default async function InterviewsPage() {
               Turn user interviews into product decisions
             </p>
           </div>
-          {!hasProject && (
-            <Link
-              href="/interviews/new"
-              className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              New Project
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            {!hasProject && (
+              <Link
+                href="/interviews/new"
+                className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                New Project
+              </Link>
+            )}
+            <LogoutButton />
+          </div>
         </div>
 
         {projects.length === 0 ? (
