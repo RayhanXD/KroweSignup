@@ -751,7 +751,9 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
                   activeNodeId={activeNodeId}
                   onActivateNode={setActiveNodeId}
                   registerFlowNodeRef={registerFlowNodeRef}
-                  onNavigateFromNode={navigateToNodeByStep}
+                  onNavigateFromNode={(fromNodeId, direction) =>
+                    navigateToNodeByStep(direction, fromNodeId)
+                  }
                 />
                 {si < sections.length - 1 && (
                   <button
