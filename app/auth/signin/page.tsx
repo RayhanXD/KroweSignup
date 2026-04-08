@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import { getPostLoginDestination } from "@/lib/authPostLoginDestination";
 import SignInButton from "./SignInButton";
+import EmailAuthForm from "./EmailAuthForm";
 
 export default async function SignInPage({
   searchParams,
@@ -12,7 +14,10 @@ export default async function SignInPage({
     data: { user },
   } = await supabase.auth.getUser();
   const { error, redirectTo } = await searchParams;
-  if (user) redirect(redirectTo?.startsWith("/") ? redirectTo : "/interviews");
+  if (user) {
+    const destination = await getPostLoginDestination(supabase, user.id, redirectTo);
+    redirect(destination);
+  }
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="max-w-sm w-full px-4">
@@ -26,6 +31,15 @@ export default async function SignInPage({
           </p>
         )}
         <SignInButton redirectTo={redirectTo} />
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+        <EmailAuthForm redirectTo={redirectTo} />
       </div>
     </div>
   );

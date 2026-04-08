@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import { getPostLoginDestination } from "@/lib/authPostLoginDestination";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -9,16 +10,7 @@ export async function GET(request: Request) {
     const { error, data } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
       const next = searchParams.get("next");
-      if (next && next.startsWith("/")) {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
-      const { data: existing } = await supabase
-        .from("interview_projects")
-        .select("id")
-        .eq("user_id", data.user.id)
-        .limit(1)
-        .single();
-      const destination = existing ? "/interviews" : "/interviews/new";
+      const destination = await getPostLoginDestination(supabase, data.user.id, next);
       return NextResponse.redirect(`${origin}${destination}`);
     }
   }
