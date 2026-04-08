@@ -58,8 +58,9 @@ export function ProjectPageClient({ project, interviews, projectId }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("interviews");
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Constrained header section */}
+      <div className="max-w-3xl mx-auto px-4 pt-10 pb-0">
         {/* Back link */}
         <div className="mb-6">
           <Link href="/interviews" className="text-sm text-muted-foreground hover:underline">
@@ -89,7 +90,7 @@ export function ProjectPageClient({ project, interviews, projectId }: Props) {
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 border-b border-border mb-6">
+        <div className="flex gap-1 border-b border-border">
           {(["interviews", "script"] as Tab[]).map((tab) => (
             <button
               key={tab}
@@ -104,73 +105,75 @@ export function ProjectPageClient({ project, interviews, projectId }: Props) {
             </button>
           ))}
         </div>
-
-        {/* Interviews tab */}
-        {activeTab === "interviews" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold">Interviews</h2>
-              <div className="flex items-center gap-3">
-                <RunAnalysisButton
-                  projectId={projectId}
-                  interviewCount={project.interview_count}
-                  projectStatus={project.status}
-                />
-                <Link
-                  href={`/interviews/${projectId}/add`}
-                  className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors"
-                >
-                  + Add Interview
-                </Link>
-              </div>
-            </div>
-
-            {interviews.length === 0 ? (
-              <div className="border border-border rounded-xl p-8 text-center text-muted-foreground">
-                <p className="text-sm">No interviews yet. Add at least 3 to run analysis.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {interviews.map((interview, i) => (
-                  <Link
-                    key={interview.id}
-                    href={`/interviews/${projectId}/${interview.id}`}
-                    className="flex items-center justify-between border border-border rounded-lg px-4 py-3 hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-medium text-foreground">
-                        {interview.interviewee_name ?? `Interview #${i + 1}`}
-                      </span>
-                      {interview.interviewee_context && (
-                        <span className="text-xs text-muted-foreground truncate max-w-xs">
-                          {interview.interviewee_context}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(interview.created_at).toLocaleDateString()}
-                      </span>
-                      <StatusBadge status={interview.status} />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {project.interview_count < 3 && project.interview_count > 0 && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Add {3 - project.interview_count} more interview{3 - project.interview_count !== 1 ? "s" : ""} to enable analysis.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Script tab */}
-        {activeTab === "script" && (
-          <InterviewScriptTab projectId={projectId} />
-        )}
       </div>
+
+      {/* Interviews tab — constrained */}
+      {activeTab === "interviews" && (
+        <div className="max-w-3xl mx-auto px-4 pb-10 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold">Interviews</h2>
+            <div className="flex items-center gap-3">
+              <RunAnalysisButton
+                projectId={projectId}
+                interviewCount={project.interview_count}
+                projectStatus={project.status}
+              />
+              <Link
+                href={`/interviews/${projectId}/add`}
+                className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors"
+              >
+                + Add Interview
+              </Link>
+            </div>
+          </div>
+
+          {interviews.length === 0 ? (
+            <div className="border border-border rounded-xl p-8 text-center text-muted-foreground">
+              <p className="text-sm">No interviews yet. Add at least 3 to run analysis.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {interviews.map((interview, i) => (
+                <Link
+                  key={interview.id}
+                  href={`/interviews/${projectId}/${interview.id}`}
+                  className="flex items-center justify-between border border-border rounded-lg px-4 py-3 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium text-foreground">
+                      {interview.interviewee_name ?? `Interview #${i + 1}`}
+                    </span>
+                    {interview.interviewee_context && (
+                      <span className="text-xs text-muted-foreground truncate max-w-xs">
+                        {interview.interviewee_context}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(interview.created_at).toLocaleDateString()}
+                    </span>
+                    <StatusBadge status={interview.status} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {project.interview_count < 3 && project.interview_count > 0 && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Add {3 - project.interview_count} more interview{3 - project.interview_count !== 1 ? "s" : ""} to enable analysis.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Script tab — full width */}
+      {activeTab === "script" && (
+        <div className="flex flex-1 min-h-0">
+          <InterviewScriptTab projectId={projectId} />
+        </div>
+      )}
     </div>
   );
 }
