@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { ENV } from "../env";
-import { extractResponseText } from "../report/marketSizeUtils";
+import { extractResponseText } from "@/lib/openai/extractResponseText";
 import type { ProblemCluster, DecisionOutput, FeatureSpec, UserFlow, EdgeCase, SuccessMetric } from "./types";
 import type { OnboardingData, AssumptionVsEvidenceReport, AssumptionAnalysis } from "@/lib/analysis/assumptionMatching";
 

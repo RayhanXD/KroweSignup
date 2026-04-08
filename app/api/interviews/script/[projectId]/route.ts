@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { generateScript } from "@/lib/interviews/generateScript";
+import { shouldUseStoredInterviewScript } from "@/lib/interviews/scriptCache";
+import {
+  buildScriptOnboardingFromRows,
+  fetchSignupAnswersForSession,
+  STEP_KEYS_SCRIPT,
+} from "@/lib/interviews/founderContextFromSignup";
 
 export async function GET(
   req: Request,
@@ -18,6 +24,7 @@ export async function GET(
     .from("interview_projects")
     .select("id, session_id, interview_script, interviewer_name, interviewer_context")
     .eq("id", projectId)
+    .eq("user_id", user.id)
     .single();
 
   if (projectRes.error || !projectRes.data) {
@@ -32,41 +39,21 @@ export async function GET(
   };
 
   // 2. Cache hit — return stored script (unless regeneration requested)
-  if (interview_script && !regenerate) {
+  if (shouldUseStoredInterviewScript(interview_script, regenerate)) {
+    console.info("[script] cache hit", { projectId, userId: user.id });
     return NextResponse.json(interview_script);
   }
+  console.info("[script] cache miss", { projectId, userId: user.id, regenerate });
 
   // 3. Fetch onboarding answers if session exists
   let onboardingData = null;
   if (session_id) {
-    const answersRes = await supabase
-      .from("signup_answers")
-      .select("step_key, final_answer")
-      .eq("session_id", session_id)
-      .in("step_key", ["idea", "problem", "target_customer", "features"]);
-
-    if (answersRes.data && answersRes.data.length > 0) {
-      const getAnswer = (key: string) =>
-        answersRes.data.find((a) => a.step_key === key)?.final_answer ?? "";
-
-      const featuresRaw = getAnswer("features");
-      let featuresArray: string[] = [];
-      if (featuresRaw) {
-        try {
-          const parsed = JSON.parse(featuresRaw);
-          featuresArray = Array.isArray(parsed) ? parsed.map(String) : [featuresRaw];
-        } catch {
-          featuresArray = [featuresRaw];
-        }
-      }
-
-      onboardingData = {
-        idea: getAnswer("idea"),
-        problem: getAnswer("problem"),
-        target_customer: getAnswer("target_customer"),
-        features: featuresArray,
-      };
-    }
+    const rows = await fetchSignupAnswersForSession(
+      supabase,
+      session_id,
+      STEP_KEYS_SCRIPT
+    );
+    onboardingData = buildScriptOnboardingFromRows(rows);
   }
 
   // 4. Generate script via LLM
@@ -74,15 +61,47 @@ export async function GET(
     ? { name: interviewer_name, context: interviewer_context }
     : null;
   try {
+    console.info("[script] generation start", { projectId, userId: user.id });
     const script = await generateScript(onboardingData, interviewerInfo);
 
     // 5. Persist to DB
-    await supabase
+    const persistRes = await supabase
       .from("interview_projects")
       .update({ interview_script: script })
-      .eq("id", projectId);
+      .eq("id", projectId)
+      .eq("user_id", user.id);
 
-    return NextResponse.json(script);
+    if (persistRes.error) {
+      console.error("[script] persist failed", {
+        projectId,
+        userId: user.id,
+        error: persistRes.error.message,
+      });
+      return NextResponse.json(
+        { error: "Script generated but failed to save. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    console.info("[script] persist success", { projectId, userId: user.id });
+
+    const persistedRes = await supabase
+      .from("interview_projects")
+      .select("interview_script")
+      .eq("id", projectId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (persistedRes.error) {
+      console.error("[script] post-save read failed", {
+        projectId,
+        userId: user.id,
+        error: persistedRes.error.message,
+      });
+      return NextResponse.json(script);
+    }
+
+    return NextResponse.json(persistedRes.data?.interview_script ?? script);
   } catch (err) {
     console.error("[script] generation failed:", err);
     return NextResponse.json({ error: "Script generation failed" }, { status: 500 });

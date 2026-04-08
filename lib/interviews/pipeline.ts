@@ -12,16 +12,23 @@ import { generateMetaClusters } from "./generateMetaClusters";
 import { extractMethodsAlternatives } from "./extractMethodsAlternatives";
 import { classifyCompetitors } from "./classifyCompetitors";
 import { runAssumptionMatching } from "@/lib/analysis/assumptionMatching";
-import type { OnboardingData, AssumptionVsEvidenceReport } from "@/lib/analysis/assumptionMatching";
+import type { AssumptionVsEvidenceReport } from "@/lib/analysis/assumptionMatching";
 import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
 import type { AnalysisInput } from "@/lib/analysis/hypothesisVsReality";
 import { ENV } from "../env";
-import { extractResponseText } from "../report/marketSizeUtils";
+import { extractResponseText } from "@/lib/openai/extractResponseText";
 import type {
   ExtractedProblemWithEmbedding,
   ProblemCluster,
   PipelineResult,
 } from "./types";
+import {
+  buildEarlyFounderFromRows,
+  buildFounderContextAndOnboardingFromRows,
+  fetchSignupAnswersForSession,
+  STEP_KEYS_PIPELINE_EARLY,
+  STEP_KEYS_PIPELINE_FULL,
+} from "./founderContextFromSignup";
 
 const openaiClient = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
@@ -159,16 +166,14 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     let earlyFounderIdea: string | null = null;
     let earlyFounderProblem: string | null = null;
     if (project.session_id) {
-      const { data: earlyAnswers } = await supabase
-        .from("signup_answers")
-        .select("step_key, final_answer")
-        .eq("session_id", project.session_id)
-        .in("step_key", ["idea", "problem"]);
-      if (earlyAnswers) {
-        const byKey = Object.fromEntries(earlyAnswers.map((a: { step_key: string; final_answer: string }) => [a.step_key, a.final_answer]));
-        earlyFounderIdea = typeof byKey.idea === "string" ? byKey.idea : null;
-        earlyFounderProblem = typeof byKey.problem === "string" ? byKey.problem : null;
-      }
+      const earlyRows = await fetchSignupAnswersForSession(
+        supabase,
+        project.session_id,
+        STEP_KEYS_PIPELINE_EARLY
+      );
+      const early = buildEarlyFounderFromRows(earlyRows);
+      earlyFounderIdea = early.idea;
+      earlyFounderProblem = early.problem;
     }
 
     if (project.interview_count < 3) {
@@ -456,7 +461,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     // 9. Delete old clusters, insert new ones — run in parallel with founder context query
     let insertedClusters: Array<{ id: string; canonical_problem: string }> = [];
 
-    const [, founderAnswerResult, interviewMethodsResult] = await Promise.all([
+    const [, founderRows, interviewMethodsResult] = await Promise.all([
       (async () => {
         await supabase.from("problem_clusters").delete().eq("project_id", projectId);
         const { data } = await supabase
@@ -478,15 +483,12 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         insertedClusters = (data ?? []) as Array<{ id: string; canonical_problem: string }>;
       })(),
       project.session_id
-        ? supabase
-            .from("signup_answers")
-            .select("step_key, final_answer")
-            .eq("session_id", project.session_id)
-            .in("step_key", [
-              "idea", "problem", "target_customer", "industry",
-              "features", "competitors", "alternatives", "pricing_model",
-            ])
-        : Promise.resolve({ data: null }),
+        ? fetchSignupAnswersForSession(
+            supabase,
+            project.session_id,
+            STEP_KEYS_PIPELINE_FULL
+          )
+        : Promise.resolve([]),
       supabase
         .from("interviews")
         .select("competitors_used, alternatives_used")
@@ -534,13 +536,6 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     );
 
     // 11. Resolve founder context from parallel query result
-    let founderContext: {
-      idea: string | null;
-      problem: string | null;
-      targetCustomer: string | null;
-      industry: string | null;
-    } | null = null;
-    let onboarding: OnboardingData | undefined;
     const projectCompetitorsUsed = new Map<string, number>();
     const projectAlternativesUsed = new Map<string, number>();
 
@@ -570,29 +565,8 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       .slice(0, 8)
       .map(([text]) => text);
 
-    const founderAnswers = (founderAnswerResult as { data: Array<{ step_key: string; final_answer: unknown }> | null }).data;
-    if (founderAnswers && founderAnswers.length > 0) {
-      const byKey = Object.fromEntries(
-        founderAnswers.map((a) => [a.step_key, a.final_answer])
-      );
-      const get = (key: string) => (byKey[key] as string) ?? null;
-      founderContext = {
-        idea: get("idea"),
-        problem: get("problem"),
-        targetCustomer: get("target_customer"),
-        industry: get("industry"),
-      };
-      onboarding = {
-        idea: get("idea"),
-        problem: get("problem"),
-        target_customer: get("target_customer"),
-        industry: get("industry"),
-        features: get("features"),
-        competitors: get("competitors"),
-        alternatives: get("alternatives"),
-        pricing_model: get("pricing_model"),
-      };
-    }
+    const { founderContext, onboarding } =
+      buildFounderContextAndOnboardingFromRows(founderRows);
 
     // 11b. Run assumption matching (non-blocking)
     let assumptionAnalysis: AssumptionVsEvidenceReport | null = null;

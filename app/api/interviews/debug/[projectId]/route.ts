@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import { summarizeInterviewScriptForDebug } from "@/lib/interviews/scriptCache";
 
 export async function GET(
   _req: NextRequest,
@@ -13,8 +14,9 @@ export async function GET(
   const [projectRes, decisionRes, interviewsRes] = await Promise.all([
     supabase
       .from("interview_projects")
-      .select("id, status, interview_count, updated_at")
+      .select("id, status, interview_count, updated_at, interview_script")
       .eq("id", projectId)
+      .eq("user_id", user.id)
       .single(),
     supabase
       .from("decision_outputs")
@@ -56,6 +58,7 @@ export async function GET(
 
   return NextResponse.json({
     project: projectRes.data,
+    script: summarizeInterviewScriptForDebug(projectRes.data?.interview_script),
     decision: decisionRes.data,
     interviews: {
       total: interviews.length,

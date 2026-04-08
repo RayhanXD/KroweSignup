@@ -1,6 +1,6 @@
-export function nowMs(): number {
-  return typeof performance !== "undefined" ? performance.now() : Date.now();
-}
+/**
+ * Parse assistant text from OpenAI Responses API-shaped objects.
+ */
 
 export function extractResponseText(response: unknown): string {
   const candidate = response as {
@@ -11,12 +11,10 @@ export function extractResponseText(response: unknown): string {
     }>;
   };
 
-  // Primary: convenience property
   if (typeof candidate?.output_text === "string" && candidate.output_text.trim()) {
     return candidate.output_text.trim();
   }
 
-  // Fallback: output[].content[] with .text
   const out = candidate?.output;
   if (Array.isArray(out)) {
     for (const item of out) {
@@ -32,7 +30,6 @@ export function extractResponseText(response: unknown): string {
     }
   }
 
-  // Fallback: output_text type in content (Responses API output_text format)
   if (Array.isArray(out)) {
     for (const item of out) {
       const content = item?.content;

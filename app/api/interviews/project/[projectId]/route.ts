@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import {
+  didInterviewerFieldsChange,
+  normalizeOptionalText,
+} from "@/lib/interviews/scriptCache";
 
 export async function PATCH(
   req: Request,
@@ -12,14 +16,49 @@ export async function PATCH(
 
   const body = await req.json();
   const updates: Record<string, string | null> = {};
-  if ("interviewer_name" in body) updates.interviewer_name = (body.interviewer_name ?? "").trim() || null;
-  if ("interviewer_context" in body) updates.interviewer_context = (body.interviewer_context ?? "").trim() || null;
+  const hasInterviewerName = "interviewer_name" in body;
+  const hasInterviewerContext = "interviewer_context" in body;
+  if (hasInterviewerName) {
+    updates.interviewer_name = normalizeOptionalText(body.interviewer_name);
+  }
+  if (hasInterviewerContext) {
+    updates.interviewer_context = normalizeOptionalText(body.interviewer_context);
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  // Clear cached script so it regenerates with new interviewer info
+  const currentRes = await supabase
+    .from("interview_projects")
+    .select("interviewer_name, interviewer_context")
+    .eq("id", projectId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (currentRes.error || !currentRes.data) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  const nextName = hasInterviewerName
+    ? updates.interviewer_name
+    : currentRes.data.interviewer_name;
+  const nextContext = hasInterviewerContext
+    ? updates.interviewer_context
+    : currentRes.data.interviewer_context;
+
+  const changed = didInterviewerFieldsChange({
+    currentName: currentRes.data.interviewer_name,
+    currentContext: currentRes.data.interviewer_context,
+    nextName,
+    nextContext,
+  });
+
+  if (!changed) {
+    return NextResponse.json({ ok: true, unchanged: true });
+  }
+
+  // Clear cached script only when interviewer context actually changes.
   updates.interview_script = null;
 
   const { error } = await supabase
