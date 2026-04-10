@@ -46,52 +46,65 @@ export default function AddInterviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        <div className="mb-6">
-          <Link href={`/interviews/${projectId}`} className="text-sm text-muted-foreground hover:underline">
-            ← Back to project
-          </Link>
-        </div>
+    <div className="min-h-dvh bg-zinc-50">
+      <div className="mx-auto max-w-2xl px-4 py-16">
+        <Link
+          href={`/interviews/${projectId}`}
+          className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 transition-colors mb-8"
+        >
+          ← Back to project
+        </Link>
 
-        <h1 className="text-2xl font-bold mb-2">Add Interview</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Paste a raw interview transcript. The AI will extract and structure it.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <textarea
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              placeholder="Paste the full interview transcript here..."
-              rows={16}
-              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-foreground/20 resize-y font-mono"
-            />
-            <div className="flex items-center justify-between mt-1.5">
-              <span
-                className={`text-xs ${
-                  isValid ? "text-muted-foreground" : charCount > 0 ? "text-red-500" : "text-muted-foreground"
-                }`}
-              >
-                {charCount} / 100 characters minimum
-              </span>
-              {isValid && (
-                <span className="text-xs text-green-600">Ready to submit</span>
-              )}
-            </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm p-8">
+          <div className="mb-6">
+            <h1 className="text-xl font-semibold text-zinc-900">Add interview</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Paste a raw transcript. The AI will extract and structure the insights.
+            </p>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <textarea
+                value={rawText}
+                onChange={(e) => setRawText(e.target.value)}
+                placeholder="Paste the full interview transcript here…"
+                rows={16}
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-colors resize-y"
+              />
+              <div className="flex items-center justify-between mt-2">
+                <span
+                  className={`text-xs ${
+                    isValid
+                      ? "text-zinc-400"
+                      : charCount > 0
+                      ? "text-red-500"
+                      : "text-zinc-400"
+                  }`}
+                >
+                  {charCount.toLocaleString()} characters{!isValid && " · 100 minimum"}
+                </span>
+                {isValid && (
+                  <span className="text-xs font-medium text-green-600">Ready to submit</span>
+                )}
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading || !isValid}
-            className="w-full px-4 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {loading ? "Submitting..." : "Submit interview"}
-          </button>
-        </form>
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !isValid}
+              className="w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {loading ? "Submitting…" : "Submit interview"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

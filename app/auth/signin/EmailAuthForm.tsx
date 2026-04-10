@@ -101,7 +101,7 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20"
+        className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-colors"
         autoComplete="email"
       />
       <input
@@ -109,7 +109,7 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20"
+        className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-colors"
         autoComplete={mode === "signin" ? "current-password" : "new-password"}
       />
       {mode === "signup" && (
@@ -118,7 +118,7 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
           placeholder="Confirm password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20"
+          className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-colors"
           autoComplete="new-password"
         />
       )}
@@ -127,7 +127,7 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-foreground/5 transition-colors disabled:opacity-50"
+        className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-50"
       >
         {loading ? "Please wait..." : mode === "signin" ? "Sign in with Email" : "Create Account"}
       </button>

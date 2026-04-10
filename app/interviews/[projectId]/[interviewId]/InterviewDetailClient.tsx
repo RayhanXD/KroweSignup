@@ -244,8 +244,28 @@ export default function InterviewDetailClient({
   });
 
   return (
-    <div className="bg-surface text-on-surface">
-      <div className="flex min-h-screen flex-col">
+    <div className="bg-white text-on-surface">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <img src="/KroweLogo.png" alt="Krowe" className="h-8 w-auto" />
+            <span className="text-zinc-300">/</span>
+            <Link
+              href={`/interviews/${projectId}`}
+              className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+            >
+              Project
+            </Link>
+            <span className="text-zinc-300">/</span>
+            <span className="text-sm text-zinc-900 font-medium">
+              {savedName ?? (interviewNumber ? `Interview #${interviewNumber}` : "Interview")}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex min-h-dvh flex-col">
         <main className="flex-1 flex flex-col min-h-[calc(100vh-5rem)]">
           <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
             <section className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar bg-white">
@@ -253,7 +273,7 @@ export default function InterviewDetailClient({
                 <div className="mb-8">
                   <Link
                     href={`/interviews/${projectId}`}
-                    className="inline-block text-sm text-muted-foreground hover:underline mb-5"
+                    className="inline-block text-sm text-zinc-500 hover:text-zinc-900 transition-colors mb-5"
                   >
                     ← Back to project
                   </Link>

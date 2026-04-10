@@ -135,7 +135,7 @@ function MetricBar({
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="text-xs font-medium">{displayValue}</span>
+        <span className="text-xs font-medium tabular-nums">{displayValue}</span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div
@@ -533,31 +533,40 @@ export function DecisionPageClient({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-zinc-50">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            <img src="/KroweLogo.png" alt="Krowe" className="h-8 w-auto" />
+            <span className="text-zinc-300">/</span>
+            <Link
+              href={`/interviews/${projectId}`}
+              className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+            >
+              {project.name}
+            </Link>
+            <span className="text-zinc-300">/</span>
+            <span className="text-sm text-zinc-900 font-medium">Decision</span>
+          </div>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push("/auth/signin");
+            }}
+            className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+          >
+            Log out
+          </button>
+        </div>
+      </header>
+
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12">
-          <div className="lg:col-span-12 flex w-full flex-col gap-6 rounded-xl border border-border bg-muted/50 px-8 py-6 md:flex-row md:items-center md:justify-between">
+          <div className="lg:col-span-12 flex w-full flex-col gap-4 rounded-xl border border-zinc-200 bg-white px-8 py-6 shadow-sm md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="mb-2 flex items-center gap-3">
-                <Link
-                  href={`/interviews/${projectId}`}
-                  className="text-xs text-muted-foreground hover:underline"
-                >
-                  Back to project
-                </Link>
-                <span className="text-xs text-muted-foreground/40">·</span>
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    router.push("/auth/signin");
-                  }}
-                  className="text-xs text-muted-foreground hover:underline"
-                >
-                  Log out
-                </button>
-              </div>
-              <h1 className="text-2xl font-bold">{project.name}</h1>
-              <p className="text-sm text-muted-foreground">Product Decision Report</p>
+              <h1 className="text-2xl font-semibold text-zinc-900">{project.name}</h1>
+              <p className="text-sm text-zinc-500 mt-0.5">Product Decision Report</p>
             </div>
 
             <div className="flex min-w-[160px] flex-col items-center gap-2">

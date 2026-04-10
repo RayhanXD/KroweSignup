@@ -80,7 +80,7 @@ export default function PricingModelStep({
                   Tip
                 </span>
               </div>
-              <p className="font-mono text-sm text-black leading-relaxed">
+              <p className="text-sm text-black leading-relaxed">
                 Many successful products combine{' '}
                 <span className="text-[#f97316]">freemium</span> with a{' '}
                 <span className="text-[#f97316]">subscription</span> upgrade path.

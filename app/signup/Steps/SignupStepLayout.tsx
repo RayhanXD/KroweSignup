@@ -14,7 +14,7 @@ type SignupStepLayoutProps = {
  */
 export default function SignupStepLayout({ progressPercent = 0, children }: SignupStepLayoutProps) {
   return (
-    <div className="min-h-screen bg-white text-foreground flex flex-col">
+    <div className="min-h-dvh bg-white text-foreground flex flex-col">
       <header className="border-b border-gray-200 bg-white/90 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-2 md:py-3">
           <div className="flex items-center gap-4">

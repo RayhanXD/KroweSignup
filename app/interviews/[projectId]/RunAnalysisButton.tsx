@@ -69,7 +69,7 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
         <button
           onClick={() => triggerAnalysis(true)}
           disabled={rerunLoading}
-          className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-40"
+          className="px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40 shadow-sm"
           title="Stop current analysis and rerun from scratch"
         >
           {rerunLoading ? "Restarting..." : "↺ Rerun"}
@@ -83,7 +83,7 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
       <button
         onClick={() => triggerAnalysis(true)}
         disabled={rerunLoading || interviewCount < 3}
-        className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-40"
+        className="px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40 shadow-sm"
         title="Rerun analysis with all interviews"
       >
         {rerunLoading ? "Restarting..." : "↺ Rerun Analysis"}
@@ -95,9 +95,9 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
     <button
       onClick={() => triggerAnalysis(false)}
       disabled={interviewCount < 3 || loading}
-      className="px-3 py-1.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+      className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
     >
-      {loading ? "Starting..." : "Run Analysis"}
+      {loading ? "Starting…" : "Run analysis"}
     </button>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import AppHeader from "@/app/components/AppHeader";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { InterviewScriptTab } from "./InterviewScriptTab";
 
@@ -23,25 +24,21 @@ type Project = {
   session_id: string | null;
 };
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    collecting: "bg-blue-100 text-blue-700",
-    processing: "bg-yellow-100 text-yellow-700",
-    ready: "bg-green-100 text-green-700",
-    failed: "bg-red-100 text-red-700",
-    pending: "bg-gray-100 text-gray-600",
-    structured: "bg-green-100 text-green-700",
-  };
+const STATUS_CONFIG: Record<string, { label: string; dot: string; text: string; bg: string }> = {
+  collecting: { label: "Collecting", dot: "bg-blue-500", text: "text-blue-700", bg: "bg-blue-50" },
+  processing: { label: "Processing", dot: "bg-amber-500 animate-pulse", text: "text-amber-700", bg: "bg-amber-50" },
+  ready: { label: "Ready", dot: "bg-green-500", text: "text-green-700", bg: "bg-green-50" },
+  failed: { label: "Failed", dot: "bg-red-500", text: "text-red-700", bg: "bg-red-50" },
+  pending: { label: "Pending", dot: "bg-zinc-400", text: "text-zinc-500", bg: "bg-zinc-50" },
+  structured: { label: "Structured", dot: "bg-green-500", text: "text-green-700", bg: "bg-green-50" },
+};
+
+function StatusPill({ status }: { status: string }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-        styles[status] ?? "bg-gray-100 text-gray-600"
-      }`}
-    >
-      {status === "processing" && (
-        <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-      )}
-      {status}
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.text} ${cfg.bg}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
     </span>
   );
 }
@@ -57,48 +54,46 @@ type Props = {
 export function ProjectPageClient({ project, interviews, projectId }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("interviews");
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Constrained header section */}
-      <div className="max-w-3xl mx-auto px-4 pt-10 pb-0">
-        {/* Back link */}
-        <div className="mb-6">
-          <Link href="/interviews" className="text-sm text-muted-foreground hover:underline">
-            ← All projects
-          </Link>
-        </div>
+  const needsMore = project.interview_count < 3 && project.interview_count > 0;
+  const remaining = 3 - project.interview_count;
 
+  return (
+    <div className="min-h-dvh bg-zinc-50 flex flex-col">
+      <AppHeader backHref="/interviews" backLabel="Projects" />
+
+      <div className="mx-auto w-full max-w-3xl px-4 pt-8 pb-0">
         {/* Project header */}
-        <div className="flex items-start justify-between gap-4 mb-8">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold">{project.name}</h1>
-              <StatusBadge status={project.status} />
+            <div className="flex items-center gap-2.5 mb-1">
+              <h1 className="text-2xl font-semibold text-zinc-900">{project.name}</h1>
+              <StatusPill status={project.status} />
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-zinc-500">
               {project.interview_count} interview{project.interview_count !== 1 ? "s" : ""} collected
             </p>
           </div>
+
           {project.status === "ready" && (
             <Link
               href={`/interviews/${projectId}/decision`}
-              className="shrink-0 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
+              className="shrink-0 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
             >
-              View Decision →
+              View decision →
             </Link>
           )}
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 border-b border-border">
+        <div className="flex border-b border-zinc-200">
           {(["interviews", "script"] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px capitalize ${
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 activeTab === tab
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-orange-500 text-orange-500"
+                  : "border-transparent text-zinc-500 hover:text-zinc-900"
               }`}
             >
               {tab === "script" ? "Interview Script" : "Interviews"}
@@ -107,12 +102,16 @@ export function ProjectPageClient({ project, interviews, projectId }: Props) {
         </div>
       </div>
 
-      {/* Interviews tab — constrained */}
+      {/* Interviews tab */}
       {activeTab === "interviews" && (
-        <div className="max-w-3xl mx-auto px-4 pb-10 mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold">Interviews</h2>
-            <div className="flex items-center gap-3">
+        <div className="mx-auto w-full max-w-3xl px-4 py-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-zinc-700">
+              {interviews.length > 0
+                ? `${interviews.length} interview${interviews.length !== 1 ? "s" : ""}`
+                : "No interviews yet"}
+            </h2>
+            <div className="flex items-center gap-2">
               <RunAnalysisButton
                 projectId={projectId}
                 interviewCount={project.interview_count}
@@ -120,55 +119,69 @@ export function ProjectPageClient({ project, interviews, projectId }: Props) {
               />
               <Link
                 href={`/interviews/${projectId}/add`}
-                className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors"
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm"
               >
-                + Add Interview
+                + Add interview
               </Link>
             </div>
           </div>
 
           {interviews.length === 0 ? (
-            <div className="border border-border rounded-xl p-8 text-center text-muted-foreground">
-              <p className="text-sm">No interviews yet. Add at least 3 to run analysis.</p>
+            <div className="rounded-xl border border-zinc-200 bg-white p-10 text-center">
+              <p className="text-sm font-medium text-zinc-700 mb-1">No interviews yet</p>
+              <p className="text-sm text-zinc-400 mb-4">Add at least 3 to run analysis.</p>
+              <Link
+                href={`/interviews/${projectId}/add`}
+                className="inline-flex rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+              >
+                Add your first interview
+              </Link>
             </div>
           ) : (
-            <div className="space-y-2">
-              {interviews.map((interview, i) => (
-                <Link
-                  key={interview.id}
-                  href={`/interviews/${projectId}/${interview.id}`}
-                  className="flex items-center justify-between border border-border rounded-lg px-4 py-3 hover:bg-muted/40 transition-colors"
-                >
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium text-foreground">
-                      {interview.interviewee_name ?? `Interview #${i + 1}`}
-                    </span>
-                    {interview.interviewee_context && (
-                      <span className="text-xs text-muted-foreground truncate max-w-xs">
-                        {interview.interviewee_context}
+            <>
+              <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+                {interviews.map((interview, i) => (
+                  <Link
+                    key={interview.id}
+                    href={`/interviews/${projectId}/${interview.id}`}
+                    className={`flex items-center justify-between px-5 py-3.5 hover:bg-zinc-50 transition-colors ${
+                      i < interviews.length - 1 ? "border-b border-zinc-100" : ""
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-zinc-900">
+                        {interview.interviewee_name ?? `Interview #${i + 1}`}
+                      </p>
+                      {interview.interviewee_context && (
+                        <p className="text-xs text-zinc-400 truncate max-w-xs">
+                          {interview.interviewee_context}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 ml-4 shrink-0">
+                      <span className="text-xs text-zinc-400">
+                        {new Date(interview.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(interview.created_at).toLocaleDateString()}
-                    </span>
-                    <StatusBadge status={interview.status} />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                      <StatusPill status={interview.status} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
 
-          {project.interview_count < 3 && project.interview_count > 0 && (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Add {3 - project.interview_count} more interview{3 - project.interview_count !== 1 ? "s" : ""} to enable analysis.
-            </p>
+              {needsMore && (
+                <p className="mt-3 text-sm text-zinc-400">
+                  Add {remaining} more interview{remaining !== 1 ? "s" : ""} to enable analysis.
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
 
-      {/* Script tab — full width */}
+      {/* Script tab */}
       {activeTab === "script" && (
         <div className="flex flex-1 min-h-0">
           <InterviewScriptTab projectId={projectId} />

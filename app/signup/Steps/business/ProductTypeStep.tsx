@@ -33,7 +33,7 @@ export default function ProductTypeStep({
               <span className="material-symbols-outlined">category</span>
             </div>
             <h1 className="animate-fade-slide-in step-delay-2 text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
-              What type of <span className="text-orange-500 bg-clip-text bg-gradient-to-r from-primary-600 to-primary-500">product</span> is your idea?
+              What type of <span className="text-orange-500">product</span> is your idea?
             </h1>
             <p className="animate-fade-slide-in step-delay-3 text-lg text-gray-500 leading-relaxed">
               Categorizing your solution helps us tailor the incubation roadmap specifically for your technology stack.

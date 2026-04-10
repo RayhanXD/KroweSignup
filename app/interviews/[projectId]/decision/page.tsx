@@ -74,7 +74,7 @@ export default async function DecisionPage({
 
   if (!decision || decision.status !== "ready") {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <div className="max-w-7xl mx-auto px-4 py-10">
           <Link href={`/interviews/${projectId}`} className="text-sm text-muted-foreground hover:underline">
             ← Back to project

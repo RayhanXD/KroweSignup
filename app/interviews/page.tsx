@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import Link from "next/link";
-import LogoutButton from "./LogoutButton";
+import AppHeader from "@/app/components/AppHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -13,19 +13,44 @@ type Project = {
   created_at: string;
 };
 
-function StatusBadge({ status }: { status: Project["status"] }) {
-  const styles: Record<Project["status"], string> = {
-    collecting: "bg-blue-100 text-blue-700",
-    processing: "bg-yellow-100 text-yellow-700",
-    ready: "bg-green-100 text-green-700",
-    failed: "bg-red-100 text-red-700",
-  };
+const STATUS_CONFIG: Record<
+  Project["status"],
+  { label: string; dot: string; text: string; bg: string }
+> = {
+  collecting: {
+    label: "Collecting",
+    dot: "bg-blue-500",
+    text: "text-blue-700",
+    bg: "bg-blue-50",
+  },
+  processing: {
+    label: "Processing",
+    dot: "bg-amber-500 animate-pulse",
+    text: "text-amber-700",
+    bg: "bg-amber-50",
+  },
+  ready: {
+    label: "Ready",
+    dot: "bg-green-500",
+    text: "text-green-700",
+    bg: "bg-green-50",
+  },
+  failed: {
+    label: "Failed",
+    dot: "bg-red-500",
+    text: "text-red-700",
+    bg: "bg-red-50",
+  },
+};
+
+function StatusPill({ status }: { status: Project["status"] }) {
+  const cfg = STATUS_CONFIG[status];
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${styles[status]}`}>
-      {status === "processing" && (
-        <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-      )}
-      {status}
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.text} ${cfg.bg}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
     </span>
   );
 }
@@ -43,67 +68,67 @@ export default async function InterviewsPage() {
     .order("created_at", { ascending: false });
 
   const projects = (data ?? []) as Project[];
-  const hasProject = projects.length > 0;
 
-  if (!hasProject) redirect("/interviews/new");
+  if (projects.length === 0) redirect("/interviews/new");
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-10">
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-dvh bg-zinc-50">
+      <AppHeader />
+
+      <main className="mx-auto max-w-3xl px-4 py-10">
+        {/* Page header */}
+        <div className="mb-8 flex items-end justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Decision Engine</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Turn user interviews into product decisions
+            <h1 className="text-2xl font-semibold text-zinc-900">Projects</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              {projects.length} project{projects.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {!hasProject && (
-              <Link
-                href="/interviews/new"
-                className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                New Project
-              </Link>
-            )}
-            <LogoutButton />
-          </div>
+          <Link
+            href="/interviews/new"
+            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+          >
+            New project
+          </Link>
         </div>
 
-        {projects.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <p className="text-lg font-medium mb-2">No projects yet</p>
-            <p className="text-sm">Create a project to start analyzing user interviews.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {projects.map((project) => (
-              <Link
-                key={project.id}
-                href={`/interviews/${project.id}`}
-                className="block border border-border rounded-xl p-4 hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium truncate">{project.name}</span>
-                      <StatusBadge status={project.status} />
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {project.interview_count} interview{project.interview_count !== 1 ? "s" : ""}
-                      {" · "}
-                      {new Date(project.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {project.status === "ready" && (
-                    <span className="shrink-0 text-xs font-medium text-green-600">View decision →</span>
-                  )}
+        {/* Projects list */}
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+          {projects.map((project, i) => (
+            <Link
+              key={project.id}
+              href={`/interviews/${project.id}`}
+              className={`flex items-center justify-between px-5 py-4 hover:bg-zinc-50 transition-colors ${
+                i < projects.length - 1 ? "border-b border-zinc-100" : ""
+              }`}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-zinc-900 truncate">{project.name}</span>
+                  <StatusPill status={project.status} />
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+                <p className="mt-0.5 text-sm text-zinc-400">
+                  {project.interview_count} interview{project.interview_count !== 1 ? "s" : ""}
+                  {" · "}
+                  {new Date(project.created_at).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+
+              {project.status === "ready" ? (
+                <span className="ml-4 shrink-0 text-sm font-medium text-orange-500">
+                  View decision →
+                </span>
+              ) : (
+                <span className="ml-4 shrink-0 text-zinc-300">→</span>
+              )}
+            </Link>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }

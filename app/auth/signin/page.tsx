@@ -18,28 +18,51 @@ export default async function SignInPage({
     const destination = await getPostLoginDestination(supabase, user.id, redirectTo);
     redirect(destination);
   }
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="max-w-sm w-full px-4">
-        <h1 className="text-2xl font-bold mb-2 text-center">Decision Engine</h1>
-        <p className="text-sm text-muted-foreground text-center mb-8">
-          Sign in to access your interview projects
-        </p>
-        {error && (
-          <p className="text-sm text-red-600 text-center mb-4">
-            Sign-in failed. Please try again.
-          </p>
-        )}
-        <SignInButton redirectTo={redirectTo} />
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
+    <div className="min-h-dvh bg-zinc-50 flex flex-col items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="mb-8 flex justify-center">
+          <img src="/KroweLogo.png" alt="Krowe" className="h-10 w-auto" />
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
+          <div className="mb-6 text-center">
+            <h1 className="text-xl font-semibold text-zinc-900">Sign in to Krowe</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Access your interview projects and insights
+            </p>
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">or</span>
+
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+              <p className="text-sm text-red-600">Sign-in failed. Please try again.</p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <SignInButton redirectTo={redirectTo} />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-zinc-200" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-white px-2 text-xs text-zinc-400 uppercase tracking-wider">
+                  or
+                </span>
+              </div>
+            </div>
+
+            <EmailAuthForm redirectTo={redirectTo} />
           </div>
         </div>
-        <EmailAuthForm redirectTo={redirectTo} />
+
+        <p className="mt-6 text-center text-xs text-zinc-400">
+          © 2026 Krowe Technologies Inc.
+        </p>
       </div>
     </div>
   );

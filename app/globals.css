@@ -36,10 +36,33 @@
   --shadow-soft: 0 4px 20px -2px rgb(0 0 0 / 0.06), 0 2px 8px -2px rgb(0 0 0 / 0.04);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+/* Tabular numbers for data displays */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Press feedback on interactive buttons */
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+button {
+  transition: transform 100ms ease;
 }
 
 .material-symbols-outlined {

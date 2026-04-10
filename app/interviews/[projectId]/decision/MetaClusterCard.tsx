@@ -25,7 +25,7 @@ export function MetaClusterCard({
           <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
             {mc.frequency} mentions
           </span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-foreground text-background">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 tabular-nums">
             Score: {mc.score.toFixed(2)}
           </span>
           {allClusters.length > 0 && (

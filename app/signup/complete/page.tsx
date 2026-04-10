@@ -44,14 +44,14 @@ function SignupCompleteContent() {
 
   if (!error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-white">
+      <div className="min-h-dvh flex items-center justify-center p-6 bg-white">
         <SpiralPreloader className="animate-fade-in" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-dvh flex items-center justify-center p-6">
       <div className="max-w-md w-full rounded-2xl border bg-white p-6 text-center">
         <div className="text-xl font-semibold text-black">
           There was a problem finishing signup

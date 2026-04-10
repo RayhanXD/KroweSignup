@@ -70,11 +70,11 @@ export function AllProblemsButton({ allClusters }: { allClusters: ClusterWithId[
                         {clusters.map((cluster) => (
                           <tr key={cluster.id} className="border-t border-border/50">
                             <td className="py-2.5 pr-4 font-medium">{cluster.canonical_problem}</td>
-                            <td className="py-2.5 pr-4 text-right text-muted-foreground">{cluster.frequency}</td>
-                            <td className="py-2.5 pr-4 text-right text-muted-foreground">
+                            <td className="py-2.5 pr-4 text-right text-muted-foreground tabular-nums">{cluster.frequency}</td>
+                            <td className="py-2.5 pr-4 text-right text-muted-foreground tabular-nums">
                               {cluster.avg_intensity.toFixed(1)}
                             </td>
-                            <td className="py-2.5 text-right font-medium">{cluster.score.toFixed(2)}</td>
+                            <td className="py-2.5 text-right font-medium tabular-nums">{cluster.score.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>

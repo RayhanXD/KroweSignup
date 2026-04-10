@@ -85,7 +85,7 @@ export default function StartupStageStep({
                   Almost there
                 </span>
               </div>
-              <p className="font-mono text-sm text-black leading-relaxed">
+              <p className="text-sm text-black leading-relaxed">
                 This is the <span className="text-[#f97316]">final step</span> before we generate your personalized startup plan.
               </p>
             </div>
@@ -140,7 +140,7 @@ export default function StartupStageStep({
                   disabled={!canContinue || submitting}
                   className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Anaylze My Interviews!
+                  Analyze my interviews
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

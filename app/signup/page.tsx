@@ -337,7 +337,7 @@ export default function SignupPage() {
 
   // Fallback
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-dvh flex items-center justify-center">
       <div className="p-6 border rounded-lg bg-white">
         <p className="font-medium text-gray-800">Unknown step: {String(stepKey)}</p>
         <p className="text-sm text-gray-500 mt-2">
