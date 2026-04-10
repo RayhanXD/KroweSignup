@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import Link from "next/link";
 import AppHeader from "@/app/components/AppHeader";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -84,12 +85,22 @@ export default async function InterviewsPage() {
               {projects.length} project{projects.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <Link
-            href="/interviews/new"
-            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
-          >
-            New project
-          </Link>
+          <div className="flex gap-2">
+            {FEATURE_FLAGS.granolaImports && (
+              <Link
+                href="/interviews/imports"
+                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors"
+              >
+                Granola imports
+              </Link>
+            )}
+            <Link
+              href="/interviews/new"
+              className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+            >
+              New project
+            </Link>
+          </div>
         </div>
 
         {/* Projects list */}
