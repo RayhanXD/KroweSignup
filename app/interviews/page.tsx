@@ -13,21 +13,72 @@ type Project = {
   created_at: string;
 };
 
-function StatusBadge({ status }: { status: Project["status"] }) {
-  const styles: Record<Project["status"], string> = {
-    collecting: "bg-blue-100 text-blue-700",
-    processing: "bg-yellow-100 text-yellow-700",
-    ready: "bg-green-100 text-green-700",
-    failed: "bg-red-100 text-red-700",
-  };
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${styles[status]}`}>
-      {status === "processing" && (
-        <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-      )}
-      {status}
-    </span>
-  );
+/** Stub until `description` (or similar) exists on `interview_projects`. */
+function projectCardDescription(): string {
+  return "Interview synthesis and decision context for this project. Add a short description when the schema supports it.";
+}
+
+/**
+ * Top card pill derived from pipeline status only (no per-project “signal” column yet).
+ */
+function projectTierPill(project: Project): { label: string; className: string } {
+  switch (project.status) {
+    case "ready":
+      return {
+        label: "High Signal",
+        className: "bg-[#FFEAE5] text-[#FF6A4D]",
+      };
+    case "processing":
+      return {
+        label: "In Progress",
+        className: "bg-zinc-100 text-[#71717A]",
+      };
+    case "failed":
+      return {
+        label: "Needs attention",
+        className: "bg-red-50 text-red-700",
+      };
+    case "collecting":
+    default:
+      return {
+        label: "Collecting",
+        className: "bg-zinc-100 text-[#71717A]",
+      };
+  }
+}
+
+function projectFooterStatus(project: Project): {
+  label: string;
+  dotClass: string;
+  textClass: string;
+} {
+  switch (project.status) {
+    case "ready":
+      return {
+        label: "Ready",
+        dotClass: "bg-[#FF6A4D]",
+        textClass: "text-[#FF6A4D]",
+      };
+    case "processing":
+      return {
+        label: "In progress",
+        dotClass: "bg-[#A1A1AA] animate-pulse",
+        textClass: "text-[#A1A1AA]",
+      };
+    case "failed":
+      return {
+        label: "Failed",
+        dotClass: "bg-red-500",
+        textClass: "text-red-600",
+      };
+    case "collecting":
+    default:
+      return {
+        label: "Draft",
+        dotClass: "bg-[#A1A1AA]",
+        textClass: "text-[#A1A1AA]",
+      };
+  }
 }
 
 export default async function InterviewsPage() {
@@ -49,61 +100,120 @@ export default async function InterviewsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-10">
-        <div className="flex items-center justify-between mb-8">
+      <main className="max-w-[1100px] mx-auto px-5 py-10">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-end mb-8">
           <div>
-            <h1 className="text-2xl font-bold">Decision Engine</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Turn user interviews into product decisions
+            <h1 className="text-3xl font-serif font-bold text-[#0B0F19] tracking-tight">
+              Active Projects
+            </h1>
+            <p className="text-[#71717A] mt-1.5 text-sm font-medium">
+              Strategic intelligence and decision specs.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {!hasProject && (
-              <Link
-                href="/interviews/new"
-                className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                New Project
-              </Link>
-            )}
+          <div className="flex flex-wrap items-center gap-3 justify-end">
+            <Link
+              href="/interviews/new"
+              className="bg-gradient-to-br from-[#FF6A4D] to-[#FF5733] text-white px-4 py-2 rounded-full font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:translate-y-[-1px] transition-all"
+            >
+              <span className="material-symbols-outlined text-base" aria-hidden>
+                add
+              </span>
+              New Project
+            </Link>
             <LogoutButton />
           </div>
         </div>
 
-        {projects.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <p className="text-lg font-medium mb-2">No projects yet</p>
-            <p className="text-sm">Create a project to start analyzing user interviews.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {projects.map((project) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {projects.map((project) => {
+            const tier = projectTierPill(project);
+            const footer = projectFooterStatus(project);
+            return (
               <Link
                 key={project.id}
                 href={`/interviews/${project.id}`}
-                className="block border border-border rounded-xl p-4 hover:bg-muted/50 transition-colors"
+                className="bg-white border border-black/5 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group cursor-pointer block"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium truncate">{project.name}</span>
-                      <StatusBadge status={project.status} />
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {project.interview_count} interview{project.interview_count !== 1 ? "s" : ""}
-                      {" · "}
-                      {new Date(project.created_at).toLocaleDateString()}
-                    </p>
+                <div className="flex justify-between items-start mb-3">
+                  <span
+                    className={`text-[12px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${tier.className}`}
+                  >
+                    {tier.label}
+                  </span>
+                  <span
+                    className="material-symbols-outlined text-[#A1A1AA] group-hover:text-[#FF6A4D] transition-colors"
+                    aria-hidden
+                  >
+                    more_horiz
+                  </span>
+                </div>
+                <h3 className="text-[16px] font-serif font-semibold text-[#0B0F19] mb-1.5 leading-tight">
+                  {project.name}
+                </h3>
+                <p className="text-[#6B7280] text-xs leading-relaxed mb-4 line-clamp-2">
+                  {projectCardDescription()}
+                </p>
+                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-black/5">
+                  <div className="flex items-center gap-1.5 text-[13px] text-[#A1A1AA]">
+                    <span className="material-symbols-outlined text-sm" aria-hidden>
+                      forum
+                    </span>
+                    {project.interview_count} interview{project.interview_count !== 1 ? "s" : ""}
                   </div>
-                  {project.status === "ready" && (
-                    <span className="shrink-0 text-xs font-medium text-green-600">View decision →</span>
-                  )}
+                  <div className="flex items-center gap-1.5 text-[13px] text-[#A1A1AA]">
+                    <span className="material-symbols-outlined text-sm" aria-hidden>
+                      calendar_today
+                    </span>
+                    {new Date(project.created_at).toLocaleDateString()}
+                  </div>
+                  <div
+                    className={`flex items-center gap-1.5 text-[13px] font-medium ${footer.textClass}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${footer.dotClass}`} />
+                    {footer.label}
+                  </div>
                 </div>
               </Link>
-            ))}
+            );
+          })}
+
+          <Link
+            href="/interviews/new"
+            className="border-2 border-dashed border-black/5 rounded-xl p-4 flex flex-col items-center justify-center text-center group hover:border-[#FF6A4D]/20 hover:bg-[#FFEAE5]/10 transition-all cursor-pointer min-h-[170px]"
+          >
+            <div className="w-10 h-10 rounded-full bg-white border border-black/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <span className="material-symbols-outlined text-[#FF6A4D]" aria-hidden>
+                add
+              </span>
+            </div>
+            <h3 className="text-sm font-semibold text-[#0B0F19]">Create New Insight Loop</h3>
+            <p className="text-xs text-[#A1A1AA] mt-1">Start from interviews or upload docs.</p>
+          </Link>
+        </div>
+
+        {/*
+          Multi-project: `interview_projects.user_id` is UNIQUE (see migration 016) and
+          `/interviews/new` redirects if a project already exists—only one project per user
+          until schema + new-project flow are updated.
+        */}
+        <footer className="mt-16 pt-6 border-t border-black/5 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center text-[11px] text-[#A1A1AA] font-medium tracking-wide uppercase">
+          <div className="flex flex-wrap items-center gap-6">
+            <span>System Status: Optimal</span>
+            <span>Version: 1.0.4-Founder</span>
           </div>
-        )}
-      </div>
+          <div className="flex flex-wrap items-center gap-6">
+            <a className="hover:text-[#0B0F19] transition-colors" href="#">
+              Documentation
+            </a>
+            <a className="hover:text-[#0B0F19] transition-colors" href="#">
+              Security Audit
+            </a>
+            <a className="hover:text-[#0B0F19] transition-colors" href="#">
+              Feedback
+            </a>
+          </div>
+        </footer>
+      </main>
     </div>
   );
 }

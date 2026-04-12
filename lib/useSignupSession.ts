@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from "react";
 import { useRouter } from "next/navigation";
-import {StepKey, getFirstStepKey} from "@/lib/signupSteps"
+import { StepKey, getFirstStepKey, normalizeStepKey } from "@/lib/signupSteps";
 import type { SessionState } from "@/lib/types/session";
 import type { SubmitAnswerResponse, ConfirmAnswerResponse } from "@/lib/types/answers";
 
@@ -39,7 +39,9 @@ export function useSignupSession(){
                 setState((s) => ({
                     ...s,
                     sessionId: json.sessionId,
-                    currentStepKey: json.currentStepKey ?? getFirstStepKey(),
+                    currentStepKey: normalizeStepKey(
+                        String(json.currentStepKey ?? getFirstStepKey())
+                    ),
                     answersByStepKey: json.answersByStepKey || {},
                     loading: false,
                     error: null,
@@ -81,7 +83,9 @@ export function useSignupSession(){
         
         setState((s) => ({
             ...s,
-            currentStepKey: json.nextStepKey ?? s.currentStepKey,
+            currentStepKey: json.nextStepKey
+                ? normalizeStepKey(String(json.nextStepKey))
+                : s.currentStepKey,
         }));
 
         return json as SubmitAnswerResponse;
@@ -111,7 +115,10 @@ export function useSignupSession(){
 
         //confirm route advances session, so update current step here
         if (json.nextStepKey) {
-            setState((s) => ({...s, currentStepKey: json.nextStepKey}));
+            setState((s) => ({
+                ...s,
+                currentStepKey: normalizeStepKey(String(json.nextStepKey)),
+            }));
         }
 
         //keep local answer in sync

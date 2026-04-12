@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getFirstStepKey } from "@/lib/signupSteps";
+import { getFirstStepKey, normalizeStepKey } from "@/lib/signupSteps";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 
 export async function POST() {
@@ -18,6 +18,17 @@ export async function POST() {
       .maybeSingle();
 
     let session = existing;
+    if (session) {
+      const normalizedKey = normalizeStepKey(String(session.current_step_key));
+      if (normalizedKey !== String(session.current_step_key)) {
+        await supabase
+          .from("signup_sessions")
+          .update({ current_step_key: normalizedKey })
+          .eq("id", session.id);
+        session = { ...session, current_step_key: normalizedKey };
+      }
+    }
+
     if (!session) {
       const { data, error } = await supabase
         .from("signup_sessions")
@@ -50,7 +61,7 @@ export async function POST() {
 
     return NextResponse.json({
       sessionId: session.id,
-      currentStepKey: session.current_step_key,
+      currentStepKey: normalizeStepKey(String(session.current_step_key)),
       status: session.status,
       answersByStepKey,
     });

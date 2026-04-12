@@ -292,7 +292,6 @@ export default function SignupPage() {
         onBack={goBack}
         onContinue={async () => {
           await saveAndNext('interview_count', String(countValue))
-          // After confirming, skip interview_upload if count is 0
           if (countValue === 0) {
             setOverrideStepKey('startup_stage')
           }

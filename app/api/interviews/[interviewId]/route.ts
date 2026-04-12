@@ -57,3 +57,63 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ interviewId: string }> }
+) {
+  const { interviewId } = await params;
+  const supabase = await createInterviewAuthClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: interview, error: interviewErr } = await supabase
+    .from("interviews")
+    .select("id, project_id")
+    .eq("id", interviewId)
+    .single();
+
+  if (interviewErr || !interview) {
+    return NextResponse.json({ error: "Interview not found" }, { status: 404 });
+  }
+
+  const projectId = interview.project_id as string;
+
+  const { error: problemsDeleteErr } = await supabase
+    .from("extracted_problems")
+    .delete()
+    .eq("interview_id", interviewId);
+
+  if (problemsDeleteErr) {
+    return NextResponse.json({ error: problemsDeleteErr.message }, { status: 500 });
+  }
+
+  const { error: deleteInterviewErr } = await supabase
+    .from("interviews")
+    .delete()
+    .eq("id", interviewId);
+
+  if (deleteInterviewErr) {
+    return NextResponse.json({ error: deleteInterviewErr.message }, { status: 500 });
+  }
+
+  const { count: remainingCount, error: remainingCountErr } = await supabase
+    .from("interviews")
+    .select("*", { count: "exact", head: true })
+    .eq("project_id", projectId);
+
+  if (remainingCountErr) {
+    return NextResponse.json({ error: remainingCountErr.message }, { status: 500 });
+  }
+
+  const { error: updateProjectErr } = await supabase
+    .from("interview_projects")
+    .update({ interview_count: remainingCount ?? 0 })
+    .eq("id", projectId);
+
+  if (updateProjectErr) {
+    return NextResponse.json({ error: updateProjectErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

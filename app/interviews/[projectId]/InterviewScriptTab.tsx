@@ -1,241 +1,120 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragMoveEvent,
-  type DragStartEvent,
-  type DragEndEvent,
-} from "@dnd-kit/core";
+  Background,
+  Controls,
+  MiniMap,
+  Panel,
+  ReactFlow,
+  ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+  type Edge,
+  type Node,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import {
-  SortableContext,
-  useSortable,
-  arrayMove,
-  horizontalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  GitBranch,
+  PenLine,
+  Share2,
+} from "lucide-react";
+import { arrayMove } from "@dnd-kit/sortable";
+
 import type { InterviewScript } from "@/lib/interviews/generateScript";
+import {
+  buildInterviewScriptFlowGraph,
+  getSpineEdgeHighlight,
+  questionNodeId,
+} from "@/lib/interviews/interviewScriptFlowGraph";
+import { founderConsoleNodeTypes } from "./founderConsoleNodeTypes";
+import { ScriptCanvasProvider } from "./scriptCanvasContext";
 
-function questionNodeId(sectionIndex: number, questionIndex: number) {
-  return `s${sectionIndex}-q${questionIndex}`;
+function nodeSearchText(node: Node): string {
+  const d = node.data as Record<string, unknown>;
+  const t = node.type;
+  if (t === "fcOpening" || t === "fcClosing") return String(d.text ?? "");
+  if (t === "fcQuestion") {
+    const probes = Array.isArray(d.probes) ? (d.probes as string[]).join(" ") : "";
+    return `${d.sectionTitle ?? ""} ${d.question ?? ""} ${probes}`;
+  }
+  if (t === "fcContext" || t === "fcArchive") return String(d.label ?? "");
+  return "";
 }
 
-// ── QuestionNode ──────────────────────────────────────────────────────────────
+function mergeNodeUi(
+  nodes: Node[],
+  activeNodeId: string | null,
+  searchQuery: string
+): Node[] {
+  const q = searchQuery.trim().toLowerCase();
+  return nodes.map((node) => {
+    const text = nodeSearchText(node);
+    const dimmed = q.length > 0 && !text.toLowerCase().includes(q);
+    const active = activeNodeId !== null && node.id === activeNodeId;
+    return {
+      ...node,
+      data: { ...node.data, active, dimmed },
+    };
+  });
+}
 
-function QuestionNode({
-  id,
-  question,
-  probes,
-  active,
-  onActivate,
-  registerFlowNodeRef,
+function mergeEdgeStyles(edges: Edge[], spineIds: string[], activeNodeId: string | null): Edge[] {
+  const pick = getSpineEdgeHighlight(spineIds, activeNodeId);
+  return edges.map((e) => {
+    const extra = pick(e);
+    return {
+      ...e,
+      style: {
+        ...e.style,
+        ...extra,
+      },
+    };
+  });
+}
+
+function FitViewWhenReady({ token }: { token: string | number }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      fitView({ padding: 0.18, duration: 280, minZoom: 0.15, maxZoom: 1.35 });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [token, fitView]);
+  return null;
+}
+
+type ConsoleTab = "nodes" | "archive";
+
+export function InterviewScriptTab({
+  projectId,
+  projectName = "",
 }: {
-  id: string;
-  question: string;
-  probes: string[];
-  active: boolean;
-  onActivate: () => void;
-  registerFlowNodeRef: (el: HTMLDivElement | null) => void;
+  projectId: string;
+  projectName?: string;
 }) {
-  const [probesOpen, setProbesOpen] = useState(false);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  };
-
-  return (
-    <div
-      ref={(el) => {
-        setNodeRef(el);
-        registerFlowNodeRef(el);
-      }}
-      onPointerDownCapture={onActivate}
-      style={style}
-      className={`w-64 shrink-0 rounded-xl border bg-card/95 p-4 shadow-sm backdrop-blur-sm flex flex-col gap-3 ${
-        active ? "border-primary/60 ring-2 ring-primary/25" : "border-border/70"
-      }`}
-    >
-      {/* Drag handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        data-drag-handle="true"
-        className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors self-start -mt-1 -ml-1"
-      >
-        <GripVertical size={14} />
-      </div>
-
-      {/* Question text */}
-      <p className="text-sm font-medium text-foreground leading-snug">{question}</p>
-
-      {/* Probes toggle */}
-      {probes.length > 0 && (
-        <div>
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => setProbesOpen((o) => !o)}
-            className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {probesOpen ? "Hide probes" : `Probes (${probes.length})`}
-          </button>
-          {probesOpen && (
-            <ul className="mt-2 space-y-1">
-              {probes.map((probe, pi) => (
-                <li key={pi} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                  <span className="text-muted-foreground/50 shrink-0 mt-0.5">→</span>
-                  <span>{probe}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── SectionGroup ──────────────────────────────────────────────────────────────
-
-function SectionGroup({
-  sectionIndex,
-  title,
-  questions,
-  activeNodeId,
-  onActivateNode,
-  registerFlowNodeRef,
-  onNavigateFromNode,
-}: {
-  sectionIndex: number;
-  title: string;
-  questions: InterviewScript["sections"][number]["questions"];
-  activeNodeId: string | null;
-  onActivateNode: (nodeId: string) => void;
-  registerFlowNodeRef: (nodeId: string, el: HTMLDivElement | null) => void;
-  onNavigateFromNode: (fromNodeId: string, direction: -1 | 1) => void;
-}) {
-  const ids = questions.map((_, qi) => questionNodeId(sectionIndex, qi));
-
-  return (
-    <div className="flex flex-col gap-2 shrink-0">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground leading-tight">
-        {title}
-      </p>
-      <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
-        <div className="flex items-start gap-2">
-          {questions.flatMap((q, qi) => {
-            const node = (
-              <QuestionNode
-                key={ids[qi]}
-                id={ids[qi]}
-                question={q.question}
-                probes={q.probes}
-                active={activeNodeId === ids[qi]}
-                onActivate={() => onActivateNode(ids[qi])}
-                registerFlowNodeRef={(el) => registerFlowNodeRef(ids[qi], el)}
-              />
-            );
-            if (qi < questions.length - 1) {
-              return [
-                node,
-                <button
-                  key={`arrow-${qi}`}
-                  type="button"
-                  data-no-pan="true"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => onNavigateFromNode(ids[qi], 1)}
-                  className="flex items-center self-start mt-9 shrink-0 rounded-full border border-border/60 bg-background/80 px-1.5 py-1 text-muted-foreground/55 hover:text-foreground hover:border-border transition-colors"
-                  aria-label="Go to next question"
-                >
-                  <ChevronRight size={14} />
-                </button>,
-              ];
-            }
-            return [node];
-          })}
-        </div>
-      </SortableContext>
-    </div>
-  );
-}
-
-// ── Flow static card (Intro / Closing) ────────────────────────────────────────
-
-function FlowStaticCard({
-  label,
-  text,
-  active,
-  onActivate,
-  registerFlowNodeRef,
-}: {
-  label: string;
-  text: string;
-  active: boolean;
-  onActivate: () => void;
-  registerFlowNodeRef: (el: HTMLDivElement | null) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2 shrink-0">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground leading-tight">
-        {label}
-      </p>
-      <div
-        ref={registerFlowNodeRef}
-        onPointerDownCapture={onActivate}
-        className={`w-64 rounded-xl border bg-card/95 p-4 shadow-sm backdrop-blur-sm ${
-          active ? "border-primary/60 ring-2 ring-primary/25" : "border-border/70"
-        }`}
-      >
-        <p className="text-sm text-foreground leading-relaxed">{text}</p>
-      </div>
-    </div>
-  );
-}
-
-// ── Main Tab ──────────────────────────────────────────────────────────────────
-
-export function InterviewScriptTab({ projectId }: { projectId: string }) {
   const [script, setScript] = useState<InterviewScript | null>(null);
   const [sections, setSections] = useState<InterviewScript["sections"]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [isPanning, setIsPanning] = useState(false);
-  const [isDraggingQuestion, setIsDraggingQuestion] = useState(false);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLDivElement | null>(null);
-  const flowNodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [consoleTab, setConsoleTab] = useState<ConsoleTab>("nodes");
   const hasAutoCentered = useRef(false);
-  const dragPointer = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const dragAutoScrollRaf = useRef<number | null>(null);
-  const panState = useRef<{
-    active: boolean;
-    startX: number;
-    startY: number;
-    scrollLeft: number;
-    scrollTop: number;
-    pointerId: number | null;
-  }>({
-    active: false,
-    startX: 0,
-    startY: 0,
-    scrollLeft: 0,
-    scrollTop: 0,
-    pointerId: null,
-  });
+  const [fitToken, setFitToken] = useState(0);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
+  const flowWrapRef = useRef<HTMLDivElement | null>(null);
+
+  const contextLabel = useMemo(() => {
+    const name = projectName.trim();
+    return name.length > 0 ? `${name} · discovery context` : "Market & discovery context";
+  }, [projectName]);
 
   const flowNodeOrder = useMemo(() => {
     const nodes: string[] = ["opening"];
@@ -253,47 +132,6 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
     [flowNodeOrder]
   );
 
-  const getHorizontalBounds = useCallback(() => {
-    const container = canvasRef.current;
-    if (!container) return { maxLeft: 0 };
-    return {
-      maxLeft: Math.max(container.scrollWidth - container.clientWidth, 0),
-    };
-  }, []);
-
-  const registerFlowNodeRef = useCallback((nodeId: string, el: HTMLDivElement | null) => {
-    flowNodeRefs.current[nodeId] = el;
-  }, []);
-
-  const scrollNodeIntoView = useCallback((nodeId: string) => {
-    const container = canvasRef.current;
-    const node = flowNodeRefs.current[nodeId];
-    if (!container || !node) return;
-
-    const containerRect = container.getBoundingClientRect();
-    const nodeRect = node.getBoundingClientRect();
-    const nextLeft =
-      nodeRect.left -
-      containerRect.left +
-      container.scrollLeft -
-      (container.clientWidth - nodeRect.width) / 2;
-
-    const nodeTop = nodeRect.top - containerRect.top + container.scrollTop;
-    const isVerticallyOutOfBounds =
-      nodeRect.top < containerRect.top || nodeRect.bottom > containerRect.bottom;
-    const nextTop = isVerticallyOutOfBounds
-      ? nodeTop - (container.clientHeight - nodeRect.height) / 2
-      : container.scrollTop;
-    const { maxLeft } = getHorizontalBounds();
-    const maxTop = Math.max(container.scrollHeight - container.clientHeight, 0);
-
-    container.scrollTo({
-      left: Math.min(Math.max(nextLeft, 0), maxLeft),
-      top: Math.min(Math.max(nextTop, 0), maxTop),
-      behavior: "smooth",
-    });
-  }, [getHorizontalBounds]);
-
   const navigateToNodeByStep = useCallback(
     (direction: -1 | 1, fromNodeId?: string) => {
       if (flowNodeOrder.length === 0) return;
@@ -305,17 +143,27 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
       );
       const nextId = flowNodeOrder[nextIndex];
       setActiveNodeId(nextId);
-      scrollNodeIntoView(nextId);
     },
-    [activeNodeId, flowNodeIndexById, flowNodeOrder, scrollNodeIntoView]
+    [activeNodeId, flowNodeIndexById, flowNodeOrder]
   );
 
-  const stopDragAutoScroll = useCallback(() => {
-    if (dragAutoScrollRaf.current !== null) {
-      cancelAnimationFrame(dragAutoScrollRaf.current);
-      dragAutoScrollRaf.current = null;
-    }
+  const moveQuestion = useCallback((sectionIndex: number, questionIndex: number, delta: -1 | 1) => {
+    setSections((prev) => {
+      const sec = prev[sectionIndex];
+      if (!sec) return prev;
+      const next = questionIndex + delta;
+      if (next < 0 || next >= sec.questions.length) return prev;
+      return prev.map((s, i) =>
+        i !== sectionIndex ? s : { ...s, questions: arrayMove(s.questions, questionIndex, next) }
+      );
+    });
+    setFitToken((t) => t + 1);
   }, []);
+
+  const moveQuestionValue = useMemo(
+    () => ({ moveQuestion }),
+    [moveQuestion]
+  );
 
   async function fetchScript(regenerate = false) {
     hasAutoCentered.current = false;
@@ -347,25 +195,45 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
-  // Sync sections state when script loads or regenerates
   useEffect(() => {
     if (script) setSections(script.sections);
   }, [script]);
 
-  // Center the script flow in the grid after data loads.
-  // Keep a fixed-size dependency array; never spread flowNodeOrder into deps.
+  const graph = useMemo(() => {
+    if (!script) {
+      return buildInterviewScriptFlowGraph({
+        intro: "",
+        closing: "",
+        sections: [],
+        contextLabel: contextLabel,
+        archiveLabel: "Script archive",
+      });
+    }
+    return buildInterviewScriptFlowGraph({
+      intro: script.intro,
+      closing: script.closing,
+      sections,
+      contextLabel,
+      archiveLabel: "Past segments (placeholder)",
+    });
+  }, [script, sections, contextLabel]);
+
+  const styledNodes = useMemo(
+    () => mergeNodeUi(graph.nodes, activeNodeId, searchQuery),
+    [graph.nodes, activeNodeId, searchQuery]
+  );
+
+  const styledEdges = useMemo(
+    () => mergeEdgeStyles(graph.edges, graph.spineIds, activeNodeId),
+    [graph.edges, graph.spineIds, activeNodeId]
+  );
+
   useEffect(() => {
     if (!script || hasAutoCentered.current) return;
-
-    const raf = requestAnimationFrame(() => {
-      const startNodeId = "opening";
-      setActiveNodeId(startNodeId);
-      scrollNodeIntoView(startNodeId);
-      hasAutoCentered.current = true;
-    });
-
-    return () => cancelAnimationFrame(raf);
-  }, [script, scrollNodeIntoView, flowNodeOrder]);
+    setActiveNodeId("opening");
+    hasAutoCentered.current = true;
+    setFitToken((t) => t + 1);
+  }, [script]);
 
   useEffect(() => {
     if (flowNodeOrder.length === 0) {
@@ -378,47 +246,36 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
   }, [activeNodeId, flowNodeIndexById, flowNodeOrder]);
 
   useEffect(() => {
-    if (!isDraggingQuestion) return;
-
-    const onPointerMove = (event: PointerEvent) => {
-      dragPointer.current = { x: event.clientX, y: event.clientY };
-    };
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-
-    const edgeThreshold = 140;
-    const maxSpeed = 18;
-    const tick = () => {
-      const container = canvasRef.current;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const { x } = dragPointer.current;
-
-      let velocityX = 0;
-      if (x < rect.left + edgeThreshold) {
-        const pressure = (rect.left + edgeThreshold - x) / edgeThreshold;
-        velocityX = -(Math.min(Math.max(pressure, 0), 1) ** 1.4) * maxSpeed;
-      } else if (x > rect.right - edgeThreshold) {
-        const pressure = (x - (rect.right - edgeThreshold)) / edgeThreshold;
-        velocityX = Math.min(Math.max(pressure, 0), 1) ** 1.4 * maxSpeed;
+    if (consoleTab !== "nodes") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const t = event.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) {
+        return;
       }
-
-      if (velocityX !== 0) {
-        const { maxLeft } = getHorizontalBounds();
-        container.scrollLeft = Math.min(
-          Math.max(container.scrollLeft + velocityX, 0),
-          Math.max(maxLeft, 0)
-        );
+      if (event.key === "Home") {
+        event.preventDefault();
+        const first = flowNodeOrder[0];
+        if (!first) return;
+        setActiveNodeId(first);
+        setFitToken((x) => x + 1);
+        return;
       }
-
-      dragAutoScrollRaf.current = requestAnimationFrame(tick);
+      if (event.key === "End") {
+        event.preventDefault();
+        const last = flowNodeOrder[flowNodeOrder.length - 1];
+        if (!last) return;
+        setActiveNodeId(last);
+        setFitToken((x) => x + 1);
+        return;
+      }
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        navigateToNodeByStep(event.key === "ArrowRight" ? 1 : -1);
+      }
     };
-
-    dragAutoScrollRaf.current = requestAnimationFrame(tick);
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      stopDragAutoScroll();
-    };
-  }, [getHorizontalBounds, isDraggingQuestion, stopDragAutoScroll]);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [consoleTab, flowNodeOrder, navigateToNodeByStep]);
 
   function buildPlainText(): string {
     if (!script) return "";
@@ -447,186 +304,20 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // ignore clipboard errors
+      // ignore
     }
   }
 
-  function handleDragStart(event: DragStartEvent) {
-    setIsDraggingQuestion(true);
-    const sourceEvent = event.activatorEvent;
-    if (sourceEvent instanceof PointerEvent || sourceEvent instanceof MouseEvent) {
-      dragPointer.current = { x: sourceEvent.clientX, y: sourceEvent.clientY };
-      return;
-    }
-    if (sourceEvent instanceof TouchEvent && sourceEvent.touches.length > 0) {
-      dragPointer.current = {
-        x: sourceEvent.touches[0].clientX,
-        y: sourceEvent.touches[0].clientY,
-      };
-    }
+  function handleDownload() {
+    if (!script) return;
+    const blob = new Blob([buildPlainText()], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `interview-script-${projectId}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
-
-  function handleDragMove(event: DragMoveEvent) {
-    const sourceEvent = event.activatorEvent;
-    if (sourceEvent instanceof PointerEvent || sourceEvent instanceof MouseEvent) {
-      dragPointer.current = { x: sourceEvent.clientX, y: sourceEvent.clientY };
-      return;
-    }
-    if (sourceEvent instanceof TouchEvent && sourceEvent.touches.length > 0) {
-      dragPointer.current = {
-        x: sourceEvent.touches[0].clientX,
-        y: sourceEvent.touches[0].clientY,
-      };
-    }
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    setIsDraggingQuestion(false);
-    stopDragAutoScroll();
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const parseId = (id: string | number) => {
-      const parts = String(id).split("-");
-      return {
-        si: parseInt(parts[0].slice(1), 10),
-        qi: parseInt(parts[1].slice(1), 10),
-      };
-    };
-
-    const { si: activeSI, qi: activeQI } = parseId(active.id);
-    const { si: overSI, qi: overQI } = parseId(over.id);
-
-    if (activeSI !== overSI) return; // within-section only
-
-    const nextActiveId = String(active.id);
-    setActiveNodeId(nextActiveId);
-    setSections((prev) =>
-      prev.map((s, i) =>
-        i !== activeSI
-          ? s
-          : { ...s, questions: arrayMove(s.questions, activeQI, overQI) }
-      )
-    );
-    requestAnimationFrame(() => scrollNodeIntoView(nextActiveId));
-  }
-
-  function handleDragCancel() {
-    setIsDraggingQuestion(false);
-    stopDragAutoScroll();
-  }
-
-  function shouldStartPan(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) return false;
-    return !target.closest(
-      "button,a,input,textarea,select,[role='button'],[data-drag-handle='true'],[data-no-pan='true']"
-    );
-  }
-
-  function handleCanvasPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (isDraggingQuestion) return;
-    if (event.button !== 0 || !shouldStartPan(event.target)) return;
-    const container = canvasRef.current;
-    if (!container) return;
-
-    panState.current = {
-      active: true,
-      startX: event.clientX,
-      startY: event.clientY,
-      scrollLeft: container.scrollLeft,
-      scrollTop: container.scrollTop,
-      pointerId: event.pointerId,
-    };
-    setIsPanning(true);
-    container.setPointerCapture(event.pointerId);
-  }
-
-  function handleCanvasPointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    const container = canvasRef.current;
-    if (!container || !panState.current.active) return;
-    const dx = event.clientX - panState.current.startX;
-    const dy = event.clientY - panState.current.startY;
-    container.scrollLeft = panState.current.scrollLeft - dx;
-    container.scrollTop = panState.current.scrollTop - dy;
-  }
-
-  function stopPanning() {
-    const container = canvasRef.current;
-    if (container && panState.current.pointerId !== null) {
-      try {
-        container.releasePointerCapture(panState.current.pointerId);
-      } catch {
-        // no-op when pointer capture is already released
-      }
-    }
-    panState.current.active = false;
-    panState.current.pointerId = null;
-    setIsPanning(false);
-  }
-
-  function handleCanvasKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (isDraggingQuestion) return;
-
-    const target = event.target as HTMLElement | null;
-    if (
-      target &&
-      target.closest("input,textarea,select,button,a,[contenteditable='true'],[role='button']")
-    ) {
-      return;
-    }
-
-    if (event.key === "Home") {
-      event.preventDefault();
-      const firstNode = flowNodeOrder[0];
-      if (!firstNode) return;
-      setActiveNodeId(firstNode);
-      scrollNodeIntoView(firstNode);
-      return;
-    }
-
-    if (event.key === "End") {
-      event.preventDefault();
-      const lastNode = flowNodeOrder[flowNodeOrder.length - 1];
-      if (!lastNode) return;
-      setActiveNodeId(lastNode);
-      scrollNodeIntoView(lastNode);
-      return;
-    }
-
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-
-    event.preventDefault();
-    navigateToNodeByStep(event.key === "ArrowRight" ? 1 : -1);
-  }
-
-  function handleCanvasWheel(event: React.WheelEvent<HTMLDivElement>) {
-    const container = canvasRef.current;
-    if (!container) return;
-
-    const horizontalDelta = event.deltaX !== 0 ? event.deltaX : event.shiftKey ? event.deltaY : 0;
-    if (horizontalDelta === 0) return;
-
-    const { maxLeft } = getHorizontalBounds();
-    event.preventDefault();
-    container.scrollLeft = Math.min(
-      Math.max(container.scrollLeft + horizontalDelta, 0),
-      Math.max(maxLeft, 0)
-    );
-  }
-
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
-    const container = canvasRef.current;
-    if (!container) return;
-    const { maxLeft } = getHorizontalBounds();
-    console.debug("[InterviewScriptTab] scroll metrics", {
-      activeNodeId,
-      scrollLeft: container.scrollLeft,
-      maxLeft,
-      scrollWidth: container.scrollWidth,
-      clientWidth: container.clientWidth,
-    });
-  }, [activeNodeId, getHorizontalBounds]);
 
   if (loading) {
     return (
@@ -642,6 +333,7 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
       <div className="h-full min-h-[22rem] flex flex-col items-center justify-center gap-3 text-muted-foreground px-6">
         <p className="text-sm text-red-500">{error}</p>
         <button
+          type="button"
           onClick={() => fetchScript()}
           className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors"
         >
@@ -654,212 +346,258 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
   if (!script) return null;
 
   return (
-    <div className="flex flex-1 min-h-0 w-full flex-col">
-      {/* Non-scrolling overlay wrapper around the scrollable canvas */}
-      <div className="relative flex-1 min-h-0">
-      {/* Draggable canvas with immersive grid */}
-      <div
-        ref={canvasRef}
-        onPointerDown={handleCanvasPointerDown}
-        onPointerMove={handleCanvasPointerMove}
-        onPointerUp={stopPanning}
-        onPointerCancel={stopPanning}
-        onKeyDown={handleCanvasKeyDown}
-        onWheel={handleCanvasWheel}
-        onPointerLeave={(event) => {
-          if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-          stopPanning();
-        }}
-        tabIndex={0}
-        className={`relative h-full w-full min-h-0 overflow-auto select-none outline-none ${isPanning || isDraggingQuestion ? "cursor-grabbing" : "cursor-grab"}`}
-        style={{
-          backgroundImage:
-            "radial-gradient(circle, rgba(24,24,27,0.18) 1px, transparent 1px), radial-gradient(ellipse at top, rgba(249,115,22,0.08), transparent 50%), linear-gradient(180deg, rgba(250,250,250,0.96), rgba(244,244,245,0.9))",
-          backgroundSize: "22px 22px, 100% 100%, 100% 100%",
-          backgroundPosition: "0 0, center top, center",
-          touchAction: "none",
-        }}
-      >
-        <div className="pointer-events-none sticky top-2 left-1/2 z-20 -translate-x-1/2 px-3 w-max max-w-full">
-          <div className="pointer-events-auto flex w-fit max-w-full items-center gap-2 rounded-full border border-border/80 bg-background/90 px-2.5 py-1 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="min-w-0">
-              <h2 className="text-[11px] font-semibold leading-tight">Interview Script</h2>
-              <p className="text-[10px] text-muted-foreground leading-tight truncate">
-                Tailored guide for your discovery calls.
-              </p>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => fetchScript(true)}
-                disabled={regenerating}
-                className="text-[10px] px-2 py-1 rounded-full border border-border hover:bg-muted transition-colors shrink-0 disabled:opacity-50"
-              >
-                {regenerating ? "Regenerating…" : "Regenerate"}
-              </button>
-              <button
-                onClick={handleCopy}
-                className="text-[10px] px-2 py-1 rounded-full border border-border hover:bg-muted transition-colors shrink-0"
-              >
-                {copied ? "Copied!" : "Copy Script"}
-              </button>
-            </div>
+    <div className="flex flex-1 min-h-0 w-full flex-col bg-gradient-to-b from-background via-muted/20 to-muted/30">
+      {/* Founder Console header */}
+      <div className="shrink-0 border-b border-border/70 bg-background/90 px-4 py-3 md:px-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Founder Console</p>
+            <nav className="flex items-center gap-1 border-b border-transparent">
+              {(
+                [
+                  ["nodes", "Nodes"],
+                  ["archive", "Archive"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setConsoleTab(id)}
+                  className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
+                    consoleTab === id
+                      ? "border-[#FF6A4D] text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
           </div>
-        </div>
-
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-background/65 to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background/65 to-transparent" />
-
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragMove={handleDragMove}
-          onDragEnd={handleDragEnd}
-          onDragCancel={handleDragCancel}
-        >
-          <div className="flex min-h-full w-max items-center pt-14">
-            <div className="h-px min-w-[40vw] shrink-0" />
-            <div className="flex min-w-max items-start gap-4 px-0 py-0">
-            {/* Opening */}
-            <FlowStaticCard
-              label="Opening"
-              text={script.intro}
-              active={activeNodeId === "opening"}
-              onActivate={() => setActiveNodeId("opening")}
-              registerFlowNodeRef={(el) => registerFlowNodeRef("opening", el)}
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search canvas…"
+              className="h-9 w-full min-w-[12rem] max-w-xs rounded-full border border-border/80 bg-background px-3 text-xs outline-none focus:border-[#FF6A4D]/60 focus:ring-2 focus:ring-[#FF6A4D]/15"
+              aria-label="Search canvas"
             />
-
-            {/* Arrow → first section */}
             <button
               type="button"
-              data-no-pan="true"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => navigateToNodeByStep(1, "opening")}
-              className="flex items-start shrink-0 mt-4 rounded-full border border-border/60 bg-background/80 px-1.5 py-1 text-muted-foreground/55 hover:text-foreground hover:border-border transition-colors"
-              aria-label="Go to next question"
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#ff6a4d] to-[#ff874d] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95"
             >
-              <ChevronRight size={14} />
+              {copied ? "Copied" : "Deploy script"}
             </button>
+            <button
+              type="button"
+              onClick={() => fetchScript(true)}
+              disabled={regenerating}
+              className="rounded-full border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+            >
+              {regenerating ? "Regenerating…" : "Regenerate"}
+            </button>
+          </div>
+        </div>
+      </div>
 
-            {/* Sections */}
-            {sections.map((section, si) => (
-              <Fragment key={si}>
-                <SectionGroup
-                  sectionIndex={si}
-                  title={section.title}
-                  questions={section.questions}
+      {consoleTab === "archive" && (
+        <div className="flex-1 min-h-[16rem] flex flex-col items-center justify-center px-6 text-center gap-2">
+          <p className="text-sm text-muted-foreground max-w-md">
+            Regenerating replaces the stored script for this project. Version history for past scripts is not enabled yet.
+          </p>
+          <p className="text-[11px] text-muted-foreground">Archive nodes on the canvas are visual placeholders.</p>
+        </div>
+      )}
+
+      {consoleTab === "nodes" && (
+        <div ref={flowWrapRef} className="relative flex-1 min-h-[28rem] w-full">
+          <ScriptCanvasProvider value={moveQuestionValue}>
+            <ReactFlowProvider>
+              <div className="absolute inset-0">
+                <FlowCanvasInner
+                  nodes={styledNodes}
+                  edges={styledEdges}
+                  fitToken={fitToken}
                   activeNodeId={activeNodeId}
-                  onActivateNode={setActiveNodeId}
-                  registerFlowNodeRef={registerFlowNodeRef}
-                  onNavigateFromNode={(fromNodeId, direction) =>
-                    navigateToNodeByStep(direction, fromNodeId)
-                  }
+                  onNodeClick={(id) => setActiveNodeId(id)}
+                  onExportDownload={handleDownload}
+                  onExportCopy={handleCopy}
                 />
-                {si < sections.length - 1 && (
-                  <button
-                    type="button"
-                    data-no-pan="true"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => navigateToNodeByStep(1, questionNodeId(si, section.questions.length - 1))}
-                    className="flex items-start shrink-0 mt-4 rounded-full border border-border/60 bg-background/80 px-1.5 py-1 text-muted-foreground/55 hover:text-foreground hover:border-border transition-colors"
-                    aria-label="Go to next question section"
-                  >
-                    <ChevronRight size={14} />
-                  </button>
-                )}
-              </Fragment>
-            ))}
+              </div>
+            </ReactFlowProvider>
+          </ScriptCanvasProvider>
 
-            {/* Arrow → closing */}
+          <div className="pointer-events-none absolute bottom-4 right-4 z-20 flex gap-1 rounded-full border border-border/70 bg-background/90 p-1 shadow-md backdrop-blur">
             <button
               type="button"
-              data-no-pan="true"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() =>
-                navigateToNodeByStep(
-                  1,
-                  sections.length > 0 && sections[sections.length - 1].questions.length > 0
-                    ? questionNodeId(
-                        sections.length - 1,
-                        sections[sections.length - 1].questions.length - 1
-                      )
-                    : "opening"
-                )
-              }
-              className="flex items-start shrink-0 mt-4 rounded-full border border-border/60 bg-background/80 px-1.5 py-1 text-muted-foreground/55 hover:text-foreground hover:border-border transition-colors"
-              aria-label="Go to closing"
+              onClick={() => {
+                const first = flowNodeOrder[0];
+                if (!first) return;
+                setActiveNodeId(first);
+                setFitToken((t) => t + 1);
+              }}
+              className="pointer-events-auto rounded-full px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted"
+            >
+              Start
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToNodeByStep(-1)}
+              className="pointer-events-auto rounded-full p-1 text-muted-foreground hover:bg-muted"
+              aria-label="Previous"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToNodeByStep(1)}
+              className="pointer-events-auto rounded-full p-1 text-muted-foreground hover:bg-muted"
+              aria-label="Next"
             >
               <ChevronRight size={14} />
             </button>
-
-            {/* Closing */}
-            <FlowStaticCard
-              label="Closing"
-              text={script.closing}
-              active={activeNodeId === "closing"}
-              onActivate={() => setActiveNodeId("closing")}
-              registerFlowNodeRef={(el) => registerFlowNodeRef("closing", el)}
-            />
-            </div>
-            <div className="h-px min-w-[40vw] shrink-0" />
+            <button
+              type="button"
+              onClick={() => {
+                const last = flowNodeOrder[flowNodeOrder.length - 1];
+                if (!last) return;
+                setActiveNodeId(last);
+                setFitToken((t) => t + 1);
+              }}
+              className="pointer-events-auto rounded-full px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted"
+            >
+              End
+            </button>
           </div>
-        </DndContext>
-      </div>
-      <div className="pointer-events-none absolute bottom-4 right-4 z-30">
-        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-border/70 bg-background/85 p-1 shadow-sm backdrop-blur">
-          <button
-            type="button"
-            data-no-pan="true"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => {
-              const firstNode = flowNodeOrder[0];
-              if (!firstNode) return;
-              setActiveNodeId(firstNode);
-              scrollNodeIntoView(firstNode);
-            }}
-            className="rounded-full px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Jump to first question"
-          >
-            Start
-          </button>
-          <button
-            type="button"
-            data-no-pan="true"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => navigateToNodeByStep(-1)}
-            className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Previous question"
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <button
-            type="button"
-            data-no-pan="true"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => navigateToNodeByStep(1)}
-            className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Next question"
-          >
-            <ChevronRight size={14} />
-          </button>
-          <button
-            type="button"
-            data-no-pan="true"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => {
-              const lastNode = flowNodeOrder[flowNodeOrder.length - 1];
-              if (!lastNode) return;
-              setActiveNodeId(lastNode);
-              scrollNodeIntoView(lastNode);
-            }}
-            className="rounded-full px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Jump to last question"
-          >
-            End
-          </button>
         </div>
-      </div>
-      </div>
+      )}
     </div>
+  );
+}
+
+function FlowCanvasInner({
+  nodes,
+  edges,
+  fitToken,
+  activeNodeId,
+  onNodeClick,
+  onExportDownload,
+  onExportCopy,
+}: {
+  nodes: Node[];
+  edges: Edge[];
+  fitToken: string | number;
+  activeNodeId: string | null;
+  onNodeClick: (id: string) => void;
+  onExportDownload: () => void;
+  onExportCopy: () => void;
+}) {
+  const [rfNodes, setRfNodes, onNodesChange] = useNodesState(nodes);
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(edges);
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    setRfNodes(nodes);
+  }, [nodes, setRfNodes]);
+
+  useEffect(() => {
+    setRfEdges(edges);
+  }, [edges, setRfEdges]);
+
+  return (
+    <>
+      <ReactFlow
+        nodes={rfNodes}
+        edges={rfEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onNodeClick={(_, n) => onNodeClick(n.id)}
+        nodeTypes={founderConsoleNodeTypes}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+        panOnScroll
+        zoomOnScroll
+        zoomOnPinch
+        minZoom={0.12}
+        maxZoom={1.6}
+        proOptions={{ hideAttribution: true }}
+        className="!bg-transparent"
+      >
+        <FitViewWhenReady token={fitToken} />
+        <Background gap={22} size={1} color="rgba(24,24,27,0.14)" className="!bg-transparent" />
+        <Controls
+          className="!rounded-full !border !border-border/70 !bg-background/90 !shadow-md [&_button]:!border-border/60"
+          showInteractive={false}
+        />
+        <MiniMap
+          className="!rounded-xl !border !border-border/60 !bg-background/85"
+          maskColor="rgba(0,0,0,0.12)"
+          nodeStrokeWidth={2}
+        />
+        <Panel position="bottom-center" className="m-0 mb-4">
+          <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border/80 bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur">
+            <button
+              type="button"
+              title="Fit canvas"
+              onClick={() => {
+                requestAnimationFrame(() =>
+                  fitView({ padding: 0.18, duration: 240, minZoom: 0.12, maxZoom: 1.6 })
+                );
+              }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FF6A4D]/15 text-[#FF6A4D] hover:bg-[#FF6A4D]/25"
+            >
+              <PenLine size={16} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              title="Branching (linear script for now)"
+              disabled
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground opacity-40"
+            >
+              <GitBranch size={16} />
+            </button>
+            <button
+              type="button"
+              title="Focus active node"
+              onClick={() => {
+                if (!activeNodeId) return;
+                requestAnimationFrame(() =>
+                  fitView({
+                    nodes: [{ id: activeNodeId }],
+                    padding: 0.45,
+                    duration: 280,
+                    minZoom: 0.12,
+                    maxZoom: 1.45,
+                  })
+                );
+              }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              disabled={!activeNodeId}
+            >
+              <Eye size={16} />
+            </button>
+            <div className="mx-1 h-6 w-px bg-border/80" />
+            <button
+              type="button"
+              title="Download .txt"
+              onClick={onExportDownload}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Share2 size={16} />
+            </button>
+            <button
+              type="button"
+              title="Copy script"
+              onClick={onExportCopy}
+              className="ml-0.5 rounded-full px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:bg-muted"
+            >
+              Copy
+            </button>
+          </div>
+        </Panel>
+      </ReactFlow>
+    </>
   );
 }

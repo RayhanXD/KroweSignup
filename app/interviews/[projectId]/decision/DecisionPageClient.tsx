@@ -36,6 +36,7 @@ type Props = {
   sortedFeatures: FeatureSpec[];
   confidencePct: number;
   interviewsSortedIds: string[];
+  persistedVerdict: AnalysisResponse["decision"] | null;
 };
 
 const DECISION_LABELS: Record<AnalysisResponse["decision"], string> = {
@@ -74,8 +75,6 @@ const SIGNAL_LABEL_STYLES: Record<string, string> = {
   Moderate: "bg-yellow-100 text-yellow-700 border-yellow-200",
   Weak: "bg-red-100 text-red-700 border-red-200",
 };
-
-const analysisCache = new Map<string, AnalysisResponse>();
 
 const PRIORITY_ICONS: Record<FeatureSpec["priority"], string> = {
   "must-have": "bolt",
@@ -265,14 +264,11 @@ export function DecisionPageClient({
   sortedFeatures,
   confidencePct,
   interviewsSortedIds,
+  persistedVerdict,
 }: Props) {
   const router = useRouter();
-  const [analysisState, setAnalysisState] = useState<"loading" | "error" | "ready">(
-    analysisCache.has(projectId) ? "ready" : "loading"
-  );
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(
-    analysisCache.get(projectId) ?? null
-  );
+  const [analysisState, setAnalysisState] = useState<"loading" | "error" | "ready">("loading");
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(null);
   const [analysisError, setAnalysisError] = useState("");
   const requestIdRef = useRef(0);
 
@@ -356,7 +352,6 @@ export function DecisionPageClient({
       .then((data) => {
         if (opts?.signal?.aborted) return;
         if (requestId !== requestIdRef.current) return;
-        analysisCache.set(projectId, data);
         setAnalysisResult(data);
         setAnalysisState("ready");
       })
@@ -369,12 +364,9 @@ export function DecisionPageClient({
   };
 
   useEffect(() => {
-    const cached = analysisCache.get(projectId) ?? null;
-    setAnalysisResult(cached);
+    setAnalysisResult(null);
     setAnalysisError("");
-    setAnalysisState(cached ? "ready" : "loading");
-
-    if (cached) return;
+    setAnalysisState("loading");
 
     const controller = new AbortController();
     const requestId = ++requestIdRef.current;
@@ -384,7 +376,6 @@ export function DecisionPageClient({
   }, [projectId]);
 
   const handleRetry = () => {
-    analysisCache.delete(projectId);
     setAnalysisResult(null);
     setAnalysisError("");
     fetchAnalysis();
@@ -658,12 +649,7 @@ export function DecisionPageClient({
     );
   };
 
-  const verdictLabel =
-    analysisState === "ready" && analysisResult
-      ? DECISION_LABELS[analysisResult.decision]
-      : analysisState === "error"
-        ? "—"
-        : "";
+  const verdictLabel = persistedVerdict ? DECISION_LABELS[persistedVerdict] : "Ready";
 
   return (
     <main className="decision-report font-sans relative min-h-screen overflow-hidden bg-background">
@@ -730,13 +716,9 @@ export function DecisionPageClient({
                   <span className="font-label mb-1 text-[10px] font-bold uppercase tracking-[0.35em] text-white/70">
                     Verdict
                   </span>
-                  {analysisState === "loading" ? (
-                    <SkeletonLine className="h-14 w-36 bg-white/30" />
-                  ) : (
-                    <h2 className="font-headline text-4xl font-bold italic tracking-tight text-white drop-shadow-md md:text-5xl">
-                      {verdictLabel || "…"}
-                    </h2>
-                  )}
+                  <h2 className="font-headline text-4xl font-bold italic tracking-tight text-white drop-shadow-md md:text-5xl">
+                    {verdictLabel}
+                  </h2>
                 </div>
                 <div className="absolute -top-4 right-0 text-right">
                   <span className="font-label mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">

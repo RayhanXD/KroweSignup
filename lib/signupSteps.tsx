@@ -31,6 +31,12 @@ export function isValidStepKey(v: string): v is StepKey {
   return (SIGNUP_STEPS as string[]).includes(v)
 }
 
+/** Coerce API/DB step strings to a valid StepKey. */
+export function normalizeStepKey(k: string): StepKey {
+  if (isValidStepKey(k)) return k;
+  return getFirstStepKey();
+}
+
 export function getFirstStepKey(): StepKey {
   return SIGNUP_STEPS[0]
 }
@@ -58,9 +64,9 @@ export function getNextStepKeyForContext(
   context: { interviewCount?: number }
 ): StepKey | null {
   if (current === "interview_count") {
-    return (context.interviewCount ?? 0) > 0 ? "interview_upload" : "startup_stage"
+    return (context.interviewCount ?? 0) > 0 ? "interview_upload" : "startup_stage";
   }
-  return getNextStepKey(current)
+  return getNextStepKey(current);
 }
 
 export function getPrevStepKeyForContext(
@@ -68,7 +74,7 @@ export function getPrevStepKeyForContext(
   context: { interviewCount?: number }
 ): StepKey | null {
   if (current === "startup_stage") {
-    return (context.interviewCount ?? 0) > 0 ? "interview_upload" : "interview_count"
+    return (context.interviewCount ?? 0) > 0 ? "interview_upload" : "interview_count";
   }
-  return getPrevStepKey(current)
+  return getPrevStepKey(current);
 }

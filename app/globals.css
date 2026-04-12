@@ -53,6 +53,10 @@ body {
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
+.serif-text {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+}
+
 @keyframes spiral-preloader-gather {
   0% {
     opacity: 0;
