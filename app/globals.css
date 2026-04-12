@@ -11,8 +11,13 @@
   --card-foreground: #171717;
   --border: #e4e4e7;
   --tertiary: #0d9488;
-  /* Interviews UI accent (upload flow + project overview); scoped so signup --primary stays unchanged */
-  --interview-brand: #f07c28;
+  /* Interviews UI accent (list, project shell, founder console); signup --primary unchanged */
+  --interview-brand: #ff6a4d;
+  --interview-brand-end: #ff5733;
+  --interview-brand-tint: #ffeae5;
+  --interview-brand-glow: color-mix(in srgb, var(--interview-brand) 35%, transparent);
+  /* Editorial serif — referenced by @theme --font-serif and .serif-text */
+  --font-serif-family: ui-serif, Georgia, "Times New Roman", serif;
 
   /* Motion system: one place for easing and duration */
   --ease-out-smooth: cubic-bezier(0.16, 1, 0.3, 1);
@@ -35,7 +40,10 @@
   --color-border: var(--border);
   --color-tertiary: var(--tertiary);
   --color-interview-brand: var(--interview-brand);
+  --color-interview-brand-end: var(--interview-brand-end);
+  --color-interview-brand-tint: var(--interview-brand-tint);
   --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-serif-family);
   --font-mono: var(--font-geist-mono);
   --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
   --shadow-soft: 0 4px 20px -2px rgb(0 0 0 / 0.06), 0 2px 8px -2px rgb(0 0 0 / 0.04);
@@ -44,7 +52,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .material-symbols-outlined {
@@ -57,7 +65,7 @@ body {
 }
 
 .serif-text {
-  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-family: var(--font-serif-family);
 }
 
 @keyframes spiral-preloader-gather {

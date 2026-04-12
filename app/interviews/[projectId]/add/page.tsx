@@ -144,7 +144,7 @@ export default function AddInterviewPage() {
             type="button"
             disabled={loading || !hasValidTranscript}
             onClick={handleContinue}
-            className="bg-gradient-to-br from-[#FF6A4D] to-[#FF5733] text-white text-xs px-4 py-1.5 rounded-full font-bold shadow-md shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
+            className="bg-gradient-to-br from-interview-brand to-interview-brand-end text-white text-xs px-4 py-1.5 rounded-full font-bold shadow-md shadow-interview-brand/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
           >
             {loading ? "Working…" : "Continue to Insights"}
           </button>

@@ -49,8 +49,10 @@ export default function NewProjectForm({ isAdmin }: { isAdmin: boolean }) {
           </Link>
         </div>
 
-        <h1 className="text-2xl font-bold mb-2">New Project</h1>
-        <p className="text-sm text-muted-foreground mb-8">
+        <h1 className="serif-text text-[24px] sm:text-[26px] font-bold tracking-tight leading-[1.15] text-foreground mb-2">
+          New Project
+        </h1>
+        <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
           Give your research project a name{isAdmin ? " and optionally link it to a Krowe signup session" : ""}.
         </p>
 
@@ -65,7 +67,7 @@ export default function NewProjectForm({ isAdmin }: { isAdmin: boolean }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. SaaS tool for freelancers"
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-foreground/20"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-interview-brand/15"
             />
           </div>
 
@@ -81,7 +83,7 @@ export default function NewProjectForm({ isAdmin }: { isAdmin: boolean }) {
                 value={sessionId}
                 onChange={(e) => setSessionId(e.target.value)}
                 placeholder="Link to your Krowe session ID"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-interview-brand/15"
               />
               <p className="mt-1.5 text-xs text-muted-foreground">
                 Linking a session gives the AI context about your idea when generating the product spec.
@@ -96,7 +98,7 @@ export default function NewProjectForm({ isAdmin }: { isAdmin: boolean }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-full bg-gradient-to-br from-interview-brand to-interview-brand-end text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create project"}
           </button>

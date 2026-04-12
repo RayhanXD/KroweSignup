@@ -253,7 +253,7 @@ export function ProjectPageClient({
             {project.status === "ready" ? (
               <Link
                 href={`/interviews/${projectId}/decision`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-orange-400 text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-interview-brand text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
                 <span className="material-symbols-outlined text-[14px] leading-none">insights</span>
                 View Decision

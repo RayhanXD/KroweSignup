@@ -81,9 +81,9 @@ function confidenceBadge(score: number): { label: string; classes: string } {
 function ProblemCard({ problem: p }: { problem: ExtractedProblem }) {
   const badge = confidenceBadge(p.confidence);
   return (
-    <div className="bg-white p-4 rounded-xl border border-zinc-100 flex flex-col gap-3 shadow-sm hover:border-primary/20 transition-colors">
+    <div className="bg-white p-4 rounded-xl border border-zinc-100 flex flex-col gap-3 shadow-sm hover:border-interview-brand/20 transition-colors">
       <div className="flex justify-between items-center">
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold">
+        <div className="w-8 h-8 rounded-full bg-interview-brand/10 flex items-center justify-center text-interview-brand text-xs font-semibold">
           !
         </div>
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${badge.classes}`}>
@@ -334,7 +334,7 @@ export default function InterviewDetailClient({
                             }}
                             className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px capitalize ${
                               transcriptTab === tab
-                                ? "border-primary text-primary"
+                                ? "border-interview-brand text-interview-brand"
                                 : "border-transparent text-muted-foreground hover:text-foreground"
                             }`}
                           >
@@ -474,7 +474,7 @@ export default function InterviewDetailClient({
                       <ul className="space-y-3">
                         {summaryToBullets(summary).map((point, i) => (
                           <li key={i} className="flex gap-3 text-sm leading-relaxed">
-                            <span className="text-primary font-bold">•</span>
+                            <span className="text-interview-brand font-bold">•</span>
                             <span>{point}</span>
                           </li>
                         ))}
@@ -502,11 +502,11 @@ export default function InterviewDetailClient({
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {topQuotes.map((q, i) => (
-                          <div key={i} className="bg-primary/5 p-6 rounded-xl border border-primary/10 shadow-sm flex flex-col justify-between min-h-[140px]">
+                          <div key={i} className="bg-interview-brand/5 p-6 rounded-xl border border-interview-brand/10 shadow-sm flex flex-col justify-between min-h-[140px]">
                             <p className="italic text-on-surface text-base leading-relaxed mb-4">
                               &ldquo;{q.displayQuote}&rdquo;
                             </p>
-                            <span className="text-[8px] font-black text-primary uppercase tracking-widest">
+                            <span className="text-[8px] font-black text-interview-brand uppercase tracking-widest">
                               {q.intensity && q.intensity >= 4 ? "High Intensity" : "Signal"}
                             </span>
                           </div>
@@ -567,7 +567,7 @@ export default function InterviewDetailClient({
                                 </span>
                               </div>
                               <div className="h-1 w-full bg-zinc-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary-container w-full" />
+                                <div className="h-full bg-interview-brand/35 w-full" />
                               </div>
                             </div>
                           ))}

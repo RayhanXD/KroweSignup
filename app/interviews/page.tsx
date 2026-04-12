@@ -26,7 +26,7 @@ function projectTierPill(project: Project): { label: string; className: string }
     case "ready":
       return {
         label: "High Signal",
-        className: "bg-[#FFEAE5] text-[#FF6A4D]",
+        className: "bg-interview-brand-tint text-interview-brand",
       };
     case "processing":
       return {
@@ -56,8 +56,8 @@ function projectFooterStatus(project: Project): {
     case "ready":
       return {
         label: "Ready",
-        dotClass: "bg-[#FF6A4D]",
-        textClass: "text-[#FF6A4D]",
+        dotClass: "bg-interview-brand",
+        textClass: "text-interview-brand",
       };
     case "processing":
       return {
@@ -103,17 +103,17 @@ export default async function InterviewsPage() {
       <main className="max-w-[1100px] mx-auto px-5 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-end mb-8">
           <div>
-            <h1 className="text-3xl font-serif font-bold text-[#0B0F19] tracking-tight">
+            <h1 className="serif-text text-3xl font-bold text-foreground tracking-tight">
               Active Projects
             </h1>
-            <p className="text-[#71717A] mt-1.5 text-sm font-medium">
+            <p className="text-muted-foreground mt-1.5 text-sm font-medium">
               Strategic intelligence and decision specs.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 justify-end">
             <Link
               href="/interviews/new"
-              className="bg-gradient-to-br from-[#FF6A4D] to-[#FF5733] text-white px-4 py-2 rounded-full font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:translate-y-[-1px] transition-all"
+              className="bg-gradient-to-br from-interview-brand to-interview-brand-end text-white px-4 py-2 rounded-full font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:translate-y-[-1px] transition-all"
             >
               <span className="material-symbols-outlined text-base" aria-hidden>
                 add
@@ -141,13 +141,13 @@ export default async function InterviewsPage() {
                     {tier.label}
                   </span>
                   <span
-                    className="material-symbols-outlined text-[#A1A1AA] group-hover:text-[#FF6A4D] transition-colors"
+                    className="material-symbols-outlined text-[#A1A1AA] group-hover:text-interview-brand transition-colors"
                     aria-hidden
                   >
                     more_horiz
                   </span>
                 </div>
-                <h3 className="text-[16px] font-serif font-semibold text-[#0B0F19] mb-1.5 leading-tight">
+                <h3 className="text-[16px] serif-text font-semibold text-foreground mb-1.5 leading-tight">
                   {project.name}
                 </h3>
                 <p className="text-[#6B7280] text-xs leading-relaxed mb-4 line-clamp-2">
@@ -179,14 +179,14 @@ export default async function InterviewsPage() {
 
           <Link
             href="/interviews/new"
-            className="border-2 border-dashed border-black/5 rounded-xl p-4 flex flex-col items-center justify-center text-center group hover:border-[#FF6A4D]/20 hover:bg-[#FFEAE5]/10 transition-all cursor-pointer min-h-[170px]"
+            className="border-2 border-dashed border-black/5 rounded-xl p-4 flex flex-col items-center justify-center text-center group hover:border-interview-brand/20 hover:bg-interview-brand-tint/10 transition-all cursor-pointer min-h-[170px]"
           >
             <div className="w-10 h-10 rounded-full bg-white border border-black/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-[#FF6A4D]" aria-hidden>
+              <span className="material-symbols-outlined text-interview-brand" aria-hidden>
                 add
               </span>
             </div>
-            <h3 className="text-sm font-semibold text-[#0B0F19]">Create New Insight Loop</h3>
+            <h3 className="text-sm font-semibold text-foreground">Create New Insight Loop</h3>
             <p className="text-xs text-[#A1A1AA] mt-1">Start from interviews or upload docs.</p>
           </Link>
         </div>
@@ -202,13 +202,13 @@ export default async function InterviewsPage() {
             <span>Version: 1.0.4-Founder</span>
           </div>
           <div className="flex flex-wrap items-center gap-6">
-            <a className="hover:text-[#0B0F19] transition-colors" href="#">
+            <a className="hover:text-foreground transition-colors" href="#">
               Documentation
             </a>
-            <a className="hover:text-[#0B0F19] transition-colors" href="#">
+            <a className="hover:text-foreground transition-colors" href="#">
               Security Audit
             </a>
-            <a className="hover:text-[#0B0F19] transition-colors" href="#">
+            <a className="hover:text-foreground transition-colors" href="#">
               Feedback
             </a>
           </div>
