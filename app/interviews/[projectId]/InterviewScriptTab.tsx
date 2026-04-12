@@ -34,6 +34,8 @@ import {
 import { founderConsoleNodeTypes } from "./founderConsoleNodeTypes";
 import { ScriptCanvasProvider } from "./scriptCanvasContext";
 
+type NavDirection = "left" | "right" | "up" | "down" | "center";
+
 function nodeSearchText(node: Node): string {
   const d = node.data as Record<string, unknown>;
   const t = node.type;
@@ -106,6 +108,12 @@ export function InterviewScriptTab({
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [consoleTab, setConsoleTab] = useState<ConsoleTab>("nodes");
+  const focusRequestNonceRef = useRef(0);
+  const [focusRequest, setFocusRequest] = useState<{
+    nodeId: string;
+    direction: NavDirection;
+    nonce: number;
+  } | null>(null);
   const hasAutoCentered = useRef(false);
   const [fitToken, setFitToken] = useState(0);
 
@@ -115,6 +123,25 @@ export function InterviewScriptTab({
     const name = projectName.trim();
     return name.length > 0 ? `${name} · discovery context` : "Market & discovery context";
   }, [projectName]);
+
+  const graph = useMemo(() => {
+    if (!script) {
+      return buildInterviewScriptFlowGraph({
+        intro: "",
+        closing: "",
+        sections: [],
+        contextLabel: contextLabel,
+        archiveLabel: "Script archive",
+      });
+    }
+    return buildInterviewScriptFlowGraph({
+      intro: script.intro,
+      closing: script.closing,
+      sections,
+      contextLabel,
+      archiveLabel: "Past segments (placeholder)",
+    });
+  }, [script, sections, contextLabel]);
 
   const flowNodeOrder = useMemo(() => {
     const nodes: string[] = ["opening"];
@@ -132,9 +159,14 @@ export function InterviewScriptTab({
     [flowNodeOrder]
   );
 
+  const queueFocusOnNode = useCallback((nodeId: string, direction: NavDirection) => {
+    focusRequestNonceRef.current += 1;
+    setFocusRequest({ nodeId, direction, nonce: focusRequestNonceRef.current });
+  }, []);
+
   const navigateToNodeByStep = useCallback(
     (direction: -1 | 1, fromNodeId?: string) => {
-      if (flowNodeOrder.length === 0) return;
+      if (flowNodeOrder.length === 0) return null;
       const currentId = fromNodeId ?? activeNodeId ?? flowNodeOrder[0];
       const currentIndex = flowNodeIndexById.get(currentId) ?? 0;
       const nextIndex = Math.min(
@@ -143,8 +175,44 @@ export function InterviewScriptTab({
       );
       const nextId = flowNodeOrder[nextIndex];
       setActiveNodeId(nextId);
+      return nextId;
     },
     [activeNodeId, flowNodeIndexById, flowNodeOrder]
+  );
+
+  const findNearestNodeInDirection = useCallback(
+    (direction: Exclude<NavDirection, "center">, fromNodeId?: string): string | null => {
+      const currentId = fromNodeId ?? activeNodeId ?? flowNodeOrder[0];
+      const current = graph.nodes.find((n) => n.id === currentId);
+      if (!current) return null;
+
+      let bestId: string | null = null;
+      let bestScore = Number.POSITIVE_INFINITY;
+
+      for (const candidate of graph.nodes) {
+        if (candidate.id === current.id) continue;
+        const dx = candidate.position.x - current.position.x;
+        const dy = candidate.position.y - current.position.y;
+
+        const inDirection =
+          (direction === "right" && dx > 12) ||
+          (direction === "left" && dx < -12) ||
+          (direction === "down" && dy > 12) ||
+          (direction === "up" && dy < -12);
+        if (!inDirection) continue;
+
+        const primary = direction === "left" || direction === "right" ? Math.abs(dx) : Math.abs(dy);
+        const secondary = direction === "left" || direction === "right" ? Math.abs(dy) : Math.abs(dx);
+        const score = primary + secondary * 0.45;
+        if (score < bestScore) {
+          bestScore = score;
+          bestId = candidate.id;
+        }
+      }
+
+      return bestId;
+    },
+    [activeNodeId, flowNodeOrder, graph.nodes]
   );
 
   const moveQuestion = useCallback((sectionIndex: number, questionIndex: number, delta: -1 | 1) => {
@@ -199,25 +267,6 @@ export function InterviewScriptTab({
     if (script) setSections(script.sections);
   }, [script]);
 
-  const graph = useMemo(() => {
-    if (!script) {
-      return buildInterviewScriptFlowGraph({
-        intro: "",
-        closing: "",
-        sections: [],
-        contextLabel: contextLabel,
-        archiveLabel: "Script archive",
-      });
-    }
-    return buildInterviewScriptFlowGraph({
-      intro: script.intro,
-      closing: script.closing,
-      sections,
-      contextLabel,
-      archiveLabel: "Past segments (placeholder)",
-    });
-  }, [script, sections, contextLabel]);
-
   const styledNodes = useMemo(
     () => mergeNodeUi(graph.nodes, activeNodeId, searchQuery),
     [graph.nodes, activeNodeId, searchQuery]
@@ -257,6 +306,7 @@ export function InterviewScriptTab({
         const first = flowNodeOrder[0];
         if (!first) return;
         setActiveNodeId(first);
+        queueFocusOnNode(first, "center");
         setFitToken((x) => x + 1);
         return;
       }
@@ -265,17 +315,40 @@ export function InterviewScriptTab({
         const last = flowNodeOrder[flowNodeOrder.length - 1];
         if (!last) return;
         setActiveNodeId(last);
+        queueFocusOnNode(last, "center");
         setFitToken((x) => x + 1);
         return;
       }
-      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      if (
+        event.key === "ArrowLeft" ||
+        event.key === "ArrowRight" ||
+        event.key === "ArrowUp" ||
+        event.key === "ArrowDown"
+      ) {
         event.preventDefault();
-        navigateToNodeByStep(event.key === "ArrowRight" ? 1 : -1);
+        const direction =
+          event.key === "ArrowLeft"
+            ? "left"
+            : event.key === "ArrowRight"
+              ? "right"
+              : event.key === "ArrowUp"
+                ? "up"
+                : "down";
+        const directionalNodeId = findNearestNodeInDirection(direction);
+        if (directionalNodeId) {
+          setActiveNodeId(directionalNodeId);
+          queueFocusOnNode(directionalNodeId, direction);
+          return;
+        }
+        if (direction === "left" || direction === "right") {
+          const nextId = navigateToNodeByStep(direction === "right" ? 1 : -1);
+          if (nextId) queueFocusOnNode(nextId, direction);
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [consoleTab, flowNodeOrder, navigateToNodeByStep]);
+  }, [consoleTab, findNearestNodeInDirection, flowNodeOrder, navigateToNodeByStep, queueFocusOnNode]);
 
   function buildPlainText(): string {
     if (!script) return "";
@@ -420,6 +493,7 @@ export function InterviewScriptTab({
                   edges={styledEdges}
                   fitToken={fitToken}
                   activeNodeId={activeNodeId}
+                  focusRequest={focusRequest}
                   onNodeClick={(id) => setActiveNodeId(id)}
                   onExportDownload={handleDownload}
                   onExportCopy={handleCopy}
@@ -481,6 +555,7 @@ function FlowCanvasInner({
   edges,
   fitToken,
   activeNodeId,
+  focusRequest,
   onNodeClick,
   onExportDownload,
   onExportCopy,
@@ -489,13 +564,14 @@ function FlowCanvasInner({
   edges: Edge[];
   fitToken: string | number;
   activeNodeId: string | null;
+  focusRequest: { nodeId: string; direction: NavDirection; nonce: number } | null;
   onNodeClick: (id: string) => void;
   onExportDownload: () => void;
   onExportCopy: () => void;
 }) {
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(nodes);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(edges);
-  const { fitView } = useReactFlow();
+  const { fitView, getZoom, setCenter } = useReactFlow();
 
   useEffect(() => {
     setRfNodes(nodes);
@@ -504,6 +580,32 @@ function FlowCanvasInner({
   useEffect(() => {
     setRfEdges(edges);
   }, [edges, setRfEdges]);
+
+  useEffect(() => {
+    if (!focusRequest) return;
+    const target = rfNodes.find((n) => n.id === focusRequest.nodeId);
+    if (!target) return;
+
+    const widthFromStyle = typeof target.style?.width === "number" ? target.style.width : null;
+    const heightFromStyle = typeof target.style?.height === "number" ? target.style.height : null;
+    const nodeWidth = target.measured?.width ?? widthFromStyle ?? 256;
+    const nodeHeight = target.measured?.height ?? heightFromStyle ?? 160;
+    const centerX = target.position.x + nodeWidth / 2;
+    const centerY = target.position.y + nodeHeight / 2;
+    const zoom = Math.max(0.22, Math.min(getZoom() || 0.6, 1.3));
+    const worldOffset = 130 / zoom;
+
+    let offsetX = 0;
+    let offsetY = 0;
+    if (focusRequest.direction === "right") offsetX = worldOffset;
+    if (focusRequest.direction === "left") offsetX = -worldOffset;
+    if (focusRequest.direction === "down") offsetY = worldOffset * 0.85;
+    if (focusRequest.direction === "up") offsetY = -worldOffset * 0.85;
+
+    requestAnimationFrame(() => {
+      setCenter(centerX + offsetX, centerY + offsetY, { zoom, duration: 240 });
+    });
+  }, [focusRequest, getZoom, rfNodes, setCenter]);
 
   return (
     <>

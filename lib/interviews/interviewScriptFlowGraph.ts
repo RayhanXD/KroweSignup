@@ -28,6 +28,9 @@ const FC_SPINE_Y = 200;
 const FC_PAD_X = 72;
 const FC_CONTEXT_Y = 40;
 const FC_ARCHIVE_OFFSET_Y = 168;
+const FC_TEXT_CARD_BASE_MIN_H = 140;
+const FC_TEXT_CARD_MAX_MIN_H = 320;
+const FC_ARCHIVE_GAP_Y = 68;
 
 /** Exported for tests that assert layout spacing. */
 export const FC_LAYOUT = {
@@ -39,6 +42,18 @@ export const FC_LAYOUT = {
 
 function spineX(index: number): number {
   return FC_PAD_X + index * (FC_NODE_W + FC_GAP);
+}
+
+function estimateTextCardMinHeight(text: string): number {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return FC_TEXT_CARD_BASE_MIN_H;
+  // Approximate wrapped line count for 256px card width and text-sm body copy.
+  const estimatedLines = Math.ceil(normalized.length / 34);
+  const estimated = 106 + estimatedLines * 20;
+  return Math.max(
+    FC_TEXT_CARD_BASE_MIN_H,
+    Math.min(FC_TEXT_CARD_MAX_MIN_H, estimated)
+  );
 }
 
 /**
@@ -85,7 +100,7 @@ export function buildInterviewScriptFlowGraph(args: {
     type: "fcOpening",
     position: { x: spineX(0), y: FC_SPINE_Y },
     data: { text: intro, label: "Opening" as const },
-    style: cardStyle(140),
+    style: cardStyle(estimateTextCardMinHeight(intro)),
   });
 
   // Questions
@@ -118,15 +133,20 @@ export function buildInterviewScriptFlowGraph(args: {
     type: "fcClosing",
     position: { x: spineX(closingSpineIndex), y: FC_SPINE_Y },
     data: { text: closing, label: "Closing" as const },
-    style: cardStyle(140),
+    style: cardStyle(estimateTextCardMinHeight(closing)),
   });
 
   // Decorative: Archive (below closing)
+  const closingNodeMinHeight = estimateTextCardMinHeight(closing);
   const archiveX = spineX(closingSpineIndex);
+  const archiveOffsetY = Math.max(
+    FC_ARCHIVE_OFFSET_Y,
+    closingNodeMinHeight + FC_ARCHIVE_GAP_Y
+  );
   nodes.push({
     id: "archive",
     type: "fcArchive",
-    position: { x: archiveX, y: FC_SPINE_Y + FC_ARCHIVE_OFFSET_Y },
+    position: { x: archiveX, y: FC_SPINE_Y + archiveOffsetY },
     data: { label: archiveLabel ?? "Competitor Matrix" },
     style: cardStyle(88),
   });

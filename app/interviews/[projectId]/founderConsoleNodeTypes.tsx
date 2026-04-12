@@ -5,8 +5,8 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { ChevronDown, ChevronUp, Clock, GripVertical } from "lucide-react";
 import { useScriptCanvas } from "./scriptCanvasContext";
 
-type FcContextData = { label: string; dimmed?: boolean };
-type FcArchiveData = { label: string; dimmed?: boolean };
+type FcContextData = { label: string; active?: boolean; dimmed?: boolean };
+type FcArchiveData = { label: string; active?: boolean; dimmed?: boolean };
 type FcTextCardData = { text: string; active?: boolean; dimmed?: boolean; label: "Opening" | "Closing" };
 type FcQuestionData = {
   sectionTitle: string;
@@ -24,10 +24,13 @@ function estimateMinutes(probes: string[]): number {
 }
 
 export const FcContextNode = memo(function FcContextNode({ data }: NodeProps<Node<FcContextData>>) {
+  const active = data.active ?? false;
   const dimmed = data.dimmed ?? false;
   return (
     <div
-      className={`relative w-full rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5 shadow-sm transition-opacity ${
+      className={`relative w-full rounded-xl border bg-muted/30 px-3 py-2.5 shadow-sm transition-[box-shadow,opacity,border-color] ${
+        active ? "border-[#FF6A4D]/65 ring-2 ring-[#FF6A4D]/20" : "border-border/50"
+      } ${
         dimmed ? "opacity-35" : "opacity-90"
       }`}
     >
@@ -39,10 +42,13 @@ export const FcContextNode = memo(function FcContextNode({ data }: NodeProps<Nod
 });
 
 export const FcArchiveNode = memo(function FcArchiveNode({ data }: NodeProps<Node<FcArchiveData>>) {
+  const active = data.active ?? false;
   const dimmed = data.dimmed ?? false;
   return (
     <div
-      className={`relative w-full rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5 shadow-sm transition-opacity ${
+      className={`relative w-full rounded-xl border bg-muted/30 px-3 py-2.5 shadow-sm transition-[box-shadow,opacity,border-color] ${
+        active ? "border-[#FF6A4D]/65 ring-2 ring-[#FF6A4D]/20" : "border-border/50"
+      } ${
         dimmed ? "opacity-35" : "opacity-90"
       }`}
     >
@@ -71,7 +77,7 @@ export const FcOpeningNode = memo(function FcOpeningNode({ data }: NodeProps<Nod
         </div>
       )}
       <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{data.label}</p>
-      <p className="text-sm leading-relaxed text-foreground">{data.text}</p>
+      <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap break-words">{data.text}</p>
     </div>
   );
 });
@@ -94,7 +100,7 @@ export const FcClosingNode = memo(function FcClosingNode({ data }: NodeProps<Nod
         </div>
       )}
       <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{data.label}</p>
-      <p className="text-sm leading-relaxed text-foreground">{data.text}</p>
+      <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap break-words">{data.text}</p>
     </div>
   );
 });
