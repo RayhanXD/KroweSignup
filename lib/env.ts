@@ -15,6 +15,12 @@ type EnvConfig = {
   openai: {
     apiKey: string;
   };
+  mongo: {
+    uri: string | undefined;
+    dbName: string;
+    problemsCollection: string;
+    vectorIndexName: string;
+  };
 };
 
 /**
@@ -35,6 +41,13 @@ function requireEnv(key: string): string {
  * Validates and returns all environment variables
  */
 function validateEnv(): EnvConfig {
+  const mongoUri = process.env.MONGODB_URI?.trim() || undefined;
+  const mongoDbName = process.env.MONGODB_DB_NAME?.trim() || "krowe";
+  const mongoProblemsCollection =
+    process.env.MONGODB_PROBLEMS_COLLECTION?.trim() || "problems";
+  const mongoVectorIndexName =
+    process.env.MONGODB_VECTOR_INDEX_NAME?.trim() || "problems_embedding_idx";
+
   return {
     supabase: {
       url: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
@@ -43,6 +56,12 @@ function validateEnv(): EnvConfig {
     },
     openai: {
       apiKey: requireEnv("OPENAI_API_KEY"),
+    },
+    mongo: {
+      uri: mongoUri,
+      dbName: mongoDbName,
+      problemsCollection: mongoProblemsCollection,
+      vectorIndexName: mongoVectorIndexName,
     },
   };
 }
@@ -61,7 +80,15 @@ export const ENV = {
   SUPABASE_ANON_KEY: env.supabase.anonKey,
   SUPABASE_SERVICE_ROLE_KEY: env.supabase.serviceRoleKey,
   OPENAI_API_KEY: env.openai.apiKey,
+  MONGODB_URI: env.mongo.uri,
+  MONGODB_DB_NAME: env.mongo.dbName,
+  MONGODB_PROBLEMS_COLLECTION: env.mongo.problemsCollection,
+  MONGODB_VECTOR_INDEX_NAME: env.mongo.vectorIndexName,
 } as const;
+
+export function isMongoConfigured(): boolean {
+  return Boolean(ENV.MONGODB_URI);
+}
 
 /**
  * Optional base URL for the platform app (dashboard / roadmap).
