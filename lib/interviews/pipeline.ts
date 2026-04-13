@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "../supabaseServer";
 import { structureInterview } from "./structureInterview";
 import { extractProblems } from "./extractProblems";
 import { embedProblems, clusterByCosineSimilarity } from "./clusterProblems";
+import { prepareProblemsForInsertWithSemanticDedup } from "./semanticDedup";
 import { scoreCluster, selectTopQuotes } from "./scoreProblems";
 import { mergeCluster } from "./mergeClusters";
 import { mergeClusterGroups } from "./mergeClusterGroups";
@@ -258,19 +259,13 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
           const problems = await extractProblems(structured.segments, interview.raw_text);
           console.log(`[pipeline] interview ${interview.id} extracted ${problems.length} problems`);
           if (problems.length > 0) {
+            const preparedRows = await prepareProblemsForInsertWithSemanticDedup({
+              projectId,
+              interviewId: interview.id,
+              problems,
+            });
             const { error: insertErr } = await supabase.from("extracted_problems").insert(
-              problems.map((p) => ({
-                interview_id: interview.id,
-                problem_text: p.problem_text,
-                customer_type: p.customer_type,
-                context: p.context,
-                root_cause: p.root_cause ?? null,
-                intensity_score: p.intensity_score,
-                confidence: p.confidence,
-                supporting_quote: p.supporting_quote ?? null,
-                verbatim_quote: p.verbatim_quote ?? null,
-                embedding: null,
-              }))
+              preparedRows
             );
             if (insertErr) {
               console.error(`[pipeline] interview ${interview.id} extracted_problems insert failed:`, insertErr.message);

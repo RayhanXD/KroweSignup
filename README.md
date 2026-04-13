@@ -38,6 +38,32 @@ NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
 
 The app will use `NEXT_PUBLIC_APP_ORIGIN` in non-production builds and otherwise fall back to `window.location.origin`.
 
+## MongoDB Atlas Setup (Beginner)
+
+Use this setup for semantic deduplication in the interview pipeline.
+
+1. Create an Atlas account at `https://www.mongodb.com/atlas` and create a free `M0` cluster.
+2. Create a database user in Atlas (`Database Access`) and save the username/password.
+3. Add a network access rule in `Network Access`:
+- For local development only, add `0.0.0.0/0`.
+- Later, restrict this to your server/Vercel egress IPs.
+4. In Atlas, open `Connect` for your cluster and copy the SRV connection string (`mongodb+srv://...`).
+5. Add these variables to `.env.local`:
+
+```bash
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-url>/?retryWrites=true&w=majority
+MONGODB_DB_NAME=krowe
+MONGODB_PROBLEMS_COLLECTION=problems
+MONGODB_VECTOR_INDEX_NAME=problems_embedding_idx
+```
+
+6. Create a Vector Search index on the `problems` collection:
+- Field path: `embedding`
+- Dimensions: `1536` (matches `text-embedding-3-small`)
+- Similarity: `cosine`
+- Add `projectId` as a filter field in the index definition.
+7. Restart the app and run interview processing; the backend will use Mongo dedup when configured, and fall back safely when not configured.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
