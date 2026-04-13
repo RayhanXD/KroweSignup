@@ -63,30 +63,30 @@ export default function StartupStageStep({
         <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-start">
           {/* Left Column */}
           <div className="space-y-6">
-            <div className="animate-fade-slide-in step-delay-1 w-12 h-12 rounded-xl bg-[#fff4e6] flex items-center justify-center">
-              <Rocket className="w-6 h-6 text-[#f97316]" />
+            <div className="animate-fade-slide-in step-delay-1 w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center">
+              <Rocket className="w-6 h-6 text-primary" />
             </div>
 
             <div className="animate-fade-slide-in step-delay-2 space-y-4">
-              <h1 className="text-4xl font-bold tracking-tight text-black">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground">
                 Where are you
                 <br />
-                <span className="text-[#f97316]">right now?</span>
+                <span className="text-primary">right now?</span>
               </h1>
               <p className="animate-fade-slide-in step-delay-3 text-muted-foreground leading-relaxed">
                 Select the stage that best describes your startup today. This helps us tailor your plan.
               </p>
             </div>
 
-            <div className="animate-fade-slide-in step-delay-4 bg-[#fafafa] rounded-lg p-5 space-y-3">
+            <div className="animate-fade-slide-in step-delay-4 bg-surface-subtle rounded-lg p-5 space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                 <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   Almost there
                 </span>
               </div>
-              <p className="font-mono text-sm text-black leading-relaxed">
-                This is the <span className="text-[#f97316]">final step</span> before we generate your personalized startup plan.
+              <p className="font-mono text-sm text-foreground leading-relaxed">
+                This is the <span className="text-primary">final step</span> before we generate your personalized startup plan.
               </p>
             </div>
           </div>
@@ -104,12 +104,12 @@ export default function StartupStageStep({
                     checked={value === stage.value}
                     onChange={() => onChange(stage.value)}
                   />
-                  <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-xl px-4 py-3 transition-all duration-200 hover:border-orange-200 hover:shadow-sm peer-checked:border-orange-400 peer-checked:ring-1 peer-checked:ring-orange-400 peer-checked:bg-orange-50">
-                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 peer-checked:bg-orange-100 flex items-center justify-center text-xs font-bold text-gray-500 peer-checked:text-orange-600 transition-colors">
+                  <div className="flex items-center gap-4 bg-card border border-border rounded-xl px-4 py-3 transition-all duration-200 hover:border-primary/30 hover:shadow-sm peer-checked:border-primary/50 peer-checked:ring-1 peer-checked:ring-primary/50 peer-checked:bg-primary-soft">
+                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-muted peer-checked:bg-primary-soft flex items-center justify-center text-xs font-bold text-muted-foreground peer-checked:text-primary transition-colors">
                       {idx + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 group-hover:text-orange-700 peer-checked:text-orange-700">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary peer-checked:text-primary">
                         {stage.label}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">{stage.description}</p>
@@ -122,7 +122,7 @@ export default function StartupStageStep({
             {/* Footer Actions */}
             <div className="animate-fade-slide-in step-delay-6 flex items-center justify-between pt-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <div className="w-2 h-2 rounded-full bg-success" />
                 <span>Auto-saved</span>
               </div>
 
@@ -138,7 +138,7 @@ export default function StartupStageStep({
                   type="button"
                   onClick={onContinue}
                   disabled={!canContinue || submitting}
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Anaylze My Interviews!
                   <ArrowRight className="w-4 h-4" />

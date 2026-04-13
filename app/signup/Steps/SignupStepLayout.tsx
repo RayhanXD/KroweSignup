@@ -14,17 +14,17 @@ type SignupStepLayoutProps = {
  */
 export default function SignupStepLayout({ progressPercent = 0, children }: SignupStepLayoutProps) {
   return (
-    <div className="min-h-screen bg-white text-foreground flex flex-col">
-      <header className="border-b border-gray-200 bg-white/90 backdrop-blur">
+    <div className="min-h-screen bg-card text-foreground flex flex-col">
+      <header className="border-b border-border bg-card/90 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-2 md:py-3">
           <div className="flex items-center gap-4">
             <div className="flex-shrink-0">
               <img src="/KroweLogo.png" alt="Krowe Logo" className="h-10 w-auto md:h-12" />
             </div>
             <div className="flex-1 flex justify-center min-w-0 px-2 -ml-12 md:-ml-16">
-              <div className="w-full max-w-xs h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="w-full max-w-xs h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="signup-progress-fill bg-orange-500 h-full rounded-full"
+                  className="signup-progress-fill bg-primary-soft h-full rounded-full"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>

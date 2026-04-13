@@ -41,7 +41,7 @@ export function MetaClusterCard({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50"
           onClick={() => setOpen(false)}
         >
           <div

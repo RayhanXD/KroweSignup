@@ -114,32 +114,32 @@ export default function InterviewUploadStep({
       <div className="w-full flex flex-col items-center justify-center">
         <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center justify-items-center">
           <div className="space-y-6 w-full max-w-lg text-center md:text-left md:justify-self-stretch">
-            <div className="animate-fade-slide-in step-delay-1 w-12 h-12 rounded-xl bg-[#fff4e6] flex items-center justify-center mx-auto md:mx-0">
-              <Upload className="w-6 h-6 text-[#f97316]" />
+            <div className="animate-fade-slide-in step-delay-1 w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center mx-auto md:mx-0">
+              <Upload className="w-6 h-6 text-primary" />
             </div>
 
             <div className="animate-fade-slide-in step-delay-2 space-y-4">
-              <h1 className="text-4xl font-bold tracking-tight text-black">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground">
                 Upload your
                 <br />
-                <span className="text-[#f97316]">interviews</span>
+                <span className="text-primary">interviews</span>
               </h1>
               <p className="animate-fade-slide-in step-delay-3 text-muted-foreground leading-relaxed">
                 Share your interview recordings or transcripts. We&apos;ll analyze them to surface key insights.
               </p>
             </div>
 
-            <div className="animate-fade-slide-in step-delay-4 bg-[#fafafa] rounded-lg p-5 space-y-3 md:mx-0 mx-auto max-w-md">
+            <div className="animate-fade-slide-in step-delay-4 bg-surface-subtle rounded-lg p-5 space-y-3 md:mx-0 mx-auto max-w-md">
               <div className="flex items-center gap-2 justify-center md:justify-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                 <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   Accepted formats
                 </span>
               </div>
-              <p className="font-mono text-sm text-black leading-relaxed">
-                <span className="text-[#f97316]">PDF, DOCX, TXT</span> — transcripts
+              <p className="font-mono text-sm text-foreground leading-relaxed">
+                <span className="text-primary">PDF, DOCX, TXT</span> — transcripts
                 <br />
-                <span className="text-[#f97316]">MP3, MP4, M4A, WAV, MOV</span> — recordings
+                <span className="text-primary">MP3, MP4, M4A, WAV, MOV</span> — recordings
               </p>
             </div>
           </div>
@@ -149,8 +149,8 @@ export default function InterviewUploadStep({
               <div
                 className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
                   dragOver
-                    ? "border-orange-400 bg-orange-50"
-                    : "border-gray-300 hover:border-orange-300 hover:bg-gray-50"
+                    ? "border-primary/50 bg-primary-soft"
+                    : "border-border/80 hover:border-primary/40 hover:bg-muted"
                 }`}
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => {
@@ -160,8 +160,8 @@ export default function InterviewUploadStep({
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
               >
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm font-medium text-gray-700">Drag & drop files here</p>
+                <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm font-medium text-foreground">Drag & drop files here</p>
                 <p className="text-xs text-muted-foreground mt-1">or click to browse</p>
                 <input
                   ref={inputRef}
@@ -180,17 +180,17 @@ export default function InterviewUploadStep({
                     return (
                       <div
                         key={file.name}
-                        className="flex items-center gap-3 px-3 py-2 bg-white border border-gray-200 rounded-lg"
+                        className="flex items-center gap-3 px-3 py-2 bg-card border border-border rounded-lg"
                       >
-                        <Icon className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                        <span className="flex-1 text-sm text-gray-800 truncate">{file.name}</span>
+                        <Icon className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="flex-1 text-sm text-foreground truncate">{file.name}</span>
                         <span className="text-xs text-muted-foreground flex-shrink-0">
                           {formatBytes(file.size)}
                         </span>
                         <button
                           type="button"
                           onClick={() => removeFile(file.name)}
-                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          className="text-muted-foreground hover:text-danger transition-colors"
                           aria-label={`Remove ${file.name}`}
                         >
                           <X className="w-4 h-4" />
@@ -202,17 +202,17 @@ export default function InterviewUploadStep({
               )}
 
               {hasExisting && files.length === 0 && (
-                <p className="text-xs text-green-600">
+                <p className="text-xs text-success">
                   {value.length} file{value.length !== 1 ? "s" : ""} already uploaded.
                 </p>
               )}
 
-              {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+              {uploadError && <p className="text-sm text-danger">{uploadError}</p>}
             </div>
 
             <div className="animate-fade-slide-in step-delay-6 flex flex-col sm:flex-row items-center justify-center gap-4 sm:justify-between pt-2 w-full">
               <div className="flex items-center gap-2 text-sm text-muted-foreground order-2 sm:order-1">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <div className="w-2 h-2 rounded-full bg-success" />
                 <span>Auto-saved</span>
               </div>
 
@@ -228,7 +228,7 @@ export default function InterviewUploadStep({
                   type="button"
                   onClick={handleContinue}
                   disabled={uploading || submitting}
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploading ? "Uploading…" : "Continue"}
                   {!uploading && <ArrowRight className="w-4 h-4" />}

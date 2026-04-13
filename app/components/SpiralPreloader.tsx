@@ -8,7 +8,11 @@ const MARGIN = 2
 const DURATION = 3
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5))
 
-const DEFAULT_COLORS = ['#fb923c', '#f97316', '#ea580c'] as const
+const DEFAULT_COLORS = [
+  'color-mix(in srgb, var(--primary) 78%, var(--card))',
+  'var(--primary)',
+  'var(--primary-hover)'
+] as const
 
 function getThemeColors(): string[] {
   if (typeof document === 'undefined') return [...DEFAULT_COLORS]

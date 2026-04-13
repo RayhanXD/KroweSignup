@@ -31,18 +31,18 @@ function projectTierPill(project: Project): { label: string; className: string }
     case "processing":
       return {
         label: "In Progress",
-        className: "bg-zinc-100 text-[#71717A]",
+        className: "bg-muted text-[var(--muted-foreground)]",
       };
     case "failed":
       return {
         label: "Needs attention",
-        className: "bg-red-50 text-red-700",
+        className: "bg-danger-soft text-danger",
       };
     case "collecting":
     default:
       return {
         label: "Collecting",
-        className: "bg-zinc-100 text-[#71717A]",
+        className: "bg-muted text-[var(--muted-foreground)]",
       };
   }
 }
@@ -62,21 +62,21 @@ function projectFooterStatus(project: Project): {
     case "processing":
       return {
         label: "In progress",
-        dotClass: "bg-[#A1A1AA] animate-pulse",
-        textClass: "text-[#A1A1AA]",
+        dotClass: "bg-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)] animate-pulse",
+        textClass: "text-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)]",
       };
     case "failed":
       return {
         label: "Failed",
-        dotClass: "bg-red-500",
-        textClass: "text-red-600",
+        dotClass: "bg-danger",
+        textClass: "text-danger",
       };
     case "collecting":
     default:
       return {
         label: "Draft",
-        dotClass: "bg-[#A1A1AA]",
-        textClass: "text-[#A1A1AA]",
+        dotClass: "bg-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)]",
+        textClass: "text-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)]",
       };
   }
 }
@@ -113,7 +113,7 @@ export default async function InterviewsPage() {
           <div className="flex flex-wrap items-center gap-3 justify-end">
             <Link
               href="/interviews/new"
-              className="bg-gradient-to-br from-interview-brand to-interview-brand-end text-white px-4 py-2 rounded-full font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:translate-y-[-1px] transition-all"
+              className="bg-gradient-to-br from-interview-brand to-interview-brand-end text-primary-foreground px-4 py-2 rounded-full font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:translate-y-[-1px] transition-all"
             >
               <span className="material-symbols-outlined text-base" aria-hidden>
                 add
@@ -132,7 +132,7 @@ export default async function InterviewsPage() {
               <Link
                 key={project.id}
                 href={`/interviews/${project.id}`}
-                className="bg-white border border-black/5 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group cursor-pointer block"
+                className="bg-card border border-border/40 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group cursor-pointer block"
               >
                 <div className="flex justify-between items-start mb-3">
                   <span
@@ -141,7 +141,7 @@ export default async function InterviewsPage() {
                     {tier.label}
                   </span>
                   <span
-                    className="material-symbols-outlined text-[#A1A1AA] group-hover:text-interview-brand transition-colors"
+                    className="material-symbols-outlined text-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)] group-hover:text-interview-brand transition-colors"
                     aria-hidden
                   >
                     more_horiz
@@ -150,17 +150,17 @@ export default async function InterviewsPage() {
                 <h3 className="text-[16px] serif-text font-semibold text-foreground mb-1.5 leading-tight">
                   {project.name}
                 </h3>
-                <p className="text-[#6B7280] text-xs leading-relaxed mb-4 line-clamp-2">
+                <p className="text-[color-mix(in srgb, var(--muted-foreground) 90%, transparent)] text-xs leading-relaxed mb-4 line-clamp-2">
                   {projectCardDescription()}
                 </p>
-                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-black/5">
-                  <div className="flex items-center gap-1.5 text-[13px] text-[#A1A1AA]">
+                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border/40">
+                  <div className="flex items-center gap-1.5 text-[13px] text-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)]">
                     <span className="material-symbols-outlined text-sm" aria-hidden>
                       forum
                     </span>
                     {project.interview_count} interview{project.interview_count !== 1 ? "s" : ""}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[13px] text-[#A1A1AA]">
+                  <div className="flex items-center gap-1.5 text-[13px] text-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)]">
                     <span className="material-symbols-outlined text-sm" aria-hidden>
                       calendar_today
                     </span>
@@ -179,15 +179,15 @@ export default async function InterviewsPage() {
 
           <Link
             href="/interviews/new"
-            className="border-2 border-dashed border-black/5 rounded-xl p-4 flex flex-col items-center justify-center text-center group hover:border-interview-brand/20 hover:bg-interview-brand-tint/10 transition-all cursor-pointer min-h-[170px]"
+            className="border-2 border-dashed border-border/40 rounded-xl p-4 flex flex-col items-center justify-center text-center group hover:border-interview-brand/20 hover:bg-interview-brand-tint/10 transition-all cursor-pointer min-h-[170px]"
           >
-            <div className="w-10 h-10 rounded-full bg-white border border-black/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-full bg-card border border-border/40 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined text-interview-brand" aria-hidden>
                 add
               </span>
             </div>
             <h3 className="text-sm font-semibold text-foreground">Create New Insight Loop</h3>
-            <p className="text-xs text-[#A1A1AA] mt-1">Start from interviews or upload docs.</p>
+            <p className="text-xs text-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)] mt-1">Start from interviews or upload docs.</p>
           </Link>
         </div>
 
@@ -196,7 +196,7 @@ export default async function InterviewsPage() {
           `/interviews/new` redirects if a project already exists—only one project per user
           until schema + new-project flow are updated.
         */}
-        <footer className="mt-16 pt-6 border-t border-black/5 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center text-[11px] text-[#A1A1AA] font-medium tracking-wide uppercase">
+        <footer className="mt-16 pt-6 border-t border-border/40 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center text-[11px] text-[color-mix(in srgb, var(--muted-foreground) 78%, transparent)] font-medium tracking-wide uppercase">
           <div className="flex flex-wrap items-center gap-6">
             <span>System Status: Optimal</span>
             <span>Version: 1.0.4-Founder</span>

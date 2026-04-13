@@ -62,8 +62,8 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
   if (status === "processing") {
     return (
       <div className="flex items-center gap-2">
-        <span className="px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-semibold flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+        <span className="px-3 py-1.5 rounded-full bg-warning-soft text-warning border border-warning/40 text-xs font-semibold flex items-center gap-1.5">
+          <span className="inline-block w-2 h-2 rounded-full bg-warning animate-pulse" />
           Analyzing...
         </span>
         <button
@@ -95,7 +95,7 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
     <button
       onClick={() => triggerAnalysis(false)}
       disabled={interviewCount < 3 || loading}
-      className="px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-orange-400 text-white text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
+      className="px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-primary-hover text-primary-foreground text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
     >
       {loading ? "Starting..." : "Run Analysis"}
     </button>

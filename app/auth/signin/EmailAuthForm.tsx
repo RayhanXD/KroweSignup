@@ -122,8 +122,8 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
           autoComplete="new-password"
         />
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {message && <p className="text-sm text-green-600">{message}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {message && <p className="text-sm text-success">{message}</p>}
       <button
         type="submit"
         disabled={loading}

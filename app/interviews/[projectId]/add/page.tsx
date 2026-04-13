@@ -76,7 +76,7 @@ export default function AddInterviewPage() {
               </h3>
               <span
                 className={`text-[11px] ${
-                  hasValidTranscript ? "text-green-700" : "text-muted-foreground"
+                  hasValidTranscript ? "text-success" : "text-muted-foreground"
                 }`}
               >
                 {charCount} / {MIN_TRANSCRIPT_CHARS} chars minimum
@@ -89,7 +89,7 @@ export default function AddInterviewPage() {
                 if (error) setError(null);
               }}
               placeholder="Paste the full interview transcript here..."
-              className="w-full min-h-[190px] rounded-2xl border border-border/60 bg-white p-3.5 text-xs leading-relaxed text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+              className="w-full min-h-[190px] rounded-2xl border border-border/60 bg-card p-3.5 text-xs leading-relaxed text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             />
             <p className="mt-1.5 text-[11px] text-muted-foreground">
               This is the active ingestion path right now. Once submitted, this creates one
@@ -97,41 +97,11 @@ export default function AddInterviewPage() {
             </p>
           </section>
 
-          <section className="mb-5">
-            <div className="mb-2.5 flex items-center justify-between">
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                Upload Files
-              </h3>
-              <span className="text-[11px] font-medium text-amber-700">Coming soon</span>
-            </div>
-            <div
-              className="w-full min-h-[155px] py-5 bg-muted/30 border-2 border-dashed border-border/40 rounded-2xl flex flex-col items-center justify-center opacity-70"
-            >
-              <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm mb-2.5">
-                <span className="material-symbols-outlined text-primary text-[20px]">cloud_upload</span>
-              </div>
-              <h3 className="font-semibold text-xs mb-0.5 text-foreground">Drop files here</h3>
-              <p className="text-muted-foreground text-[11px]">MP3, WAV, or PDF up to 50MB</p>
-              <div className="mt-3">
-                <button
-                  type="button"
-                  disabled
-                  className="px-3 py-1 bg-white border border-border/80 rounded-full text-[11px] font-semibold shadow-sm text-foreground cursor-not-allowed opacity-70"
-                >
-                  Browse Files
-                </button>
-              </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                File upload is not available yet. Paste transcript above for now.
-              </p>
-            </div>
-          </section>
-
-          {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+          {error && <p className="text-xs text-danger mb-3">{error}</p>}
         </main>
       </div>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-border/40 py-3 z-10">
+      <footer className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-md border-t border-border/40 py-3 z-10">
         <div className="max-w-[520px] mx-auto px-4 sm:px-5 flex items-center justify-between gap-3">
           <button
             type="button"
@@ -144,7 +114,7 @@ export default function AddInterviewPage() {
             type="button"
             disabled={loading || !hasValidTranscript}
             onClick={handleContinue}
-            className="bg-gradient-to-br from-interview-brand to-interview-brand-end text-white text-xs px-4 py-1.5 rounded-full font-bold shadow-md shadow-interview-brand/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
+            className="bg-gradient-to-br from-interview-brand to-interview-brand-end text-primary-foreground text-xs px-4 py-1.5 rounded-full font-bold shadow-md shadow-interview-brand/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
           >
             {loading ? "Working…" : "Continue to Insights"}
           </button>

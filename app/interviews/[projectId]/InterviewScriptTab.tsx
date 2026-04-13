@@ -404,7 +404,7 @@ export function InterviewScriptTab({
   if (error) {
     return (
       <div className="h-full min-h-[22rem] flex flex-col items-center justify-center gap-3 text-muted-foreground px-6">
-        <p className="text-sm text-red-500">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
         <button
           type="button"
           onClick={() => fetchScript()}
@@ -460,7 +460,7 @@ export function InterviewScriptTab({
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-interview-brand to-orange-400 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-interview-brand to-primary-hover px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:opacity-95"
             >
               {copied ? "Copied" : "Deploy script"}
             </button>

@@ -18,7 +18,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project uses an Arial-first typography system defined in `app/globals.css`.
+
+## Branding Rules
+
+- Typography: use Arial/Helvetica defaults (`font-sans`) and avoid custom font imports.
+- Colors: use semantic tokens from `app/globals.css` (`primary`, `muted`, `danger`, `warning`, `success`, `border`, etc.).
+- Avoid hardcoded color palettes (for example `text-gray-500`, `bg-red-50`) and hex values in app components.
+- Run `npm run lint` (includes `npm run lint:brand`) to enforce branding tokens.
 
 ## Local Auth Setup
 

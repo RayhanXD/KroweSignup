@@ -54,34 +54,34 @@ interface Props {
 
 function segmentBorder(type: string): string {
   switch (type) {
-    case "pain":      return "border-l-2 border-red-400";
-    case "emotion":   return "border-l-2 border-amber-400";
-    case "context":   return "border-l-2 border-blue-400";
-    case "intensity": return "border-l-2 border-purple-400";
+    case "pain":      return "border-l-2 border-danger/60";
+    case "emotion":   return "border-l-2 border-warning/60";
+    case "context":   return "border-l-2 border-primary/60";
+    case "intensity": return "border-l-2 border-primary/60";
     default:          return "border-l-2 border-border";
   }
 }
 
 function segmentLabelColor(type: string): string {
   switch (type) {
-    case "pain":      return "text-red-500";
-    case "emotion":   return "text-amber-500";
-    case "context":   return "text-blue-500";
-    case "intensity": return "text-purple-500";
+    case "pain":      return "text-danger";
+    case "emotion":   return "text-warning";
+    case "context":   return "text-primary";
+    case "intensity": return "text-primary";
     default:          return "text-muted-foreground";
   }
 }
 
 function confidenceBadge(score: number): { label: string; classes: string } {
-  if (score >= 0.75) return { label: "High", classes: "bg-green-100 text-green-700" };
-  if (score >= 0.5)  return { label: "Medium", classes: "bg-amber-100 text-amber-700" };
-  return { label: "Low", classes: "bg-gray-100 text-gray-500" };
+  if (score >= 0.75) return { label: "High", classes: "bg-success-soft text-success" };
+  if (score >= 0.5)  return { label: "Medium", classes: "bg-warning-soft text-warning" };
+  return { label: "Low", classes: "bg-muted text-muted-foreground" };
 }
 
 function ProblemCard({ problem: p }: { problem: ExtractedProblem }) {
   const badge = confidenceBadge(p.confidence);
   return (
-    <div className="bg-white p-4 rounded-xl border border-zinc-100 flex flex-col gap-3 shadow-sm hover:border-interview-brand/20 transition-colors">
+    <div className="bg-card p-4 rounded-xl border border-border/60 flex flex-col gap-3 shadow-sm hover:border-interview-brand/20 transition-colors">
       <div className="flex justify-between items-center">
         <div className="w-8 h-8 rounded-full bg-interview-brand/10 flex items-center justify-center text-interview-brand text-xs font-semibold">
           !
@@ -93,15 +93,15 @@ function ProblemCard({ problem: p }: { problem: ExtractedProblem }) {
       <div>
         <h3 className="font-bold text-xs text-on-surface mb-1">{p.problem_text}</h3>
         {p.root_cause && (
-          <p className="text-[10px] text-zinc-500 leading-tight">{p.root_cause}</p>
+          <p className="text-[10px] text-muted-foreground leading-tight">{p.root_cause}</p>
         )}
       </div>
       {p.supporting_quote && (
-        <p className="text-[10px] italic text-foreground/70 border-l-2 border-zinc-200 pl-2 mt-1">
+        <p className="text-[10px] italic text-foreground/70 border-l-2 border-border pl-2 mt-1">
           &ldquo;{p.supporting_quote}&rdquo;
         </p>
       )}
-      <div className="text-[10px] text-zinc-500">
+      <div className="text-[10px] text-muted-foreground">
         {p.customer_type || "Unspecified customer"}
       </div>
     </div>
@@ -248,7 +248,7 @@ export default function InterviewDetailClient({
       <div className="flex min-h-screen flex-col">
         <main className="flex-1 flex flex-col min-h-[calc(100vh-5rem)]">
           <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-            <section className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar bg-white">
+            <section className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar bg-card">
               <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
                   <Link
@@ -267,24 +267,24 @@ export default function InterviewDetailClient({
                           setIsEditing(true);
                           setTranscriptTab("raw");
                         }}
-                        className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 hover:bg-zinc-100 transition-colors"
+                        className="text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors"
                       >
                         Edit transcript
                       </button>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-500 font-medium bg-surface-container-low p-4 rounded-xl">
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground font-medium bg-surface-container-low p-4 rounded-xl">
                     <div className="flex items-center gap-2">
                       <span>Interviewee:</span>
                       <span className="text-on-surface font-semibold">
                         {savedName ?? (interviewNumber ? `Interview #${interviewNumber}` : "Unknown")}
                       </span>
                     </div>
-                    <div className="hidden sm:block w-px h-4 bg-zinc-300" />
+                    <div className="hidden sm:block w-px h-4 bg-border/80" />
                     <div className="flex items-center gap-2">
                       <span>{createdAtText}</span>
                     </div>
-                    <div className="hidden sm:block w-px h-4 bg-zinc-300" />
+                    <div className="hidden sm:block w-px h-4 bg-border/80" />
                     <div className="flex items-center gap-2">
                       <span className="capitalize">{interview.status}</span>
                     </div>
@@ -296,14 +296,14 @@ export default function InterviewDetailClient({
                     <textarea
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
-                      className="w-full h-[500px] border border-zinc-200 rounded-xl p-6 bg-zinc-50 text-sm font-mono text-foreground leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full h-[500px] border border-border rounded-xl p-6 bg-muted text-sm font-mono text-foreground leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     <div className="flex items-center justify-between mt-2">
-                      <span className={`text-xs ${isValid ? "text-muted-foreground" : "text-red-500 font-medium"}`}>
+                      <span className={`text-xs ${isValid ? "text-muted-foreground" : "text-danger font-medium"}`}>
                         {charCount} characters{!isValid && " (minimum 100)"}
                       </span>
                       <div className="flex items-center gap-2">
-                        {saveError && <span className="text-xs text-red-500">{saveError}</span>}
+                        {saveError && <span className="text-xs text-danger">{saveError}</span>}
                         <button
                           onClick={handleCancel}
                           disabled={saving}
@@ -324,7 +324,7 @@ export default function InterviewDetailClient({
                 ) : (
                   <div className="space-y-4 text-base leading-relaxed text-on-surface-variant">
                     {interview.status === "structured" && structuredSegments && (
-                      <div className="flex gap-1 mb-4 border-b border-zinc-200">
+                      <div className="flex gap-1 mb-4 border-b border-border">
                         {(["raw", "structured"] as TranscriptTab[]).map((tab) => (
                           <button
                             key={tab}
@@ -345,7 +345,7 @@ export default function InterviewDetailClient({
                     )}
 
                     {transcriptTab === "raw" && (
-                      <div className="border border-zinc-200 rounded-xl p-6 bg-white">
+                      <div className="border border-border rounded-xl p-6 bg-card">
                         <pre className="text-sm whitespace-pre-wrap font-mono text-foreground leading-relaxed">
                           {editText}
                         </pre>
@@ -357,11 +357,11 @@ export default function InterviewDetailClient({
                         <div className="flex gap-1.5 flex-wrap mb-3">
                           {(["all", "pain", "emotion", "context", "intensity"] as const).map((f) => {
                             const activeStyles: Record<typeof f, string> = {
-                              all: "bg-gray-100 text-gray-700",
-                              pain: "bg-red-50 text-red-600",
-                              emotion: "bg-amber-50 text-amber-600",
-                              context: "bg-blue-50 text-blue-600",
-                              intensity: "bg-purple-50 text-purple-600",
+                              all: "bg-muted text-foreground",
+                              pain: "bg-danger-soft text-danger",
+                              emotion: "bg-warning-soft text-warning",
+                              context: "bg-primary-soft text-primary",
+                              intensity: "bg-primary-soft text-primary",
                             };
                             const isActive = segmentFilter === f;
                             return (
@@ -377,7 +377,7 @@ export default function InterviewDetailClient({
                             );
                           })}
                         </div>
-                        <div className="border border-zinc-200 rounded-xl p-6 bg-white">
+                        <div className="border border-border rounded-xl p-6 bg-card">
                           <div className="text-sm font-mono text-foreground leading-relaxed space-y-4">
                             {(filteredSegments ?? []).map((seg, i) => (
                               <div key={i} className={`pl-3 ${segmentBorder(seg.type)}`}>
@@ -402,11 +402,11 @@ export default function InterviewDetailClient({
               </div>
             </section>
 
-            <section className="w-full lg:w-[640px] bg-[#f8f3f2] p-6 lg:p-10 overflow-y-auto no-scrollbar border-l border-zinc-100">
+            <section className="w-full lg:w-[640px] bg-surface-subtle p-6 lg:p-10 overflow-y-auto no-scrollbar border-l border-border/60">
               <div className="space-y-10">
                 <div>
                   <h2 className="text-2xl font-bold text-on-surface mb-6">AI Summary</h2>
-                  <div className="bg-white p-6 rounded-xl space-y-4 shadow-sm border border-zinc-100/50">
+                  <div className="bg-card p-6 rounded-xl space-y-4 shadow-sm border border-border/60/50">
                     {nameCardEditing ? (
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 gap-3">
@@ -426,7 +426,7 @@ export default function InterviewDetailClient({
                           />
                         </div>
                         <div className="flex items-center justify-end gap-2">
-                          {nameError && <span className="text-xs text-red-500 mr-auto">{nameError}</span>}
+                          {nameError && <span className="text-xs text-danger mr-auto">{nameError}</span>}
                           <button
                             onClick={handleNameCancel}
                             disabled={nameSaving}
@@ -445,14 +445,14 @@ export default function InterviewDetailClient({
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-3 mb-6">
-                        <div className="bg-surface-container-low p-3 rounded-lg border border-zinc-100">
-                          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Founder Name</h4>
+                        <div className="bg-surface-container-low p-3 rounded-lg border border-border/60">
+                          <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Founder Name</h4>
                           <p className="text-sm font-bold text-on-surface">
                             {savedName ?? "Not set"}
                           </p>
                         </div>
-                        <div className="bg-surface-container-low p-3 rounded-lg border border-zinc-100">
-                          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Founder Context</h4>
+                        <div className="bg-surface-container-low p-3 rounded-lg border border-border/60">
+                          <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Founder Context</h4>
                           <p className="text-xs text-on-surface-variant leading-tight">
                             {savedContext ?? "No interviewee context added yet."}
                           </p>
@@ -479,7 +479,7 @@ export default function InterviewDetailClient({
                           </li>
                         ))}
                         {painCount > 0 && (
-                          <li className="text-xs text-zinc-500">
+                          <li className="text-xs text-muted-foreground">
                             {painCount} pain point{painCount !== 1 ? "s" : ""} identified.
                           </li>
                         )}
@@ -492,7 +492,7 @@ export default function InterviewDetailClient({
 
                 <div>
                   <h2 className="text-2xl font-bold text-on-surface mb-6">Strong Signals</h2>
-                  <div className="bg-white/50 rounded-2xl border border-zinc-100 p-6 shadow-sm">
+                  <div className="bg-card/50 rounded-2xl border border-border/60 p-6 shadow-sm">
                     {interview.status !== "structured" || topQuotes.length === 0 ? (
                       <p className="text-sm text-muted-foreground italic">
                         {interview.status !== "structured"
@@ -546,8 +546,8 @@ export default function InterviewDetailClient({
                 <div>
                   <h2 className="text-2xl font-bold text-on-surface mb-6">Alternatives Found</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="bg-white p-5 rounded-lg border border-zinc-100 shadow-sm flex flex-col">
-                      <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Competitors Mentioned</h4>
+                    <div className="bg-card p-5 rounded-lg border border-border/60 shadow-sm flex flex-col">
+                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Competitors Mentioned</h4>
                       {interview.status !== "structured" ? (
                         <p className="text-sm text-muted-foreground italic">
                           Analysis pending — run the pipeline to detect competitors mentioned.
@@ -566,7 +566,7 @@ export default function InterviewDetailClient({
                                   Mentioned
                                 </span>
                               </div>
-                              <div className="h-1 w-full bg-zinc-100 rounded-full overflow-hidden">
+                              <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                                 <div className="h-full bg-interview-brand/35 w-full" />
                               </div>
                             </div>
@@ -575,8 +575,8 @@ export default function InterviewDetailClient({
                       )}
                     </div>
 
-                    <div className="bg-white p-5 rounded-lg border border-zinc-100 shadow-sm flex flex-col">
-                      <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Manual Alternatives Used</h4>
+                    <div className="bg-card p-5 rounded-lg border border-border/60 shadow-sm flex flex-col">
+                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Manual Alternatives Used</h4>
                       {interview.status !== "structured" ? (
                         <p className="text-sm text-muted-foreground italic">
                           Analysis pending — run the pipeline to detect manual alternatives.
@@ -588,7 +588,7 @@ export default function InterviewDetailClient({
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {alternativesUsed.map((mention, i) => (
-                            <span key={i} className="px-2 py-1 bg-white border border-zinc-100 shadow-sm text-[10px] font-bold rounded text-on-surface">
+                            <span key={i} className="px-2 py-1 bg-card border border-border/60 shadow-sm text-[10px] font-bold rounded text-on-surface">
                               {mention}
                             </span>
                           ))}
@@ -606,7 +606,7 @@ export default function InterviewDetailClient({
       {problemsOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-foreground/40 z-40"
             onClick={() => setProblemsOpen(false)}
           />
           <div className="fixed top-0 right-0 h-full w-full max-w-lg bg-background border-l border-border z-50 flex flex-col">

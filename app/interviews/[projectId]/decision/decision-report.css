@@ -14,6 +14,13 @@
   --dr-orb-ring-track: color-mix(in srgb, var(--dr-rule) 88%, #ffffff);
   --dr-orb-ring-fill: var(--primary);
   --dr-label-muted: color-mix(in srgb, #4a4a4a 65%, transparent);
+  --dr-build-green: #166534;
+  --dr-build-yellow: #a16207;
+  --dr-build-orange: #c2410c;
+  --dr-edge-signal: #dc2626;
+  --dr-flow-step-1: #0f766e;
+  --dr-flow-step-2: #0284c7;
+  --dr-flow-step-3: #6366f1;
 }
 
 /* Flat panels (replaces glass): white + left accent */
@@ -52,6 +59,11 @@
 /* Orange accents on serif headlines (must follow .font-headline in cascade) */
 .decision-report .font-headline.dr-bullet-text {
   color: var(--primary);
+}
+
+/* “What interviews support” column: narrative body color, not brand orange */
+.decision-report .font-headline.dr-interviews-support-content {
+  color: var(--dr-body);
 }
 
 /* Success metrics values only — dark green */
@@ -174,4 +186,139 @@
 
 .decision-report .dr-next-bullet {
   background-color: var(--dr-bullet);
+}
+
+.decision-report .dr-build-card {
+  border-left-width: 3px;
+  border-left-style: solid;
+}
+
+.decision-report .dr-build-card.dr-build-tier-green {
+  border-left-color: color-mix(in srgb, var(--dr-build-green) 42%, var(--dr-rule));
+}
+
+.decision-report .dr-build-card.dr-build-tier-green:hover {
+  border-left-color: var(--dr-build-green);
+}
+
+.decision-report .dr-build-card.dr-build-tier-green .dr-build-icon {
+  color: var(--dr-build-green);
+}
+
+.decision-report .dr-build-card.dr-build-tier-yellow {
+  border-left-color: color-mix(in srgb, var(--dr-build-yellow) 45%, var(--dr-rule));
+}
+
+.decision-report .dr-build-card.dr-build-tier-yellow:hover {
+  border-left-color: var(--dr-build-yellow);
+}
+
+.decision-report .dr-build-card.dr-build-tier-yellow .dr-build-icon {
+  color: var(--dr-build-yellow);
+}
+
+.decision-report .dr-build-card.dr-build-tier-orange {
+  border-left-color: color-mix(in srgb, var(--dr-build-orange) 50%, var(--dr-rule));
+}
+
+.decision-report .dr-build-card.dr-build-tier-orange:hover {
+  border-left-color: var(--dr-build-orange);
+}
+
+.decision-report .dr-build-card.dr-build-tier-orange .dr-build-icon {
+  color: var(--dr-build-orange);
+}
+
+.decision-report .dr-edge-signal-icon {
+  color: var(--dr-edge-signal);
+}
+
+.decision-report .dr-flow-timeline {
+  border-left-color: color-mix(in srgb, var(--dr-flow-step-2) 45%, var(--dr-rule));
+}
+
+.decision-report .dr-flow-node {
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
+}
+
+.decision-report .dr-flow-node.dr-flow-step-1 {
+  background-color: var(--dr-flow-step-1);
+}
+
+.decision-report .dr-flow-node.dr-flow-step-2 {
+  background-color: var(--dr-flow-step-2);
+}
+
+.decision-report .dr-flow-node.dr-flow-step-3 {
+  background-color: var(--dr-flow-step-3);
+}
+
+@media (prefers-color-scheme: dark) {
+  .decision-report {
+    --dr-surface: var(--card);
+    --dr-heading: var(--foreground);
+    --dr-body: color-mix(in srgb, #4a4a4a 82%, var(--foreground));
+    --dr-body-muted: color-mix(in srgb, #4a4a4a 55%, var(--muted-foreground));
+    --dr-rule: color-mix(in srgb, var(--primary) 42%, var(--border));
+    --dr-orb-border: var(--border);
+    --dr-orb-ring-track: color-mix(in srgb, var(--border) 80%, transparent);
+    --dr-label-muted: var(--muted-foreground);
+    --dr-build-green: #22c55e;
+    --dr-build-yellow: #facc15;
+    --dr-build-orange: #fb923c;
+    --dr-edge-signal: #f87171;
+    --dr-flow-step-1: #14b8a6;
+    --dr-flow-step-2: #38bdf8;
+    --dr-flow-step-3: #818cf8;
+  }
+
+  .decision-report .glass-panel {
+    border-color: var(--border);
+    border-left-color: color-mix(in srgb, var(--primary) 38%, var(--border));
+  }
+
+  .decision-report .why-decision-panel {
+    background: var(--dr-surface);
+    border-left-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  }
+
+  .decision-report .why-decision-panel h2 {
+    color: var(--dr-heading);
+  }
+
+  .decision-report .why-decision-item {
+    color: var(--dr-body);
+  }
+
+  .decision-report .dr-quote-card {
+    border-top-color: var(--border);
+    border-right-color: var(--border);
+    border-bottom-color: var(--border);
+  }
+
+  .decision-report .decision-core-orb {
+    background: radial-gradient(
+      circle at 30% 28%,
+      color-mix(in srgb, var(--primary) 88%, rgb(24 20 18)) 0%,
+      color-mix(in srgb, var(--primary) 58%, rgb(18 14 12)) 55%,
+      color-mix(in srgb, var(--primary) 42%, rgb(12 10 9)) 100%
+    );
+    border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      0 10px 32px -10px rgb(0 0 0 / 0.55);
+  }
+
+  .decision-report .decision-core-orb .font-headline,
+  .decision-report .decision-core-orb .font-label {
+    color: var(--primary-foreground);
+  }
+
+  .decision-report .decision-core-orb .font-label {
+    color: color-mix(in srgb, var(--primary-foreground) 78%, transparent);
+  }
+
+  .decision-report .font-headline.dr-success-metric-value {
+    color: #166534;
+  }
 }

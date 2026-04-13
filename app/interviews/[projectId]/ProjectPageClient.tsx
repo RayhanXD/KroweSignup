@@ -40,17 +40,17 @@ type AnalysisDecision = AnalysisResponse["decision"];
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    collecting: "bg-blue-50 text-blue-700 border border-blue-200",
-    processing:  "bg-yellow-50 text-yellow-700 border border-yellow-200",
-    ready:       "bg-green-50 text-green-700 border border-green-200",
-    failed:      "bg-red-50 text-red-700 border border-red-200",
-    pending:     "bg-gray-50 text-gray-500 border border-gray-200",
-    structured:  "bg-green-50 text-green-700 border border-green-200",
+    collecting: "bg-primary-soft text-primary border border-primary/35",
+    processing:  "bg-warning-soft text-warning border border-warning/40",
+    ready:       "bg-success-soft text-success border border-success/40",
+    failed:      "bg-danger-soft text-danger border border-danger/40",
+    pending:     "bg-muted text-muted-foreground border border-border",
+    structured:  "bg-success-soft text-success border border-success/40",
   };
   const dots: Record<string, string> = {
-    collecting: "bg-blue-500 animate-pulse",
-    processing: "bg-yellow-500 animate-pulse",
-    ready:      "bg-green-500",
+    collecting: "bg-primary animate-pulse",
+    processing: "bg-warning animate-pulse",
+    ready:      "bg-success",
   };
   const labels: Record<string, string> = {
     collecting: "Collecting",
@@ -63,7 +63,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-        styles[status] ?? "bg-gray-50 text-gray-500 border border-gray-200"
+        styles[status] ?? "bg-muted text-muted-foreground border border-border"
       }`}
     >
       {dots[status] && (
@@ -105,9 +105,9 @@ function initialForName(name: string | null, fallbackIndex: number) {
 }
 
 function signalBadgeClasses(label: InterviewSignalLabel) {
-  if (label === "High") return "bg-orange-50 text-interview-brand";
-  if (label === "Medium") return "bg-gray-100 text-gray-600";
-  return "bg-red-50 text-red-600";
+  if (label === "High") return "bg-primary-soft text-interview-brand";
+  if (label === "Medium") return "bg-muted text-muted-foreground";
+  return "bg-danger-soft text-danger";
 }
 
 function deriveDecisionLabel(status?: DecisionOutput["status"]) {
@@ -130,9 +130,9 @@ function deriveVerdictLabel(
 }
 
 function deriveVerdictClassName(verdict: AnalysisDecision | null): string {
-  if (verdict === "proceed") return "text-green-600";
-  if (verdict === "pivot") return "text-red-600";
-  if (verdict === "refine") return "text-yellow-600";
+  if (verdict === "proceed") return "text-success";
+  if (verdict === "pivot") return "text-danger";
+  if (verdict === "refine") return "text-warning";
   return "text-foreground";
 }
 
@@ -253,7 +253,7 @@ export function ProjectPageClient({
             {project.status === "ready" ? (
               <Link
                 href={`/interviews/${projectId}/decision`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-interview-brand text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-interview-brand-end text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
                 <span className="material-symbols-outlined text-[14px] leading-none">insights</span>
                 View Decision
@@ -269,7 +269,7 @@ export function ProjectPageClient({
             )}
             {project.status === "processing" ? (
               <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
                 Analysis in progress…
               </p>
             ) : project.status !== "ready" ? (
@@ -334,7 +334,7 @@ export function ProjectPageClient({
           <div className="grid grid-cols-1 md:grid-cols-10 gap-6">
             <div className="md:col-span-7 space-y-5">
               {deleteError && (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
                   {deleteError}
                 </div>
               )}
@@ -389,7 +389,7 @@ export function ProjectPageClient({
                               void handleDeleteInterview(interview.id);
                             }}
                             disabled={deleteLoadingId === interview.id}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-danger/40 text-danger hover:bg-danger-soft disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label="Delete interview"
                             title="Delete interview"
                           >
@@ -433,14 +433,14 @@ export function ProjectPageClient({
             </div>
 
             <div className="md:col-span-3 space-y-5 self-start">
-              <div className="rounded-2xl border border-white/10 bg-[#11151C] p-5 text-white shadow-xl">
+              <div className="rounded-2xl border border-live-insights-border bg-live-insights-bg p-5 text-live-insights-foreground shadow-xl">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="serif-text text-base font-bold text-white">Live Insights</h2>
+                  <h2 className="serif-text text-base font-bold text-live-insights-foreground">Live Insights</h2>
                   <span className="flex h-2 w-2 rounded-full bg-interview-brand animate-pulse" />
                 </div>
                 <div className="space-y-6">
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-widest block mb-4">
+                    <span className="text-[11px] uppercase font-bold text-live-insights-muted tracking-widest block mb-4">
                       Problem Clusters
                     </span>
                     <div className="space-y-3">
@@ -452,20 +452,20 @@ export function ProjectPageClient({
                             <div key={cluster.id} className="flex items-center justify-between gap-3">
                               <div className="flex items-center min-w-0">
                                 <span
-                                  className={`w-5 text-[10px] font-bold ${active ? "text-interview-brand" : "text-zinc-500"}`}
+                                  className={`w-5 text-[10px] font-bold ${active ? "text-interview-brand" : "text-live-insights-muted"}`}
                                 >
                                   {String(idx + 1).padStart(2, "0")}
                                 </span>
                                 <span
-                                  className={`text-xs truncate ${active ? "text-zinc-200" : "text-zinc-400"}`}
+                                  className={`text-xs truncate ${active ? "text-live-insights-foreground" : "text-live-insights-muted"}`}
                                   title={cluster.canonical_problem}
                                 >
                                   {toLiveInsightsClusterTitle(cluster.canonical_problem)}
                                 </span>
                               </div>
-                              <div className="w-12 h-1 rounded-full overflow-hidden shrink-0 bg-zinc-800">
+                              <div className="w-12 h-1 rounded-full overflow-hidden shrink-0 bg-live-insights-track">
                                 <div
-                                  className={`${active ? "bg-interview-brand" : "bg-zinc-500"} h-full`}
+                                  className={`${active ? "bg-interview-brand" : "bg-live-insights-bar-inactive"} h-full`}
                                   style={{ width: `${bar}%` }}
                                 />
                               </div>
@@ -473,13 +473,13 @@ export function ProjectPageClient({
                           );
                         })
                       ) : (
-                        <p className="text-xs text-zinc-400">No clusters available yet.</p>
+                        <p className="text-xs text-live-insights-muted">No clusters available yet.</p>
                       )}
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-widest block mb-4">
+                    <span className="text-[11px] uppercase font-bold text-live-insights-muted tracking-widest block mb-4">
                       Emerging Patterns
                     </span>
                     <div className="flex flex-wrap gap-2">
@@ -490,7 +490,7 @@ export function ProjectPageClient({
                             className={`text-[10px] px-2 py-1 rounded-md border ${
                               idx === 0
                                 ? "border-interview-brand/35 bg-interview-brand/20 text-interview-brand"
-                                : "border-white/10 bg-white/5 text-zinc-300"
+                                : "border-live-insights-border bg-live-insights-surface text-live-insights-muted"
                             }`}
                           >
                             {pattern}
@@ -498,40 +498,43 @@ export function ProjectPageClient({
                         )
                       )}
                       {rankedClusters.length === 0 && (
-                        <span className="text-[10px] text-zinc-400">No patterns yet</span>
+                        <span className="text-[10px] text-live-insights-muted">No patterns yet</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                  <div className="rounded-xl border border-live-insights-border bg-live-insights-surface p-3.5">
                     <div className="flex justify-between items-end mb-2">
-                      <span className="text-[11px] uppercase font-bold tracking-wide text-zinc-500">
+                      <span className="text-[11px] uppercase font-bold tracking-wide text-live-insights-muted">
                         Confidence
                       </span>
                       <span className="text-xl font-bold text-interview-brand">{confidencePct}%</span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-live-insights-track">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-orange-400 to-interview-brand"
+                        className="h-full rounded-full bg-gradient-to-r from-primary to-interview-brand"
                         style={{ width: `${Math.min(100, Math.max(0, confidencePct))}%` }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-widest block mb-4">
+                    <span className="text-[11px] uppercase font-bold text-live-insights-muted tracking-widest block mb-4">
                       Suggested Features
                     </span>
                     <ul className="space-y-3">
                       {suggestedFeatures.length > 0 ? (
                         suggestedFeatures.map((feature, idx) => (
-                          <li key={`${feature.name}-${idx}`} className="flex items-start text-xs text-zinc-400">
+                          <li
+                            key={`${feature.name}-${idx}`}
+                            className="flex items-start text-xs text-live-insights-foreground"
+                          >
                             <span className="mr-2 text-interview-brand">•</span>
                             {feature.name}
                           </li>
                         ))
                       ) : (
-                        <li className="text-xs text-zinc-400">No suggested features yet.</li>
+                        <li className="text-xs text-live-insights-muted">No suggested features yet.</li>
                       )}
                     </ul>
                   </div>

@@ -92,13 +92,13 @@ export default function NewProjectForm({ isAdmin }: { isAdmin: boolean }) {
           )}
 
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-danger">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2.5 rounded-full bg-gradient-to-br from-interview-brand to-interview-brand-end text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-full bg-gradient-to-br from-interview-brand to-interview-brand-end text-primary-foreground text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create project"}
           </button>

@@ -47,9 +47,9 @@ const DECISION_LABELS: Record<AnalysisResponse["decision"], string> = {
 };
 
 const MATCH_STATUS_STYLES: Record<string, string> = {
-  strong_match: "bg-green-100 text-green-700 border-green-200",
-  partial_match: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  mismatch: "bg-red-100 text-red-700 border-red-200",
+  strong_match: "bg-success-soft text-success border-success/40",
+  partial_match: "bg-warning-soft text-warning border-warning/40",
+  mismatch: "bg-danger-soft text-danger border-danger/40",
 };
 
 const MATCH_STATUS_LABELS: Record<string, string> = {
@@ -59,9 +59,9 @@ const MATCH_STATUS_LABELS: Record<string, string> = {
 };
 
 const ALIGNMENT_STATUS_STYLES: Record<string, string> = {
-  aligned: "bg-green-100 text-green-700 border-green-200",
-  partially_aligned: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  misaligned: "bg-red-100 text-red-700 border-red-200",
+  aligned: "bg-success-soft text-success border-success/40",
+  partially_aligned: "bg-warning-soft text-warning border-warning/40",
+  misaligned: "bg-danger-soft text-danger border-danger/40",
 };
 
 const ALIGNMENT_STATUS_LABELS: Record<string, string> = {
@@ -71,9 +71,9 @@ const ALIGNMENT_STATUS_LABELS: Record<string, string> = {
 };
 
 const SIGNAL_LABEL_STYLES: Record<string, string> = {
-  Strong: "bg-green-100 text-green-700 border-green-200",
-  Moderate: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  Weak: "bg-red-100 text-red-700 border-red-200",
+  Strong: "bg-success-soft text-success border-success/40",
+  Moderate: "bg-warning-soft text-warning border-warning/40",
+  Weak: "bg-danger-soft text-danger border-danger/40",
 };
 
 const PRIORITY_ICONS: Record<FeatureSpec["priority"], string> = {
@@ -81,6 +81,18 @@ const PRIORITY_ICONS: Record<FeatureSpec["priority"], string> = {
   "should-have": "layers",
   "nice-to-have": "shield",
 };
+
+function getBuildTierClass(index: number): string {
+  if (index <= 1) return "dr-build-tier-green";
+  if (index <= 3) return "dr-build-tier-yellow";
+  return "dr-build-tier-orange";
+}
+
+function getFlowStepClass(index: number): string {
+  if (index <= 0) return "dr-flow-step-1";
+  if (index === 1) return "dr-flow-step-2";
+  return "dr-flow-step-3";
+}
 
 const RING_R = 148;
 const RING_C = 2 * Math.PI * RING_R;
@@ -237,7 +249,7 @@ function VoiceQuoteCard({
         &ldquo;{quote.text}&rdquo;
       </p>
       <div className="mt-4 flex items-center gap-3 border-t border-[color:color-mix(in_srgb,var(--dr-rule)_75%,transparent)] pt-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--dr-rule)_55%,#fff)]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-card">
           <span className="font-label text-[10px]">#</span>
         </div>
         <span className="font-label text-[10px] font-bold uppercase tracking-widest">
@@ -337,6 +349,8 @@ export function DecisionPageClient({
     if (!flow?.steps?.length) return { title: "", steps: [] as string[] };
     return { title: flow.title, steps: flow.steps.slice(0, 3) };
   }, [userFlows]);
+
+  const topSuccessMetrics = useMemo(() => successMetrics.slice(0, 4), [successMetrics]);
 
   const fetchAnalysis = (opts?: { signal?: AbortSignal; requestId?: number }) => {
     const requestId = opts?.requestId ?? ++requestIdRef.current;
@@ -456,7 +470,7 @@ export function DecisionPageClient({
     if (analysisState === "error") {
       return (
         <div className="dr-panel dr-panel-rounded flex flex-col gap-3 p-6">
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-danger">
             {analysisError === "No onboarding data linked"
               ? "No onboarding data linked to this project."
               : "Hypothesis comparison unavailable. Your interview-backed sections below are still valid."}
@@ -509,11 +523,11 @@ export function DecisionPageClient({
           <div className="bg-[var(--dr-surface)] p-8 md:p-10">
             <div className="mb-6 flex items-center gap-3">
               <span className="material-symbols-outlined text-[color:var(--dr-bullet)]">{icon}</span>
-              <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--dr-bullet)]">
+              <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em]">
                 What interviews support
               </span>
             </div>
-            <div className="font-headline dr-bullet-text text-xl font-medium leading-relaxed">
+            <div className="font-headline dr-interviews-support-content text-xl font-medium leading-relaxed">
               {right}
             </div>
           </div>
@@ -549,7 +563,7 @@ export function DecisionPageClient({
     const solutionRight = (
       <div className="space-y-4 not-italic">
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-green-700">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-success">
             Aligns with plan
           </p>
           {breakdown.featureRelevance.relevant.length > 0 ? (
@@ -565,7 +579,7 @@ export function DecisionPageClient({
           )}
         </div>
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-warning">
             Gaps to address
           </p>
           {breakdown.featureRelevance.missing.length > 0 ? (
@@ -581,7 +595,7 @@ export function DecisionPageClient({
           )}
         </div>
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-danger">
             Deprioritize
           </p>
           {breakdown.featureRelevance.unnecessary.length > 0 ? (
@@ -897,7 +911,7 @@ export function DecisionPageClient({
                     return (
                       <div
                         key={index}
-                        className="flex min-h-[140px] flex-col items-center justify-center rounded-xl border border-dashed border-[color:color-mix(in_srgb,var(--dr-rule)_90%,transparent)] bg-[color:color-mix(in_srgb,var(--dr-rule)_22%,#fff)] p-8"
+                        className="flex min-h-[140px] flex-col items-center justify-center rounded-xl border border-dashed border-[color:color-mix(in_srgb,var(--dr-rule)_90%,transparent)] bg-muted p-8"
                       >
                         <span className="font-label mb-1 text-[10px] font-semibold uppercase tracking-wide">
                           {rankLabels[index]}
@@ -945,11 +959,11 @@ export function DecisionPageClient({
                 {sortedFeatures.map((feature, index) => (
                   <div
                     key={`${feature.name}-${index}`}
-                    className="dr-panel dr-panel-rounded group flex cursor-default items-center justify-between transition-colors hover:border-l-[color:var(--dr-bullet)]"
+                    className={`dr-panel dr-panel-rounded dr-build-card ${getBuildTierClass(index)} group flex cursor-default items-center justify-between transition-colors`}
                   >
                     <div className="flex flex-1 items-center gap-4 pr-2">
                       <span
-                        className="material-symbols-outlined text-[color:var(--dr-bullet)] transition-transform group-hover:scale-110"
+                        className="material-symbols-outlined dr-build-icon transition-transform group-hover:scale-110"
                         aria-hidden
                       >
                         {PRIORITY_ICONS[feature.priority]}
@@ -981,14 +995,10 @@ export function DecisionPageClient({
                     {flowTimeline.title}
                   </p>
                 )}
-                <div className="relative space-y-12 border-l border-[color:var(--dr-rule)] py-4 pl-8">
+                <div className="dr-flow-timeline relative space-y-12 border-l py-4 pl-8">
                   {flowTimeline.steps.map((step, i) => (
                     <div key={i} className="relative">
-                      <div
-                        className={`absolute -left-[37px] top-0 h-2 w-2 rounded-full ${
-                          i === 0 ? "bg-[color:var(--dr-bullet)] signal-glow" : "bg-[color:color-mix(in_srgb,var(--dr-body)_40%,transparent)]"
-                        }`}
-                      />
+                      <div className={`dr-flow-node absolute -left-[37px] top-0 h-2 w-2 rounded-full ${getFlowStepClass(i)}`} />
                       <h5 className="font-label mb-2 text-[10px] font-bold uppercase tracking-widest">
                         Step {i + 1}
                       </h5>
@@ -1012,7 +1022,7 @@ export function DecisionPageClient({
                 <ul className="space-y-4">
                   {edgeCases.map((edge, index) => (
                     <li key={index} className="flex gap-4">
-                      <span className="material-symbols-outlined shrink-0 text-sm text-[color:var(--dr-bullet)]">
+                      <span className="material-symbols-outlined dr-edge-signal-icon shrink-0 text-sm">
                         warning
                       </span>
                       <div>
@@ -1032,9 +1042,9 @@ export function DecisionPageClient({
 
           <div>
             <h3 className="font-headline mb-8 text-2xl md:text-3xl">Success metrics</h3>
-            {successMetrics.length > 0 ? (
+            {topSuccessMetrics.length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
-                {successMetrics.map((metric, index) => (
+                {topSuccessMetrics.map((metric, index) => (
                   <div
                     key={index}
                     className="dr-panel dr-panel-rounded text-center"

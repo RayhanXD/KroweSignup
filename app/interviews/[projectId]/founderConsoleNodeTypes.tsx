@@ -34,7 +34,7 @@ export const FcContextNode = memo(function FcContextNode({ data }: NodeProps<Nod
         dimmed ? "opacity-35" : "opacity-90"
       }`}
     >
-      <Handle type="source" position={Position.Bottom} id="bottom" className="!bg-zinc-400 !border-0 !size-2" />
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!bg-muted-foreground/60 !border-0 !size-2" />
       <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/80">Context</p>
       <p className="mt-1 text-xs text-muted-foreground leading-snug line-clamp-2">{data.label}</p>
     </div>
@@ -52,7 +52,7 @@ export const FcArchiveNode = memo(function FcArchiveNode({ data }: NodeProps<Nod
         dimmed ? "opacity-35" : "opacity-90"
       }`}
     >
-      <Handle type="target" position={Position.Top} id="top" className="!bg-zinc-400 !border-0 !size-2" />
+      <Handle type="target" position={Position.Top} id="top" className="!bg-muted-foreground/60 !border-0 !size-2" />
       <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/80">Archive</p>
       <p className="mt-1 text-xs text-muted-foreground leading-snug line-clamp-2">{data.label}</p>
     </div>
@@ -68,7 +68,7 @@ export const FcOpeningNode = memo(function FcOpeningNode({ data }: NodeProps<Nod
         active ? "border-interview-brand ring-2 ring-interview-brand/25 shadow-[0_8px_30px_-8px_var(--interview-brand-glow)]" : "border-border/70"
       } ${dimmed ? "opacity-35" : ""}`}
     >
-      <Handle type="target" position={Position.Top} id="top" className="!bg-zinc-400 !border-0 !size-2" />
+      <Handle type="target" position={Position.Top} id="top" className="!bg-muted-foreground/60 !border-0 !size-2" />
       <Handle type="source" position={Position.Right} id="right" className="!bg-interview-brand !border-0 !size-2" />
       {active && (
         <div className="flex items-center gap-1.5 mb-2">
@@ -91,8 +91,8 @@ export const FcClosingNode = memo(function FcClosingNode({ data }: NodeProps<Nod
         active ? "border-interview-brand ring-2 ring-interview-brand/25 shadow-[0_8px_30px_-8px_var(--interview-brand-glow)]" : "border-border/70"
       } ${dimmed ? "opacity-35" : ""}`}
     >
-      <Handle type="target" position={Position.Left} id="left" className="!bg-zinc-400 !border-0 !size-2" />
-      <Handle type="source" position={Position.Bottom} id="bottom" className="!bg-zinc-400 !border-0 !size-2" />
+      <Handle type="target" position={Position.Left} id="left" className="!bg-muted-foreground/60 !border-0 !size-2" />
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!bg-muted-foreground/60 !border-0 !size-2" />
       {active && (
         <div className="flex items-center gap-1.5 mb-2">
           <span className="h-1.5 w-1.5 rounded-full bg-interview-brand" />
@@ -121,7 +121,7 @@ export const FcQuestionNode = memo(function FcQuestionNode({ data }: NodeProps<N
         active ? "border-interview-brand ring-2 ring-interview-brand/25 shadow-[0_8px_30px_-8px_var(--interview-brand-glow)]" : "border-border/70"
       } ${dimmed ? "opacity-35" : ""}`}
     >
-      <Handle type="target" position={Position.Left} id="left" className="!bg-zinc-400 !border-0 !size-2" />
+      <Handle type="target" position={Position.Left} id="left" className="!bg-muted-foreground/60 !border-0 !size-2" />
       <Handle type="source" position={Position.Right} id="right" className="!bg-interview-brand !border-0 !size-2" />
 
       {active && (
@@ -143,7 +143,7 @@ export const FcQuestionNode = memo(function FcQuestionNode({ data }: NodeProps<N
         </div>
         <div className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-interview-brand/90" title="Primary" />
-          <span className="h-2 w-2 rounded-full bg-sky-300/90" title="Secondary" />
+          <span className="h-2 w-2 rounded-full bg-tertiary/80" title="Secondary" />
         </div>
       </div>
 

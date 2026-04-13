@@ -30,7 +30,7 @@ export function AllProblemsButton({ allClusters }: { allClusters: ClusterWithId[
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/45 backdrop-blur-[1px]"
           onClick={() => setOpen(false)}
         >
           <div

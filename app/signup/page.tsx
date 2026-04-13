@@ -46,7 +46,7 @@ export default function SignupPage() {
   const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
   if (loading) return <SpiralPreloader className="animate-fade-in" />;
-  if (error) return <div className='p-6 text-red-600'>{error}</div>
+  if (error) return <div className='p-6 text-danger'>{error}</div>
   const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
   const progressPercent = getProgressPercent(stepKey);
   const raw = answersByStepKey[stepKey] ?? "";
@@ -337,9 +337,9 @@ export default function SignupPage() {
   // Fallback
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="p-6 border rounded-lg bg-white">
-        <p className="font-medium text-gray-800">Unknown step: {String(stepKey)}</p>
-        <p className="text-sm text-gray-500 mt-2">
+      <div className="p-6 border rounded-lg bg-card">
+        <p className="font-medium text-foreground">Unknown step: {String(stepKey)}</p>
+        <p className="text-sm text-muted-foreground mt-2">
           Check your StepKey list in <code>lib/signupSteps.ts</code>.
         </p>
       </div>

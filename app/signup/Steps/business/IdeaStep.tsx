@@ -28,15 +28,15 @@ export default function IdeaStep({
         <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           {/* Left Column */}
           <div className="space-y-6">
-            <div className="animate-fade-slide-in step-delay-1 w-12 h-12 rounded-xl bg-[#fff4e6] flex items-center justify-center">
-              <Lightbulb className="w-6 h-6 text-[#f97316]" />
+            <div className="animate-fade-slide-in step-delay-1 w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center">
+              <Lightbulb className="w-6 h-6 text-primary" />
             </div>
 
             <div className="animate-fade-slide-in step-delay-2 space-y-4">
-              <h1 className="text-4xl font-bold tracking-tight text-black">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground">
                 Refine your
                 <br />
-                <span className="text-[#f97316]">Startup Vision</span>
+                <span className="text-primary">Startup Vision</span>
               </h1>
 
               <p className="animate-fade-slide-in step-delay-3 text-muted-foreground leading-relaxed">
@@ -45,18 +45,18 @@ export default function IdeaStep({
             </div>
 
             {/* Structure Hint Box */}
-            <div className="animate-fade-slide-in step-delay-4 bg-[#fafafa] rounded-lg p-5 space-y-3">
+            <div className="animate-fade-slide-in step-delay-4 bg-surface-subtle rounded-lg p-5 space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                 <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   Use this structure 
                 </span>
               </div>
-              <p className="font-mono text-sm text-black leading-relaxed">
-                &quot; <span className="text-[#f97316]">[Startup Name]</span> is a{' '}
-                <span className="text-[#f97316]">[short description]</span> that solves{' '}
-                <span className="text-[#f97316]">[problem]</span> by{' '}
-                <span className="text-[#f97316]">[mechanism]</span> .&quot;
+              <p className="font-mono text-sm text-foreground leading-relaxed">
+                &quot; <span className="text-primary">[Startup Name]</span> is a{' '}
+                <span className="text-primary">[short description]</span> that solves{' '}
+                <span className="text-primary">[problem]</span> by{' '}
+                <span className="text-primary">[mechanism]</span> .&quot;
               </p>
             </div>
           </div>
@@ -68,14 +68,14 @@ export default function IdeaStep({
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder="Start typing your vision here..."
-              className="w-full h-64 p-4 text-black placeholder:text-muted-foreground bg-white border border-gray-200 rounded-lg shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] focus:shadow-md transition-colors"
+              className="w-full h-64 p-4 text-foreground placeholder:text-muted-foreground bg-card border border-border rounded-lg shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:shadow-md transition-colors"
             />
             </div>
 
             {/* Footer Actions */}
             <div className="animate-fade-slide-in step-delay-6 flex items-center justify-between pt-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <div className="w-2 h-2 rounded-full bg-success" />
                 <span>Auto-saved</span>
               </div>
 
@@ -91,7 +91,7 @@ export default function IdeaStep({
                   type="button"
                   onClick={onContinue}
                   disabled={!canContinue || submitting}
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />

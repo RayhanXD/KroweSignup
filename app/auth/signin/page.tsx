@@ -26,7 +26,7 @@ export default async function SignInPage({
           Sign in to access your interview projects
         </p>
         {error && (
-          <p className="text-sm text-red-600 text-center mb-4">
+          <p className="text-sm text-danger text-center mb-4">
             Sign-in failed. Please try again.
           </p>
         )}

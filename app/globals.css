@@ -1,16 +1,26 @@
 @import "tailwindcss";
 
 :root {
+  --font-project-serif: ui-serif, Georgia, "Times New Roman", serif;
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: var(--foreground);
   --primary: #f97316;
+  --primary-hover: color-mix(in srgb, var(--primary) 86%, #000000);
   --primary-foreground: #ffffff;
   --muted: #f4f4f5;
   --muted-foreground: #71717a;
   --card: #ffffff;
-  --card-foreground: #171717;
+  --card-foreground: var(--foreground);
   --border: #e4e4e7;
   --tertiary: #0d9488;
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --surface-subtle: #fafafa;
+  --track: var(--border);
   /* Interviews UI accent (list, project shell, founder console); signup --primary unchanged */
   --interview-brand: #ff6a4d;
   --interview-brand-end: #ff5733;
@@ -18,6 +28,15 @@
   --interview-brand-glow: color-mix(in srgb, var(--interview-brand) 35%, transparent);
   /* Editorial serif — referenced by @theme --font-serif and .serif-text */
   --font-serif-family: ui-serif, Georgia, "Times New Roman", serif;
+
+  /* Dark inset panel (e.g. Live Insights) — independent of page light theme */
+  --live-insights-bg: #18181b;
+  --live-insights-foreground: #f4f4f5;
+  --live-insights-muted: #a1a1aa;
+  --live-insights-border: rgb(255 255 255 / 0.1);
+  --live-insights-surface: rgb(255 255 255 / 0.05);
+  --live-insights-track: rgb(255 255 255 / 0.15);
+  --live-insights-bar-inactive: rgb(255 255 255 / 0.35);
 
   /* Motion system: one place for easing and duration */
   --ease-out-smooth: cubic-bezier(0.16, 1, 0.3, 1);
@@ -39,9 +58,25 @@
   --color-card-foreground: var(--card-foreground);
   --color-border: var(--border);
   --color-tertiary: var(--tertiary);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-track: var(--track);
+  --color-primary-hover: var(--primary-hover);
   --color-interview-brand: var(--interview-brand);
   --color-interview-brand-end: var(--interview-brand-end);
   --color-interview-brand-tint: var(--interview-brand-tint);
+  --color-live-insights-bg: var(--live-insights-bg);
+  --color-live-insights-foreground: var(--live-insights-foreground);
+  --color-live-insights-muted: var(--live-insights-muted);
+  --color-live-insights-border: var(--live-insights-border);
+  --color-live-insights-surface: var(--live-insights-surface);
+  --color-live-insights-track: var(--live-insights-track);
+  --color-live-insights-bar-inactive: var(--live-insights-bar-inactive);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-serif-family);
   --font-mono: var(--font-geist-mono);
