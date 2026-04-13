@@ -97,36 +97,6 @@ export default function AddInterviewPage() {
             </p>
           </section>
 
-          <section className="mb-5">
-            <div className="mb-2.5 flex items-center justify-between">
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                Upload Files
-              </h3>
-              <span className="text-[11px] font-medium text-amber-700">Coming soon</span>
-            </div>
-            <div
-              className="w-full min-h-[155px] py-5 bg-muted/30 border-2 border-dashed border-border/40 rounded-2xl flex flex-col items-center justify-center opacity-70"
-            >
-              <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm mb-2.5">
-                <span className="material-symbols-outlined text-primary text-[20px]">cloud_upload</span>
-              </div>
-              <h3 className="font-semibold text-xs mb-0.5 text-foreground">Drop files here</h3>
-              <p className="text-muted-foreground text-[11px]">MP3, WAV, or PDF up to 50MB</p>
-              <div className="mt-3">
-                <button
-                  type="button"
-                  disabled
-                  className="px-3 py-1 bg-white border border-border/80 rounded-full text-[11px] font-semibold shadow-sm text-foreground cursor-not-allowed opacity-70"
-                >
-                  Browse Files
-                </button>
-              </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                File upload is not available yet. Paste transcript above for now.
-              </p>
-            </div>
-          </section>
-
           {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
         </main>
       </div>
