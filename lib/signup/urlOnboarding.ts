@@ -86,6 +86,10 @@ function normalizeString(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
+function isPricingModel(v: string): v is PricingModel {
+  return PRICING_MODELS.includes(v as PricingModel);
+}
+
 function normalizeStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return [...new Set(v.map((item) => normalizeString(item)).filter(Boolean))];
@@ -215,7 +219,8 @@ export function mapExtractedModelOutputToDraft(output: ExtractedUrlOnboardingMod
       if (m === "one-time") return "one_time";
       if (m === "usage-based") return "usage_based";
       return m;
-    });
+    })
+    .filter(isPricingModel);
 
   return normalizeUrlOnboardingDraft({
     idea: output.idea,
