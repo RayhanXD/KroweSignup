@@ -28,7 +28,7 @@ export default function TeamSizeStep({
   return (
     <>
     <SignupStepLayout progressPercent={progressPercent}>
-      <div className="w-full max-w-5xl mx-auto relative overflow-hidden">
+      <div className="w-full max-w-5xl mx-auto relative overflow-x-hidden">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary-soft/40 via-transparent to-transparent pointer-events-none -z-10 translate-x-1/3 -translate-y-1/4" />
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center p-6 md:p-12">
           <div className="lg:col-span-5 flex flex-col justify-center space-y-8 pt-4">
@@ -57,9 +57,9 @@ export default function TeamSizeStep({
             </div>
           </div>
           <div className="lg:col-span-7 w-full">
-            <div className="animate-fade-slide-in step-delay-5 bg-card rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-border/60 overflow-hidden relative group transition-all duration-500 hover:shadow-lg hover:ring-border/80">
-              <div className="relative h-[320px] flex flex-col items-center justify-center pb-16">
-                <div className="w-full max-w-sm px-6">
+            <div className="animate-fade-slide-in step-delay-5 bg-card rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-border/60 overflow-hidden flex flex-col relative group transition-all duration-500 hover:shadow-lg hover:ring-border/80">
+              <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-10 min-h-[260px]">
+                <div className="w-full max-w-sm">
                   <div className="text-center mb-6">
                     <span className="block text-3xl md:text-4xl font-bold text-foreground mb-2" id="team-size-display">
                       {displayValue} {displayText}
@@ -86,7 +86,7 @@ export default function TeamSizeStep({
                   </div>
                 </div>
               </div>
-              <div className="animate-fade-slide-in step-delay-6 bg-card/80 backdrop-blur-sm border-t border-border/50 p-4 md:px-6 md:py-4 flex items-center justify-between absolute bottom-0 w-full z-10">
+              <div className="shrink-0 bg-card/80 backdrop-blur-sm border-t border-border/50 p-4 md:px-6 md:py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <span className="w-2 h-2 rounded-full bg-success/80 animate-pulse" />
                   Auto-saved
@@ -103,7 +103,7 @@ export default function TeamSizeStep({
                     type="button"
                     onClick={onContinue}
                     disabled={submitting}
-                    className="flex items-center gap-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue
                     <ArrowRight className="w-4 h-4" />

@@ -41,13 +41,12 @@ export default function IndustryExperienceStep({
               </div>
             </div>
             <div className="lg:col-span-7 w-full">
-              <div className="animate-fade-slide-in step-delay-5 bg-card rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-border/60 overflow-hidden relative group transition-all duration-500 hover:shadow-lg hover:ring-border/80">
-                <div className="relative min-h-[300px] flex flex-col pb-20">
-                  <div className="w-full px-6 py-8 md:px-8 md:py-10">
+              <div className="animate-fade-slide-in step-delay-5 bg-card rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-border/60 overflow-hidden flex flex-col relative group transition-all duration-500 hover:shadow-lg hover:ring-border/80">
+                <div className="relative flex min-h-[240px] flex-1 flex-col px-6 py-8 md:px-8 md:py-10">
                   <label className="block text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-6" htmlFor="experience">
                     Industry Experience
                   </label>
-                  <div className="relative w-full">
+                  <div className="relative w-full flex-1 min-h-0">
                     <textarea
                       id="experience"
                       name="experience"
@@ -58,9 +57,8 @@ export default function IndustryExperienceStep({
                       className="block w-full text-base font-medium text-foreground border-0 border-b-2 border-border/60 focus:border-border/60 focus:ring-0 focus:outline-none bg-transparent p-0 placeholder:text-muted-foreground/70 transition-all duration-300 resize-none leading-relaxed selection:bg-primary-soft selection:text-foreground"
                     />
                   </div>
-                  </div>
                 </div>
-                <div className="animate-fade-slide-in step-delay-6 bg-card/80 backdrop-blur-sm border-t border-border/50 p-4 md:px-6 md:py-4 flex items-center justify-between absolute bottom-0 w-full z-10">
+                <div className="shrink-0 bg-card/80 backdrop-blur-sm border-t border-border/50 p-4 md:px-6 md:py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <span className="w-2 h-2 rounded-full bg-success/80 animate-pulse" />
                   Auto-saved
@@ -77,7 +75,7 @@ export default function IndustryExperienceStep({
                     type="button"
                     onClick={onContinue}
                     disabled={value.trim().length < 3 || submitting}
-                    className="flex items-center gap-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue
                     <ArrowRight className="w-4 h-4" />

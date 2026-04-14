@@ -95,7 +95,7 @@ export default function FeaturesStep({
                 <button
                   type="button"
                   onClick={addChip}
-                  className="px-4 py-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors text-sm font-medium"
+                  className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors text-sm font-medium"
                 >
                   Add
                 </button>
@@ -148,7 +148,7 @@ export default function FeaturesStep({
                   type="button"
                   onClick={onContinue}
                   disabled={!canContinue || submitting}
-                  className="flex items-center gap-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />

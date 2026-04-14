@@ -88,7 +88,7 @@ export default function SkillsStep({
   const cardChecked =
     'border-primary/50 shadow-md ring-1 ring-primary/50 bg-primary-soft'
   const checkIconBase =
-    'absolute top-4 right-4 w-5 h-5 rounded-full bg-primary-soft text-primary-foreground flex items-center justify-center transition-all duration-200'
+    'absolute top-4 right-4 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center transition-all duration-200'
   const checkIconHidden = 'opacity-0 transform scale-75'
   const checkIconVisible = 'opacity-100 scale-100'
 
@@ -232,7 +232,7 @@ export default function SkillsStep({
                 type="button"
                 onClick={onContinue}
                 disabled={!canContinue || submitting}
-                className="flex items-center gap-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue
                 <ArrowRight className="w-4 h-4" />

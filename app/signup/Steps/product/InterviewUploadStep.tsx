@@ -228,7 +228,7 @@ export default function InterviewUploadStep({
                   type="button"
                   onClick={handleContinue}
                   disabled={uploading || submitting}
-                  className="flex items-center gap-2 bg-primary-soft hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploading ? "Uploading…" : "Continue"}
                   {!uploading && <ArrowRight className="w-4 h-4" />}

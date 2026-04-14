@@ -6,6 +6,8 @@
   --foreground: #171717;
   --primary: #f97316;
   --primary-hover: color-mix(in srgb, var(--primary) 86%, #000000);
+  /* Light tint for fills behind white `text-primary-foreground` (must be opaque; see signup Continue buttons) */
+  --primary-soft: color-mix(in srgb, var(--primary) 18%, #ffffff);
   --primary-foreground: #ffffff;
   --muted: #f4f4f5;
   --muted-foreground: #71717a;
@@ -51,6 +53,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
