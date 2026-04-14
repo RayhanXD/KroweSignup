@@ -215,8 +215,7 @@ export function mapExtractedModelOutputToDraft(output: ExtractedUrlOnboardingMod
       if (m === "one-time") return "one_time";
       if (m === "usage-based") return "usage_based";
       return m;
-    })
-    .filter((m): m is PricingModel => PRICING_MODELS.includes(m));
+    });
 
   return normalizeUrlOnboardingDraft({
     idea: output.idea,
