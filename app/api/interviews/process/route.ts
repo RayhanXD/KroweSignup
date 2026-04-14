@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
   const { data: project, error: projErr } = await supabase
     .from("interview_projects")
-    .select("id, status, interview_count, updated_at")
+    .select("id, status, interview_count, updated_at, session_id, onboarding_mode, onboarding_completed_at")
     .eq("id", projectId)
     .single();
 

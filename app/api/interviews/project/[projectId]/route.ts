@@ -4,6 +4,7 @@ import {
   didInterviewerFieldsChange,
   normalizeOptionalText,
 } from "@/lib/interviews/scriptCache";
+import { deriveOnboardingCompletion } from "@/lib/interviews/businessProfile";
 
 export async function PATCH(
   req: Request,
@@ -84,7 +85,7 @@ export async function GET(
   const [projectRes, interviewsRes, clustersRes] = await Promise.all([
     supabase
       .from("interview_projects")
-      .select("id, name, status, interview_count, created_at, updated_at, session_id, interviewer_name, interviewer_context")
+      .select("id, name, status, interview_count, created_at, updated_at, session_id, interviewer_name, interviewer_context, onboarding_mode, onboarding_completed_at")
       .eq("id", projectId)
       .single(),
     supabase
@@ -102,8 +103,33 @@ export async function GET(
     return NextResponse.json({ error: projectRes.error.message }, { status: 404 });
   }
 
+  const project = projectRes.data;
+  let onboardingMode = project.onboarding_mode as "manual" | "webscraper" | null;
+  let onboardingCompletedAt = project.onboarding_completed_at as string | null;
+
+  if (!onboardingCompletedAt) {
+    const onboarding = await deriveOnboardingCompletion(supabase, project.session_id);
+    if (onboarding.completed) {
+      onboardingMode = onboarding.onboardingMode;
+      onboardingCompletedAt = new Date().toISOString();
+      await supabase
+        .from("interview_projects")
+        .update({
+          onboarding_mode: onboardingMode,
+          onboarding_completed_at: onboardingCompletedAt,
+          updated_at: onboardingCompletedAt,
+        })
+        .eq("id", projectId)
+        .eq("user_id", user.id);
+    }
+  }
+
   return NextResponse.json({
-    project: projectRes.data,
+    project: {
+      ...project,
+      onboarding_mode: onboardingMode,
+      onboarding_completed_at: onboardingCompletedAt,
+    },
     interviews: interviewsRes.data ?? [],
     clusterCount: clustersRes.count ?? 0,
   });

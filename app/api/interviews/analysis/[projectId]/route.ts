@@ -5,6 +5,10 @@ import type { AnalysisInput, AnalysisResult, AnalysisContext, QuoteSlim, SignalS
 import type { FeatureSpec } from "@/lib/interviews/types";
 import { classifyCompetitors } from "@/lib/interviews/classifyCompetitors";
 import {
+  businessProfileContextLines,
+  parseBusinessProfile,
+} from "@/lib/interviews/businessProfile";
+import {
   buildAnalysisAnswerHelpers,
   fetchSignupAnswersForSession,
   STEP_KEYS_SCRIPT,
@@ -34,7 +38,7 @@ export async function GET(
   // 1. Fetch project to get session_id
   const projectRes = await supabase
     .from("interview_projects")
-    .select("id, session_id, user_id")
+    .select("id, session_id, user_id, business_profile_json")
     .eq("id", projectId)
     .single();
 
@@ -43,6 +47,8 @@ export async function GET(
   }
 
   let sessionId = projectRes.data.session_id as string | null;
+  const businessProfile = parseBusinessProfile(projectRes.data.business_profile_json);
+  const businessProfileContext = businessProfileContextLines(businessProfile);
 
   if (!sessionId) {
     const { data: fallbackSession } = await supabase
@@ -249,6 +255,7 @@ export async function GET(
       directCompetitors,
       onlineWorkarounds,
       alternativesUsed,
+      businessProfileContext,
     },
   };
 

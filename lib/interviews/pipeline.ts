@@ -12,6 +12,10 @@ import { categorizeClusterGroups } from "./categorizeClusterGroups";
 import { generateMetaClusters } from "./generateMetaClusters";
 import { extractMethodsAlternatives } from "./extractMethodsAlternatives";
 import { classifyCompetitors } from "./classifyCompetitors";
+import {
+  businessProfileContextLines,
+  parseBusinessProfile,
+} from "./businessProfile";
 import { runAssumptionMatching } from "@/lib/analysis/assumptionMatching";
 import type { AssumptionVsEvidenceReport } from "@/lib/analysis/assumptionMatching";
 import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
@@ -157,11 +161,13 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     // 1. Load project to check interview count
     const { data: project } = await supabase
       .from("interview_projects")
-      .select("id, interview_count, session_id")
+      .select("id, interview_count, session_id, business_profile_json")
       .eq("id", projectId)
       .single();
 
     if (!project) throw new Error("Project not found");
+    const businessProfile = parseBusinessProfile(project.business_profile_json);
+    const businessProfileContext = businessProfileContextLines(businessProfile);
 
     // Fetch founder context early to improve competitor extraction accuracy
     let earlyFounderIdea: string | null = null;
@@ -657,6 +663,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       directCompetitors,
       onlineWorkarounds,
       alternativesUsed: topAlternativesUsed,
+      businessProfileContext,
       confidenceScore: pipelineConfidenceScore,
       confidenceLevel: pipelineConfidenceLevel,
     });
@@ -710,6 +717,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
             directCompetitors,
             onlineWorkarounds,
             alternativesUsed: topAlternativesUsed,
+            businessProfileContext,
           },
         };
 

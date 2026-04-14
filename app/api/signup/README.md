@@ -13,6 +13,7 @@ app/api/signup/
 │   ├── route.ts         # POST - Submit and validate answer
 │   └── confirm/         # POST - Confirm answer and advance
 ├── complete/            # POST - Mark signup as complete
+├── scrape/              # GET/POST/PUT - URL scrape fast-track onboarding
 └── report/
     ├── generate/        # POST - Generate report for session
     └── [sessionId]/     # GET - Get report by session ID
@@ -111,6 +112,41 @@ Marks a signup session as complete.
 ```json
 {
   "ok": true
+}
+```
+
+### URL Fast-Track Scraping
+
+#### `GET /api/signup/scrape?sessionId=...`
+Loads the current extracted draft (ownership-checked).
+
+#### `POST /api/signup/scrape`
+Scrapes a website via Jina Reader and extracts onboarding answers with OpenAI.
+
+**Request Body:**
+```json
+{
+  "sessionId": "uuid",
+  "url": "https://example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "ok": true,
+  "draft": { "...": "..." }
+}
+```
+
+#### `PUT /api/signup/scrape`
+Updates the extracted draft answers before final completion.
+
+**Request Body:**
+```json
+{
+  "sessionId": "uuid",
+  "draft": { "...": "..." }
 }
 ```
 

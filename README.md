@@ -88,6 +88,26 @@ Response behavior:
 - `200` with `{ ok: true }` when Mongo ping succeeds
 - `503` when Mongo is not configured or unreachable
 
+## Temporary URL Onboarding Scrape
+
+Use this to test the website-based fast-track onboarding flow.
+
+1. Add flags in `.env.local`:
+
+```bash
+ENABLE_URL_ONBOARDING_SCRAPE=true
+NEXT_PUBLIC_ENABLE_URL_ONBOARDING_SCRAPE=true
+URL_SCRAPE_TIMEOUT_MS=10000
+URL_SCRAPE_MAX_CHARS=30000
+```
+
+2. Restart `npm run dev`.
+3. Open `/signup` and click `Have a website? Skip the form ->`.
+4. Paste a website URL in `/signup/url` and run analysis.
+5. Review/edit fields in `/signup/url/review`, then generate the report.
+
+Disable both `ENABLE_URL_ONBOARDING_SCRAPE` and `NEXT_PUBLIC_ENABLE_URL_ONBOARDING_SCRAPE` after testing.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

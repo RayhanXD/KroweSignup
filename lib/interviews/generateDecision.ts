@@ -25,6 +25,7 @@ type GenerateDecisionParams = {
   directCompetitors?: string[];
   onlineWorkarounds?: string[];
   alternativesUsed?: string[];
+  businessProfileContext?: string[];
   confidenceScore?: number;
   confidenceLevel?: "LOW" | "MEDIUM" | "HIGH";
 };
@@ -51,6 +52,7 @@ export async function generateDecision(
     directCompetitors,
     onlineWorkarounds,
     alternativesUsed,
+    businessProfileContext,
     confidenceScore,
     confidenceLevel,
   } = params;
@@ -153,6 +155,14 @@ export async function generateDecision(
         ].join("\n")
       : null;
 
+  const businessProfileText =
+    businessProfileContext && businessProfileContext.length > 0
+      ? [
+          "BUSINESS PROFILE CONTEXT:",
+          ...businessProfileContext.map((line) => `- ${line}`),
+        ].join("\n")
+      : null;
+
   const userPrompt = [
     `TOP PROBLEM: ${cluster.canonical_problem}`,
     `Score: ${cluster.score.toFixed(2)} | Frequency: ${cluster.frequency} | Avg Intensity: ${cluster.avg_intensity.toFixed(1)}/5 | Consistency: ${cluster.consistency_score.toFixed(2)}`,
@@ -166,6 +176,7 @@ export async function generateDecision(
     validationText ? `\n${validationText}` : null,
     featureText ? `\n${featureText}` : null,
     transcriptAlternativesText ? `\n${transcriptAlternativesText}` : null,
+    businessProfileText ? `\n${businessProfileText}` : null,
     confidenceText ? `\n${confidenceText}` : null,
   ]
     .filter((x) => x !== null)

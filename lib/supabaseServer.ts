@@ -13,3 +13,18 @@ export function createServerSupabaseClient() {
     auth: { persistSession: false },
   });
 }
+
+/**
+ * Server-side Supabase client that always uses service role.
+ * Use for privileged auth/admin operations (e.g. deleting auth users).
+ */
+export function createServiceRoleSupabaseClient() {
+  if (!ENV.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error(
+      "Missing required environment variable for admin operation: SUPABASE_SERVICE_ROLE_KEY"
+    );
+  }
+  return createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
+}

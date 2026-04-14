@@ -50,7 +50,6 @@ export default function SignupPage() {
   const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
   const progressPercent = getProgressPercent(stepKey);
   const raw = answersByStepKey[stepKey] ?? "";
-  const value = raw
 
   if (saving || finishing) return <SpiralPreloader className="animate-fade-in" />;
 
@@ -107,7 +106,7 @@ export default function SignupPage() {
       await confirmAndMaybeFinish(step, serialized, "original");
       setOverrideStepKey(null);
       await sleepPreloaderMin(start);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in saveAndNext:", error);
     } finally {
       setSubmitting(false);

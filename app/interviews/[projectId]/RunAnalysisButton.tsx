@@ -9,11 +9,16 @@ type Props = {
   projectStatus: string;
 };
 
-export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: Props) {
+export function RunAnalysisButton({
+  projectId,
+  interviewCount,
+  projectStatus,
+}: Props) {
   const router = useRouter();
   const [status, setStatus] = useState(projectStatus);
   const [loading, setLoading] = useState(false);
   const [rerunLoading, setRerunLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const poll = useCallback(async () => {
     try {
@@ -39,6 +44,7 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
   }, [status, poll]);
 
   async function triggerAnalysis(force = false) {
+    setError(null);
     if (force) setRerunLoading(true);
     else setLoading(true);
     try {
@@ -48,11 +54,15 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
         body: JSON.stringify({ projectId, force }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to start analysis.");
+        return;
+      }
       if (data.status === "processing") {
         setStatus("processing");
       }
     } catch {
-      // ignore
+      setError("Network error while starting analysis.");
     } finally {
       setLoading(false);
       setRerunLoading(false);
@@ -80,24 +90,30 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
 
   if (status === "ready") {
     return (
-      <button
-        onClick={() => triggerAnalysis(true)}
-        disabled={rerunLoading || interviewCount < 3}
-        className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
-        title="Rerun analysis with all interviews"
-      >
-        {rerunLoading ? "Restarting..." : "↺ Rerun Analysis"}
-      </button>
+      <div className="flex flex-col items-end gap-1">
+        <button
+          onClick={() => triggerAnalysis(true)}
+          disabled={rerunLoading || interviewCount < 3}
+          className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
+          title="Rerun analysis with all interviews"
+        >
+          {rerunLoading ? "Restarting..." : "↺ Rerun Analysis"}
+        </button>
+        {error && <p className="text-[10px] text-danger">{error}</p>}
+      </div>
     );
   }
 
   return (
-    <button
-      onClick={() => triggerAnalysis(false)}
-      disabled={interviewCount < 3 || loading}
-      className="px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-primary-hover text-primary-foreground text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
-    >
-      {loading ? "Starting..." : "Run Analysis"}
-    </button>
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={() => triggerAnalysis(false)}
+        disabled={interviewCount < 3 || loading}
+        className="px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-primary-hover text-primary-foreground text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
+      >
+        {loading ? "Starting..." : "Run Analysis"}
+      </button>
+      {error && <p className="text-[10px] text-danger">{error}</p>}
+    </div>
   );
 }

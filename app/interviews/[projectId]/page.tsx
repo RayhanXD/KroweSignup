@@ -9,6 +9,7 @@ import {
   type InterviewSignalLabel,
   type InterviewSignalMetrics,
 } from "@/lib/interviews/interviewSignal";
+import { deriveOnboardingCompletion } from "@/lib/interviews/businessProfile";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,8 @@ type Project = {
   created_at: string;
   updated_at: string;
   session_id: string | null;
+  onboarding_mode: "manual" | "webscraper" | null;
+  onboarding_completed_at: string | null;
 };
 
 type ClusterWithId = ProblemCluster & { id: string };
@@ -52,7 +55,9 @@ export default async function ProjectPage({
   const [projectRes, interviewsRes, decisionResWithAnalysis, clustersRes] = await Promise.all([
     supabase
       .from("interview_projects")
-      .select("id, name, status, interview_count, created_at, updated_at, session_id")
+      .select(
+        "id, name, status, interview_count, created_at, updated_at, session_id, onboarding_mode, onboarding_completed_at"
+      )
       .eq("id", projectId)
       .single(),
     supabase
@@ -97,6 +102,22 @@ export default async function ProjectPage({
   }
 
   const project = projectRes.data as Project;
+  if (!project.onboarding_completed_at && project.session_id) {
+    const onboarding = await deriveOnboardingCompletion(supabase, project.session_id);
+    if (onboarding.completed) {
+      const nowIso = new Date().toISOString();
+      await supabase
+        .from("interview_projects")
+        .update({
+          onboarding_mode: onboarding.onboardingMode,
+          onboarding_completed_at: nowIso,
+          updated_at: nowIso,
+        })
+        .eq("id", projectId);
+      project.onboarding_mode = onboarding.onboardingMode;
+      project.onboarding_completed_at = nowIso;
+    }
+  }
   const interviewsRaw = (interviewsRes.data ?? []) as Array<Omit<Interview, "high_signal" | "signal_label" | "signal_metrics">>;
   const interviewIds = interviewsRaw.map((i) => i.id);
   const extractedProblemsRes = interviewIds.length

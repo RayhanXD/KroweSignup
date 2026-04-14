@@ -108,3 +108,32 @@ export function getOptionalPublicPlatformUrl(): string | undefined {
   }
   return `https://${withoutTrailingSlash}`;
 }
+
+function parseBooleanEnv(value: string | undefined): boolean {
+  return (value ?? "").trim().toLowerCase() === "true";
+}
+
+export function isUrlOnboardingScrapeEnabled(): boolean {
+  return (
+    parseBooleanEnv(process.env.ENABLE_URL_ONBOARDING_SCRAPE) ||
+    parseBooleanEnv(process.env.NEXT_PUBLIC_ENABLE_URL_ONBOARDING_SCRAPE)
+  );
+}
+
+export function getUrlOnboardingScrapeTimeoutMs(): number {
+  const raw = process.env.URL_SCRAPE_TIMEOUT_MS?.trim();
+  const parsed = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 10_000;
+  }
+  return Math.floor(parsed);
+}
+
+export function getUrlOnboardingScrapeMaxChars(): number {
+  const raw = process.env.URL_SCRAPE_MAX_CHARS?.trim();
+  const parsed = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 30_000;
+  }
+  return Math.floor(parsed);
+}

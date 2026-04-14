@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { InterviewScriptTab } from "./InterviewScriptTab";
+import { BusinessProfileTab } from "./BusinessProfileTab";
 import type { FeatureSpec, ProblemCluster, DecisionOutput } from "@/lib/interviews/types";
 import { toLiveInsightsClusterTitle } from "@/lib/interviews/liveInsightsTitle";
 import type { InterviewSignalLabel, InterviewSignalMetrics } from "@/lib/interviews/interviewSignal";
@@ -29,6 +30,8 @@ type Project = {
   created_at: string;
   updated_at: string;
   session_id: string | null;
+  onboarding_mode: "manual" | "webscraper" | null;
+  onboarding_completed_at: string | null;
 };
 
 type ClusterWithId = ProblemCluster & { id: string };
@@ -74,7 +77,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-type Tab = "interviews" | "script";
+type Tab = "interviews" | "script" | "businessProfile";
 
 type Props = {
   project: Project;
@@ -222,14 +225,16 @@ export function ProjectPageClient({
         {/* Tab bar */}
         <div className="flex items-center gap-2 border-b border-border/60">
           <div className="flex gap-0">
-            {(["interviews", "script"] as Tab[]).map((tab) => {
+            {(["interviews", "script", "businessProfile"] as Tab[]).map((tab) => {
               const labels: Record<Tab, string> = {
                 interviews: "Interviews",
                 script: "Interview Script",
+                businessProfile: "Business Profile",
               };
               const icons: Record<Tab, string> = {
                 interviews: "chat_bubble_outline",
                 script: "description",
+                businessProfile: "apartment",
               };
               return (
                 <button
@@ -551,6 +556,10 @@ export function ProjectPageClient({
         <div className="flex flex-col flex-1 min-h-0">
           <InterviewScriptTab projectId={projectId} projectName={project.name} />
         </div>
+      )}
+
+      {activeTab === "businessProfile" && (
+        <BusinessProfileTab projectId={projectId} />
       )}
     </div>
   );

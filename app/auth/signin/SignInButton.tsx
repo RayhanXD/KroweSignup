@@ -36,7 +36,7 @@ export default function SignInButton({ redirectTo }: { redirectTo?: string }) {
   return (
     <button
       onClick={handleGoogleSignIn}
-      className="w-full px-4 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm font-medium hover:bg-foreground/5 transition-colors"
     >
       Continue with Google
     </button>

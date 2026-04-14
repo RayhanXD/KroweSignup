@@ -20,6 +20,7 @@ export type AnalysisInput = {
     directCompetitors?: string[];
     onlineWorkarounds?: string[];
     alternativesUsed?: string[];
+    businessProfileContext?: string[];
   };
 };
 
@@ -100,6 +101,7 @@ export function buildAnalysisPrompt(input: AnalysisInput): string {
     `- Direct competitors: ${interviewData.directCompetitors?.join(", ") || "none"}`,
     `- Online workarounds (not direct competitors): ${interviewData.onlineWorkarounds?.join(", ") || "none"}`,
     `- Manual alternatives used/tried: ${interviewData.alternativesUsed?.join(", ") || "none"}`,
+    `- Business profile context: ${interviewData.businessProfileContext?.join(" | ") || "none"}`,
     "",
     "Tasks:",
     "1. Compare founder problem vs real problems",
