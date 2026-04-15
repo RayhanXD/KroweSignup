@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:granola-workflow": "vitest run lib/integrations/granola/client.test.ts lib/integrations/granola/normalize.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -37,6 +37,13 @@ type Props = {
   initialConnection: Connection;
 };
 
+type SyncResult = {
+  scanned: number;
+  upserted: number;
+  skipped: number;
+  fullResync: boolean;
+};
+
 export function ImportsClient({ initialItems, projects, initialConnection }: Props) {
   const [connection, setConnection] = useState<Connection>(initialConnection);
   const [items, setItems] = useState<InboxItem[]>(initialItems);
@@ -44,6 +51,7 @@ export function ImportsClient({ initialItems, projects, initialConnection }: Pro
   const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
 
   const filteredItems = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -88,14 +96,25 @@ export function ImportsClient({ initialItems, projects, initialConnection }: Pro
 
   async function syncNow() {
     setError(null);
+    setSyncResult(null);
     setBusy("sync");
     try {
-      const res = await fetch("/api/integrations/granola/sync", { method: "POST" });
+      const res = await fetch("/api/integrations/granola/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullResync: true }),
+      });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Sync failed");
         return;
       }
+      setSyncResult({
+        scanned: Number(data.scanned ?? 0),
+        upserted: Number(data.upserted ?? 0),
+        skipped: Number(data.skipped ?? 0),
+        fullResync: Boolean(data.fullResync),
+      });
       await Promise.all([refreshConnection(), refreshItems()]);
     } finally {
       setBusy(null);
@@ -167,7 +186,7 @@ export function ImportsClient({ initialItems, projects, initialConnection }: Pro
                 disabled={busy === "sync"}
                 className="rounded-lg bg-orange-500 px-3 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
               >
-                {busy === "sync" ? "Syncing..." : "Sync now"}
+                {busy === "sync" ? "Syncing..." : "Full resync"}
               </button>
             )}
           </div>
@@ -237,6 +256,18 @@ export function ImportsClient({ initialItems, projects, initialConnection }: Pro
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
             {error}
+          </div>
+        )}
+        {syncResult && (
+          <div className="mb-4 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700">
+            {syncResult.fullResync ? "Full resync complete" : "Sync complete"}: scanned{" "}
+            {syncResult.scanned}, imported {syncResult.upserted}, skipped {syncResult.skipped}.
+            {syncResult.scanned === 0 && (
+              <p className="mt-1 text-xs text-zinc-500">
+                Granola returned no API-eligible notes for this key. Granola only returns notes that
+                have generated summaries/transcripts and are visible to the API key owner.
+              </p>
+            )}
           </div>
         )}
 

@@ -12,6 +12,30 @@ type ListOptions = {
   pageSize?: number;
 };
 
+function normalizeListResponse(payload: unknown): GranolaListNotesResponse {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Granola API returned an invalid list response");
+  }
+
+  const raw = payload as Record<string, unknown>;
+  const notesValue = Array.isArray(raw.notes)
+    ? raw.notes
+    : Array.isArray(raw.data)
+      ? raw.data
+      : Array.isArray(raw.items)
+        ? raw.items
+        : [];
+
+  const hasMoreRaw = raw.hasMore ?? raw.has_more ?? raw.hasNextPage ?? raw.has_next_page;
+  const cursorRaw = raw.cursor ?? raw.next_cursor ?? raw.nextCursor ?? null;
+
+  return {
+    notes: notesValue as GranolaNoteSummary[],
+    hasMore: Boolean(hasMoreRaw),
+    cursor: typeof cursorRaw === "string" ? cursorRaw : null,
+  };
+}
+
 async function granolaRequest<T>(apiKey: string, path: string): Promise<T> {
   let attempt = 0;
   while (attempt < 3) {
@@ -52,10 +76,8 @@ export async function listGranolaNotes(
   if (options.pageSize) params.set("page_size", String(options.pageSize));
 
   const query = params.toString();
-  return granolaRequest<GranolaListNotesResponse>(
-    apiKey,
-    `/notes${query ? `?${query}` : ""}`
-  );
+  const payload = await granolaRequest<unknown>(apiKey, `/notes${query ? `?${query}` : ""}`);
+  return normalizeListResponse(payload);
 }
 
 export async function getGranolaNote(apiKey: string, noteId: string): Promise<GranolaNote> {
@@ -67,5 +89,8 @@ export async function getGranolaNote(apiKey: string, noteId: string): Promise<Gr
 
 export async function verifyGranolaConnection(apiKey: string): Promise<GranolaNoteSummary[] | null> {
   const res = await listGranolaNotes(apiKey, { pageSize: 1 });
-  return res.notes ?? null;
+  if (!Array.isArray(res.notes)) {
+    throw new Error("Granola API returned an invalid notes payload");
+  }
+  return res.notes;
 }

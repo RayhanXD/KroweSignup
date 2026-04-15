@@ -9,6 +9,7 @@ type SyncParams = {
   supabase: SupabaseClient;
   userId: string;
   triggerSource: TriggerSource;
+  fullResync?: boolean;
 };
 
 type ConnectionRow = {
@@ -22,8 +23,11 @@ export async function syncGranolaInbox({
   supabase,
   userId,
   triggerSource,
+  fullResync = false,
 }: SyncParams): Promise<{ scanned: number; upserted: number; skipped: number }> {
-  console.log(`[granola-sync] start user=${userId} trigger=${triggerSource}`);
+  console.log(
+    `[granola-sync] start user=${userId} trigger=${triggerSource} fullResync=${String(fullResync)}`
+  );
   const { data: connection, error: connErr } = await supabase
     .from("granola_connections")
     .select("id, encrypted_api_key, status, last_synced_note_updated_at")
@@ -54,6 +58,7 @@ export async function syncGranolaInbox({
   let cursor: string | undefined;
   let hasMore = true;
   let newestUpdatedAt = connection.last_synced_note_updated_at;
+  const updatedAfter = fullResync ? undefined : connection.last_synced_note_updated_at ?? undefined;
 
   await supabase
     .from("granola_connections")
@@ -66,13 +71,13 @@ export async function syncGranolaInbox({
       const page = await listGranolaNotes(apiKey, {
         pageSize: 30,
         cursor,
-        updatedAfter: connection.last_synced_note_updated_at ?? undefined,
+        updatedAfter,
       });
 
       hasMore = page.hasMore;
       cursor = page.cursor ?? undefined;
 
-      for (const summary of page.notes) {
+      for (const summary of page.notes ?? []) {
         scanned += 1;
         const { data: existing } = await supabase
           .from("granola_inbox_items")
@@ -93,11 +98,6 @@ export async function syncGranolaInbox({
 
         const note = await getGranolaNote(apiKey, summary.id);
         const normalized = normalizeGranolaNote(note);
-
-        if (normalized.normalized_text.trim().length < 100) {
-          skipped += 1;
-          continue;
-        }
 
         const { error: upsertErr } = await supabase.from("granola_inbox_items").upsert(
           {

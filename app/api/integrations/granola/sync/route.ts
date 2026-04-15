@@ -11,7 +11,7 @@ function hasCronSecret(req: Request): boolean {
   return Boolean(provided && provided === expected);
 }
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     ensureGranolaImportsEnabled();
   } catch {
@@ -25,13 +25,22 @@ export async function POST(_req: Request) {
 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  let fullResync = false;
+  try {
+    const body = await req.json();
+    fullResync = Boolean(body?.fullResync);
+  } catch {
+    fullResync = false;
+  }
+
   try {
     const result = await syncGranolaInbox({
       supabase,
       userId: user.id,
       triggerSource: "manual",
+      fullResync,
     });
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, fullResync, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync failed";
     return NextResponse.json({ error: message }, { status: 500 });
