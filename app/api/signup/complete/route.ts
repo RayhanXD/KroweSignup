@@ -1,9 +1,25 @@
 import {NextResponse} from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
-import { SIGNUP_STEPS, StepKey } from "@/lib/signupSteps";
+import { isValidStepKey, SIGNUP_STEPS, StepKey } from "@/lib/signupSteps";
 import type { CompleteSignupRequest } from "@/lib/types/api";
 
 type Body = CompleteSignupRequest;
+type SignupAnswerRow = {
+    step_key: StepKey;
+    final_answer: string | null;
+    final_source: string | null;
+    confirmed_at: string | null;
+};
+type SignupResponsePayload = Partial<
+    Record<
+        StepKey,
+        {
+            final: string | null;
+            source: string | null;
+            confirmedAt: string | null;
+        }
+    >
+>;
 
 function getRequiredSteps(interviewCount: number): StepKey[] {
     if (interviewCount === 0) {
@@ -27,9 +43,21 @@ export async function POST(req: Request) {
 
     if (aErr) return NextResponse.json({error: aErr.message}, {status: 500});
 
-    const byKey: Record<string, any> = {};
-        for (const a of answers ?? []) {
-            byKey[a.step_key] = a;
+    const byKey: Partial<Record<StepKey, SignupAnswerRow>> = {};
+        for (const a of (answers ?? []) as Array<{
+            step_key?: unknown;
+            final_answer?: string | null;
+            final_source?: string | null;
+            confirmed_at?: string | null;
+        }>) {
+            if (typeof a.step_key !== "string" || !isValidStepKey(a.step_key)) continue;
+
+            byKey[a.step_key] = {
+                step_key: a.step_key,
+                final_answer: a.final_answer ?? null,
+                final_source: a.final_source ?? null,
+                confirmed_at: a.confirmed_at ?? null,
+            };
         }
     
     // 2) ensure required finals exist
@@ -51,12 +79,15 @@ export async function POST(req: Request) {
     }
 
     // 3) build final payload (final final to build tasks on after)  aka leagcy response
-    const payload: Record<string, any> = {};
+    const payload: SignupResponsePayload = {};
     for(const k of requiredSteps) {
+        const row = byKey[k];
+        if (!row) continue;
+
         payload[k] = {
-            final: byKey[k].final_answer,
-            source: byKey[k].final_source,
-            confirmedAt: byKey[k].confirmed_at,
+            final: row.final_answer,
+            source: row.final_source,
+            confirmedAt: row.confirmed_at,
         };
     }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SpiralPreloader from "@/app/components/SpiralPreloader";
+import Image from "next/image";
 
 export default function UrlOnboardingStartClient() {
   const router = useRouter();
@@ -74,7 +75,11 @@ export default function UrlOnboardingStartClient() {
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-10">
-      <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-6 md:p-8 shadow-sm">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-border/60 bg-card p-6 md:p-8 shadow-soft">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-1.5">
+          <Image src="/KroweIcon.png" alt="Krowe" width={16} height={16} className="rounded-sm" />
+          <span className="text-[11px] font-semibold text-foreground">Krowe onboarding</span>
+        </div>
         <h1 className="text-2xl md:text-3xl font-semibold text-foreground">Paste your website URL to skip onboarding</h1>
         <p className="mt-3 text-sm md:text-base text-muted-foreground">
           We will analyze your site and prefill your onboarding answers. You can review and edit everything before generating your report.

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { summaryToBullets } from "@/lib/interviews/formatSummary";
 
 interface TopQuote {
@@ -244,19 +245,51 @@ export default function InterviewDetailClient({
   });
 
   return (
-    <div className="bg-surface text-on-surface">
-      <div className="flex min-h-screen flex-col">
-        <main className="flex-1 flex flex-col min-h-[calc(100vh-5rem)]">
-          <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+    <div className="min-h-screen bg-background text-on-surface">
+      <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
+        <aside className="border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-border/60 bg-background px-2.5 py-2">
+            <Image src="/KroweIcon.png" alt="Krowe" width={20} height={20} className="rounded-sm" />
+            <div>
+              <p className="text-xs font-semibold text-foreground">Krowe</p>
+              <p className="text-[10px] text-muted-foreground">Interview analysis</p>
+            </div>
+          </div>
+          <nav className="space-y-1.5">
+            <Link href="/interviews" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-background hover:text-foreground">
+              <span className="material-symbols-outlined text-base">home</span>
+              Home
+            </Link>
+            <Link href={`/interviews/${projectId}`} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-background hover:text-foreground">
+              <span className="material-symbols-outlined text-base">workspaces</span>
+              Workspace
+            </Link>
+            <div className="flex items-center gap-2 rounded-lg bg-interview-brand-tint/70 px-2.5 py-2 text-sm font-medium text-interview-brand">
+              <span className="material-symbols-outlined text-base">article</span>
+              Interview Detail
+            </div>
+          </nav>
+        </aside>
+        <main className="flex min-h-[calc(100vh-5rem)] flex-col">
+          <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
             <section className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar bg-card">
               <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
-                  <Link
-                    href={`/interviews/${projectId}`}
-                    className="inline-block text-sm text-muted-foreground hover:underline mb-5"
-                  >
-                    ← Back to project
-                  </Link>
+                  <div className="mb-5 flex flex-wrap items-center gap-3">
+                    <Link
+                      href={`/interviews/${projectId}`}
+                      className="inline-block text-sm text-muted-foreground hover:underline"
+                    >
+                      ← Back to project
+                    </Link>
+                    <span className="text-xs text-muted-foreground">·</span>
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1">
+                      <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Krowe analysis
+                      </span>
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between mb-5">
                     <h1 className="text-3xl lg:text-4xl font-bold text-on-surface tracking-tight leading-[1.1]">
                       Transcription &amp; Raw Logs

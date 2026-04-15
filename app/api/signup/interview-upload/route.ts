@@ -3,6 +3,13 @@ import { supabase } from '@/lib/supabaseClient'
 
 export const runtime = 'nodejs'
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+  return 'Upload failed'
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
@@ -45,8 +52,8 @@ export async function POST(req: NextRequest) {
     )
 
     return NextResponse.json({ files: uploaded })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[interview-upload]', err)
-    return NextResponse.json({ error: err?.message || 'Upload failed' }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }

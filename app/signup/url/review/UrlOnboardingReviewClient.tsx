@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SpiralPreloader from "@/app/components/SpiralPreloader";
+import Image from "next/image";
 import {
   normalizeUrlOnboardingDraft,
   type PricingModel,
@@ -152,7 +153,11 @@ export default function UrlOnboardingReviewClient() {
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-10">
-      <div className="mx-auto max-w-4xl rounded-2xl border border-border bg-card p-6 md:p-8">
+      <div className="mx-auto max-w-4xl rounded-2xl border border-border/60 bg-card p-6 md:p-8 shadow-soft">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-1.5">
+          <Image src="/KroweIcon.png" alt="Krowe" width={16} height={16} className="rounded-sm" />
+          <span className="text-[11px] font-semibold text-foreground">Krowe onboarding review</span>
+        </div>
         <h1 className="text-2xl font-semibold text-foreground">Review extracted onboarding answers</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Update anything that looks off, then generate your report.

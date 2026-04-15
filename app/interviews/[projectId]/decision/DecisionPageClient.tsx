@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import { AllProblemsButton } from "./AllProblemsButton";
 import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
@@ -679,6 +680,13 @@ export function DecisionPageClient({
               >
                 Back to project
               </Link>
+              <span className="dr-body-text text-xs opacity-40">·</span>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] bg-[color:color-mix(in_srgb,var(--dr-surface)_88%,transparent)] px-2.5 py-1">
+                <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
+                <span className="font-label text-[9px] uppercase tracking-[0.2em]">
+                  Krowe report
+                </span>
+              </div>
               <span className="dr-body-text text-xs opacity-40">·</span>
               <button
                 type="button"

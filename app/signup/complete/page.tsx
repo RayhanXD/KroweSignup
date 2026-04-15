@@ -51,8 +51,8 @@ function SignupCompleteContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="max-w-md w-full rounded-2xl border bg-card p-6 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+      <div className="max-w-md w-full rounded-2xl border border-border/60 bg-card p-6 text-center shadow-soft">
         <div className="text-xl font-semibold text-foreground">
           There was a problem finishing signup
         </div>

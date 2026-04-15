@@ -8,6 +8,13 @@ import type { SubmitAnswerResponse, ConfirmAnswerResponse } from "@/lib/types/an
 
 const PRELOADER_MIN_MS = 2500
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+  return "unknown error"
+}
+
 function sleepRemaining(startTime: number, minMs: number) {
   const elapsed = Date.now() - startTime
   const remaining = Math.max(0, minMs - elapsed)
@@ -46,9 +53,9 @@ export function useSignupSession(){
                     loading: false,
                     error: null,
                 }));
-            } catch (e: any) {
+            } catch (e: unknown) {
                 await sleepRemaining(startTime, PRELOADER_MIN_MS);
-                setState((s) => ({ ...s, loading: false, error: e?.message || "unknown error" }));
+                setState((s) => ({ ...s, loading: false, error: getErrorMessage(e) }));
             }
         })();
     }, []);

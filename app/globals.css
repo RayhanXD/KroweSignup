@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --font-project-serif: ui-serif, Georgia, "Times New Roman", serif;
+  --font-project-serif: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --background: #ffffff;
   --foreground: #171717;
   --primary: #f97316;
@@ -29,7 +29,7 @@
   --interview-brand-tint: #ffeae5;
   --interview-brand-glow: color-mix(in srgb, var(--interview-brand) 35%, transparent);
   /* Editorial serif — referenced by @theme --font-serif and .serif-text */
-  --font-serif-family: ui-serif, Georgia, "Times New Roman", serif;
+  --font-serif-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   /* Dark inset panel (e.g. Live Insights) — independent of page light theme */
   --live-insights-bg: #18181b;

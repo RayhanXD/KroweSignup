@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { runDecisionPipeline } from "@/lib/interviews/pipeline";
+import { trackDashboardActivity } from "@/lib/interviews/dashboardActivity";
 
 export const maxDuration = 300;
 
@@ -30,6 +31,8 @@ export async function POST(req: Request) {
     .from("interview_projects")
     .select("id, status, interview_count, updated_at, session_id, onboarding_mode, onboarding_completed_at")
     .eq("id", projectId)
+    .eq("user_id", user.id)
+    .is("archived_at", null)
     .single();
 
   if (projErr || !project) {
@@ -65,6 +68,15 @@ export async function POST(req: Request) {
       console.error(`[process] Pipeline error for project ${projectId}:`, e);
     })
   );
+
+  await trackDashboardActivity(supabase, {
+    userId: user.id,
+    action: force ? "analysis_rerun_requested" : "analysis_requested",
+    entityType: "project",
+    entityId: projectId,
+    projectId,
+    metadata: { interview_count: project.interview_count },
+  });
 
   return NextResponse.json({ ok: true, status: "processing" });
 }

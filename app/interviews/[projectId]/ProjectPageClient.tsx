@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { InterviewScriptTab } from "./InterviewScriptTab";
 import { BusinessProfileTab } from "./BusinessProfileTab";
@@ -179,34 +180,63 @@ export function ProjectPageClient({
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Constrained header section */}
-      <div className="max-w-[1240px] mx-auto w-full px-4 md:px-5 pt-10 md:pt-12 pb-0">
-        <div className="max-w-3xl">
-          {/* Back link */}
-          <div className="mb-5">
-            <Link href="/interviews" className="text-xs text-muted-foreground hover:underline">
-              ← All projects
-            </Link>
+    <div className="min-h-screen bg-background">
+      <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
+        <aside className="border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-border/60 bg-background px-2.5 py-2">
+            <Image src="/KroweIcon.png" alt="Krowe icon" width={22} height={22} className="h-[22px] w-[22px] rounded-sm" />
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold text-foreground">Krowe</p>
+              <p className="truncate text-[10px] text-muted-foreground">Project workspace</p>
+            </div>
           </div>
+          <nav aria-label="Workspace nav" className="space-y-1.5">
+            <Link href="/interviews" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
+              <span className="material-symbols-outlined text-base" aria-hidden>home</span>
+              Home
+            </Link>
+            <Link href="/interviews/projects" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
+              <span className="material-symbols-outlined text-base" aria-hidden>folder_open</span>
+              Projects
+            </Link>
+            <div className="flex items-center gap-2 rounded-lg bg-interview-brand-tint/70 px-2.5 py-2 text-sm font-medium text-interview-brand">
+              <span className="material-symbols-outlined text-base" aria-hidden>workspaces</span>
+              Active Workspace
+            </div>
+            <Link href={`/interviews/${projectId}/add`} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
+              <span className="material-symbols-outlined text-base" aria-hidden>add_circle</span>
+              Add Interview
+            </Link>
+          </nav>
+        </aside>
 
-          {/* Project header — serif/sans pairing like upload flow */}
-          <div className="flex items-start gap-3 mb-10">
+        <section className="p-3 sm:p-4">
+          <header className="mb-3 flex items-center justify-between border-b border-border/60 pb-3">
+            <div className="flex items-center gap-2">
+              <Image src="/KroweIcon.png" alt="Krowe" width={18} height={18} className="h-[18px] w-[18px] rounded-sm" />
+              <h1 className="text-sm font-medium text-foreground">Workspace Console</h1>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              <Link href="/interviews" className="hover:underline">All projects</Link>
+            </div>
+          </header>
+
+          <div className="mb-5 rounded-2xl border border-border/60 bg-card p-5 shadow-soft sm:p-6">
             <div className="mb-1 min-w-0">
-              <p className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground mb-1.5">
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                 Project
               </p>
               <div className="flex flex-wrap items-center gap-3 gap-y-2">
-                <h1 className="serif-text text-[24px] sm:text-[26px] font-bold tracking-tight leading-[1.15] text-foreground">
+                <h2 className="serif-text text-[24px] font-bold leading-[1.15] tracking-tight text-foreground sm:text-[26px]">
                   {project.name}
-                </h1>
+                </h2>
                 <StatusBadge status={project.status} />
               </div>
-              <p className="text-muted-foreground text-xs max-w-md leading-relaxed mt-2">
+              <p className="mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
                 Strategic intelligence and synthesis for this workspace. Switch tabs to review transcripts
                 or your interview script.
               </p>
-              <div className="flex items-center gap-1.5 mt-3">
+              <div className="mt-3 flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[14px] text-muted-foreground">groups</span>
                 <p className="text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">{project.interview_count}</span>
@@ -220,10 +250,9 @@ export function ProjectPageClient({
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Tab bar */}
-        <div className="flex items-center gap-2 border-b border-border/60">
+          {/* Tab bar */}
+          <div className="flex items-center gap-2 border-b border-border/60 bg-card">
           <div className="flex gap-0">
             {(["interviews", "script", "businessProfile"] as Tab[]).map((tab) => {
               const labels: Record<Tab, string> = {
@@ -240,7 +269,7 @@ export function ProjectPageClient({
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors border-b-2 -mb-px ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 -mb-px ${
                     activeTab === tab
                       ? "border-interview-brand text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
@@ -281,12 +310,11 @@ export function ProjectPageClient({
               <p className="text-[10px] text-muted-foreground">Run analysis to unlock</p>
             ) : null}
           </div>
-        </div>
-      </div>
+          </div>
 
-      {/* Interviews tab — constrained */}
-      {activeTab === "interviews" && (
-        <main className="flex-1 max-w-[1240px] mx-auto w-full px-4 md:px-5 pb-16 mt-10 space-y-8">
+          {/* Interviews tab — constrained */}
+          {activeTab === "interviews" && (
+            <main className="mt-8 space-y-8 pb-16">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="serif-text text-lg sm:text-xl font-bold text-foreground tracking-tight">
               Interviews
@@ -361,15 +389,15 @@ export function ProjectPageClient({
                     <Link
                       key={interview.id}
                       href={`/interviews/${projectId}/${interview.id}`}
-                      className="block bg-card rounded-2xl p-6 border border-border/60 shadow-soft hover:shadow-card-hover transition-all"
+                      className="block rounded-2xl border border-border/60 bg-card p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
                     >
-                      <div className="flex justify-between items-start mb-6 gap-4">
+                      <div className="mb-4 flex items-start justify-between gap-4">
                         <div className="flex space-x-4 min-w-0">
-                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-lg font-bold shrink-0">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
                             {initialForName(interview.interviewee_name, i)}
                           </div>
                           <div className="min-w-0">
-                            <h3 className="text-lg font-bold truncate">
+                            <h3 className="truncate text-base font-bold text-foreground">
                               {interview.interviewee_name ?? `Interview #${i + 1}`}
                             </h3>
                             <p className="text-xs text-muted-foreground font-medium truncate">
@@ -379,7 +407,7 @@ export function ProjectPageClient({
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span
-                            className={`${signalClass} px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider`}
+                            className={`${signalClass} rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider`}
                           >
                             {signalLabel} Signal
                           </span>
@@ -404,14 +432,14 @@ export function ProjectPageClient({
                           </button>
                         </div>
                       </div>
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <p className="text-muted-foreground text-xs leading-relaxed">
                           Context:{" "}
                           {interview.interviewee_context ??
                             "Interview details available in the full transcript."}
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                          <div className="bg-muted/40 rounded-xl p-4">
+                        <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
+                          <div className="rounded-xl border border-border/50 bg-muted/35 p-4">
                             <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-2">
                               Key Problems
                             </span>
@@ -421,7 +449,7 @@ export function ProjectPageClient({
                               </li>
                             </ul>
                           </div>
-                          <div className="bg-muted/40 rounded-xl p-4">
+                          <div className="rounded-xl border border-border/50 bg-muted/35 p-4">
                             <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-2">
                               Direct Quote
                             </span>
@@ -548,19 +576,23 @@ export function ProjectPageClient({
             </div>
           </div>
 
-        </main>
-      )}
+            </main>
+          )}
 
-      {/* Script tab — full width */}
-      {activeTab === "script" && (
-        <div className="flex flex-col flex-1 min-h-0">
-          <InterviewScriptTab projectId={projectId} projectName={project.name} />
-        </div>
-      )}
+          {/* Script tab — full width */}
+          {activeTab === "script" && (
+            <div className="mt-6 flex min-h-0 flex-1 flex-col">
+              <InterviewScriptTab projectId={projectId} projectName={project.name} />
+            </div>
+          )}
 
-      {activeTab === "businessProfile" && (
-        <BusinessProfileTab projectId={projectId} />
-      )}
+          {activeTab === "businessProfile" && (
+            <div className="mt-6">
+              <BusinessProfileTab projectId={projectId} />
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

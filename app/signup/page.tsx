@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type FormEvent, type ReactNode } from 'react'
+import Image from "next/image";
 import { SignupFormProvider } from './SignupFormContext'
 import {
   IdeaStep,
@@ -50,7 +51,15 @@ export default function SignupPage() {
   const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
   if (loading) return <SpiralPreloader className="animate-fade-in" />;
-  if (error) return <div className='p-6 text-danger'>{error}</div>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background px-4 py-10">
+        <div className="mx-auto max-w-xl rounded-2xl border border-danger/40 bg-danger-soft p-5">
+          <p className="text-sm font-medium text-danger">{error}</p>
+        </div>
+      </div>
+    );
+  }
   const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
   const progressPercent = getProgressPercent(stepKey);
   const raw = answersByStepKey[stepKey] ?? "";
@@ -96,7 +105,11 @@ export default function SignupPage() {
   if (shouldShowUrlPrompt) {
     return (
       <div className="min-h-screen bg-background p-6 md:p-10">
-        <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-6 md:p-8 shadow-sm">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-border/60 bg-card p-6 md:p-8 shadow-soft">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-1.5">
+            <Image src="/KroweIcon.png" alt="Krowe" width={16} height={16} className="rounded-sm" />
+            <span className="text-[11px] font-semibold text-foreground">Krowe onboarding</span>
+          </div>
           <h1 className="text-2xl md:text-3xl font-semibold text-foreground">What is your business website?</h1>
           <p className="mt-3 text-sm md:text-base text-muted-foreground">
             Add your URL and we will prefill onboarding so you can skip the manual questionnaire.

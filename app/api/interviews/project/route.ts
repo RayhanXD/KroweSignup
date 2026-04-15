@@ -28,18 +28,6 @@ export async function POST(req: Request) {
     sessionId = session?.id ?? null;
   }
 
-  // Prevent duplicate project per user
-  const { data: existing } = await supabase
-    .from("interview_projects")
-    .select("id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
-
-  if (existing) {
-    return NextResponse.json({ error: "You already have a project" }, { status: 409 });
-  }
-
   const { data, error } = await supabase
     .from("interview_projects")
     .insert({ name, session_id: sessionId, user_id: user.id })
