@@ -5,6 +5,7 @@ import {
   normalizeOptionalText,
 } from "@/lib/interviews/scriptCache";
 import { deriveOnboardingCompletion } from "@/lib/interviews/businessProfile";
+import { trackDashboardActivity } from "@/lib/interviews/dashboardActivity";
 
 export async function PATCH(
   req: Request,
@@ -17,8 +18,28 @@ export async function PATCH(
 
   const body = await req.json();
   const updates: Record<string, string | null> = {};
+  let clearsScriptCache = false;
+
+  const hasName = "name" in body;
+  const hasStatus = "status" in body;
   const hasInterviewerName = "interviewer_name" in body;
   const hasInterviewerContext = "interviewer_context" in body;
+
+  if (hasName) {
+    const nextName = String(body.name ?? "").trim();
+    if (!nextName) {
+      return NextResponse.json({ error: "Project name cannot be empty" }, { status: 400 });
+    }
+    updates.name = nextName;
+  }
+  if (hasStatus) {
+    const allowed = new Set(["collecting", "processing", "ready", "failed"]);
+    const status = String(body.status ?? "");
+    if (!allowed.has(status)) {
+      return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+    }
+    updates.status = status;
+  }
   if (hasInterviewerName) {
     updates.interviewer_name = normalizeOptionalText(body.interviewer_name);
   }
@@ -32,9 +53,10 @@ export async function PATCH(
 
   const currentRes = await supabase
     .from("interview_projects")
-    .select("interviewer_name, interviewer_context")
+    .select("id, name, status, interviewer_name, interviewer_context")
     .eq("id", projectId)
     .eq("user_id", user.id)
+    .is("archived_at", null)
     .single();
 
   if (currentRes.error || !currentRes.data) {
@@ -55,22 +77,43 @@ export async function PATCH(
     nextContext,
   });
 
-  if (!changed) {
+  if (!changed && !hasName && !hasStatus) {
     return NextResponse.json({ ok: true, unchanged: true });
   }
 
-  // Clear cached script only when interviewer context actually changes.
-  updates.interview_script = null;
+  if (changed) {
+    // Clear cached script only when interviewer context actually changes.
+    updates.interview_script = null;
+    clearsScriptCache = true;
+  }
 
-  const { error } = await supabase
+  const { data: updatedProject, error } = await supabase
     .from("interview_projects")
     .update(updates)
     .eq("id", projectId)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select("id, name, status, interview_count, created_at, updated_at, session_id")
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true });
+  await trackDashboardActivity(supabase, {
+    userId: user.id,
+    action: "project_updated",
+    entityType: "project",
+    entityId: projectId,
+    projectId,
+    metadata: {
+      changed_fields: Object.keys(updates),
+      script_cache_cleared: clearsScriptCache,
+      previous_name: currentRes.data.name,
+      previous_status: currentRes.data.status,
+      next_name: updatedProject.name,
+      next_status: updatedProject.status,
+    },
+  });
+
+  return NextResponse.json({ ok: true, project: updatedProject });
 }
 
 export async function GET(
@@ -87,6 +130,8 @@ export async function GET(
       .from("interview_projects")
       .select("id, name, status, interview_count, created_at, updated_at, session_id, interviewer_name, interviewer_context, onboarding_mode, onboarding_completed_at")
       .eq("id", projectId)
+      .eq("user_id", user.id)
+      .is("archived_at", null)
       .single(),
     supabase
       .from("interviews")
@@ -133,4 +178,39 @@ export async function GET(
     interviews: interviewsRes.data ?? [],
     clusterCount: clustersRes.count ?? 0,
   });
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ projectId: string }> }
+) {
+  const { projectId } = await params;
+  const supabase = await createInterviewAuthClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const nowIso = new Date().toISOString();
+  const { data: archived, error } = await supabase
+    .from("interview_projects")
+    .update({ archived_at: nowIso, updated_at: nowIso })
+    .eq("id", projectId)
+    .eq("user_id", user.id)
+    .is("archived_at", null)
+    .select("id, name")
+    .single();
+
+  if (error || !archived) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  await trackDashboardActivity(supabase, {
+    userId: user.id,
+    action: "project_archived",
+    entityType: "project",
+    entityId: projectId,
+    projectId,
+    metadata: { name: archived.name },
+  });
+
+  return NextResponse.json({ ok: true });
 }

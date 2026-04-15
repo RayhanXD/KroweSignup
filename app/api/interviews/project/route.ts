@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import { trackDashboardActivity } from "@/lib/interviews/dashboardActivity";
 
 export async function POST(req: Request) {
   const supabase = await createInterviewAuthClient();
@@ -28,29 +29,29 @@ export async function POST(req: Request) {
     sessionId = session?.id ?? null;
   }
 
-  // Prevent duplicate project per user
-  const { data: existing } = await supabase
-    .from("interview_projects")
-    .select("id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
-
-  if (existing) {
-    return NextResponse.json({ error: "You already have a project" }, { status: 409 });
-  }
-
   const { data, error } = await supabase
     .from("interview_projects")
     .insert({ name, session_id: sessionId, user_id: user.id })
-    .select("id, status")
+    .select("id, name, status, interview_count, created_at, updated_at")
     .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ projectId: data.id, status: data.status });
+  await trackDashboardActivity(supabase, {
+    userId: user.id,
+    action: "project_created",
+    entityType: "project",
+    entityId: data.id,
+    projectId: data.id,
+    metadata: { name: data.name },
+  });
+
+  return NextResponse.json({
+    projectId: data.id,
+    project: data,
+  });
 }
 
 export async function GET(req: Request) {
@@ -65,8 +66,9 @@ export async function GET(req: Request) {
 
   let query = supabase
     .from("interview_projects")
-    .select("id, name, status, interview_count, created_at, updated_at, session_id")
+    .select("id, name, status, interview_count, created_at, updated_at, session_id, archived_at")
     .eq("user_id", user.id)
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   if (sessionId) {
