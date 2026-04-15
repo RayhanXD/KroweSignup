@@ -3,6 +3,7 @@ import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import Link from "next/link";
 import Image from "next/image";
 import LogoutButton from "./LogoutButton";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -213,6 +214,17 @@ export default async function InterviewsPage() {
                     Manage
                   </p>
                   <div className="space-y-1">
+                    {FEATURE_FLAGS.granolaImports && (
+                      <Link
+                        href="/interviews/imports"
+                        className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+                      >
+                        <span className="material-symbols-outlined text-base" aria-hidden>
+                          import_contacts
+                        </span>
+                        Granola imports
+                      </Link>
+                    )}
                     <Link
                       href="/interviews/projects"
                       className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
