@@ -486,7 +486,7 @@ export function InterviewScriptTab({
       )}
 
       {consoleTab === "nodes" && (
-        <div ref={flowWrapRef} className="relative flex-1 min-h-[28rem] w-full">
+        <div ref={flowWrapRef} className="relative flex-1 min-h-0 w-full">
           <ScriptCanvasProvider value={moveQuestionValue}>
             <ReactFlowProvider>
               <div className="absolute inset-0">

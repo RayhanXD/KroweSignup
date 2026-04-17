@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import { createClient } from "@supabase/supabase-js";
 import {
   didInterviewerFieldsChange,
   normalizeOptionalText,
@@ -181,13 +182,37 @@ export async function GET(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
   const supabase = await createInterviewAuthClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const permanent = new URL(req.url).searchParams.get("permanent") === "true";
+
+  if (permanent) {
+    const isAdmin = user.email === process.env.ADMIN_EMAIL;
+    if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data: deleted, error } = await adminClient
+      .from("interview_projects")
+      .delete()
+      .eq("id", projectId)
+      .select("id")
+      .maybeSingle();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!deleted) return NextResponse.json({ error: "Project not found." }, { status: 404 });
+
+    return NextResponse.json({ ok: true });
+  }
 
   const nowIso = new Date().toISOString();
   const { data: archived, error } = await supabase

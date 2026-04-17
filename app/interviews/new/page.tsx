@@ -17,8 +17,20 @@ export default async function NewProjectPage() {
 
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
 
+  if (!isAdmin) {
+    const { data: existing } = await supabase
+      .from("interview_projects")
+      .select("id")
+      .eq("user_id", user.id)
+      .is("archived_at", null)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) redirect(`/interviews/${existing.id}`);
+  }
+
   return (
-    <InterviewsShell activeNav="create" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+    <InterviewsShell topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
       <div className="space-y-5">
         <DashboardPageHeader
           title="Create Project"

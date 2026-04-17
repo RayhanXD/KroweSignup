@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
-import { ensureGranolaImportsEnabled } from "@/lib/featureFlags";
 import { syncGranolaInbox } from "@/lib/integrations/granola/sync";
 
 function hasCronSecret(req: Request): boolean {
@@ -12,12 +11,6 @@ function hasCronSecret(req: Request): boolean {
 }
 
 export async function POST(req: Request) {
-  try {
-    ensureGranolaImportsEnabled();
-  } catch {
-    return NextResponse.json({ error: "Feature disabled" }, { status: 404 });
-  }
-
   const supabase = await createInterviewAuthClient();
   const {
     data: { user },
@@ -48,12 +41,6 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  try {
-    ensureGranolaImportsEnabled();
-  } catch {
-    return NextResponse.json({ error: "Feature disabled" }, { status: 404 });
-  }
-
   if (!hasCronSecret(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

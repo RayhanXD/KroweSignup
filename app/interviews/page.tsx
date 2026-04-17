@@ -126,6 +126,7 @@ export default async function InterviewsPage() {
   const hasProject = projects.length > 0;
 
   if (!hasProject) redirect("/interviews/new");
+  if (projects.length === 1) redirect(`/interviews/${projects[0].id}`);
 
   const totalInterviews = projects.reduce(
     (sum, project) => sum + project.interview_count,
@@ -164,7 +165,7 @@ export default async function InterviewsPage() {
   ];
 
   return (
-    <InterviewsShell activeNav="home" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+    <InterviewsShell topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
       <article className="mb-3 overflow-hidden rounded-xl border border-border/60 bg-[radial-gradient(circle_at_90%_20%,color-mix(in_srgb,var(--interview-brand)_25%,white)_0%,transparent_38%),linear-gradient(180deg,color-mix(in_srgb,var(--interview-brand-tint)_42%,white),white)] p-4">
                 <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2 py-1 text-[11px] font-medium text-muted-foreground">
                   <Image

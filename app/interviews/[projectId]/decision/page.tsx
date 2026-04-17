@@ -11,13 +11,12 @@ import type {
   DecisionOutput,
   MetaCluster,
 } from "@/lib/interviews/types";
-import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
+import type { AnalysisResponse, AnalysisResult } from "@/lib/analysis/hypothesisVsReality";
 
 export const dynamic = "force-dynamic";
 
 type ClusterWithId = ProblemCluster & { id: string };
 type DecisionWithId = Omit<DecisionOutput, "project_id"> & { id: string; updated_at: string };
-type AnalysisDecision = AnalysisResponse["decision"];
 
 function isMissingAnalysisResultColumnError(message: string): boolean {
   return message.includes("analysis_result");
@@ -84,10 +83,10 @@ export default async function DecisionPage({
 
   const project = projectRes.data;
   const decisionRows = (decisionRes.data ?? []) as Array<
-    DecisionWithId & { analysis_result?: AnalysisResponse | null }
+    DecisionWithId & { analysis_result?: AnalysisResult | null }
   >;
   const decision: DecisionWithId | null = decisionRows[0] ?? null;
-  const persistedVerdict: AnalysisDecision | null = decisionRows[0]?.analysis_result?.decision ?? null;
+  const persistedAnalysis: AnalysisResult | null = decisionRows[0]?.analysis_result ?? null;
   const allClusters = (clustersRes.data ?? []) as ClusterWithId[];
   const interviews = (interviewsRes.data ?? []) as Array<{ id: string; created_at: string }>;
   const interviewsSortedIds = interviews.map((i) => i.id);
@@ -155,7 +154,7 @@ export default async function DecisionPage({
       sortedFeatures={sortedFeatures}
       confidencePct={confidencePct}
       interviewsSortedIds={interviewsSortedIds}
-      persistedVerdict={persistedVerdict}
+      persistedAnalysis={persistedAnalysis}
     />
   );
 }

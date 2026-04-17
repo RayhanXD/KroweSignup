@@ -15,9 +15,10 @@ export type DashboardProject = {
 
 type Props = {
   initialProjects: DashboardProject[];
+  isAdmin?: boolean;
 };
 
-export function ProjectsManagerClient({ initialProjects }: Props) {
+export function ProjectsManagerClient({ initialProjects, isAdmin = false }: Props) {
   const router = useRouter();
   const [projects, setProjects] = useState<DashboardProject[]>(initialProjects);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -54,6 +55,32 @@ export function ProjectsManagerClient({ initialProjects }: Props) {
       setEditName("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rename project.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function deleteProject(projectId: string) {
+    setError(null);
+    const confirmed = window.confirm(
+      "Permanently delete this project? This cannot be undone and will remove all interviews and data."
+    );
+    if (!confirmed) return;
+
+    setBusyId(projectId);
+    try {
+      const res = await fetch(`/api/interviews/project/${projectId}?permanent=true`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to delete project.");
+      }
+
+      setProjects((prev) => prev.filter((project) => project.id !== projectId));
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete project.");
     } finally {
       setBusyId(null);
     }
@@ -164,6 +191,16 @@ export function ProjectsManagerClient({ initialProjects }: Props) {
                   >
                     {isBusy ? "Archiving..." : "Archive"}
                   </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => void deleteProject(project.id)}
+                      className="rounded-full bg-danger px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-danger/80 disabled:opacity-60"
+                    >
+                      {isBusy ? "Deleting..." : "Delete"}
+                    </button>
+                  )}
                 </div>
               </div>
             );

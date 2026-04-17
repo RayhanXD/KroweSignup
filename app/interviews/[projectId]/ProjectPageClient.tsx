@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import InterviewsSidebar from "@/app/interviews/_components/InterviewsSidebar";
 import { RunAnalysisButton } from "./RunAnalysisButton";
-import { InterviewScriptTab } from "./InterviewScriptTab";
-import { BusinessProfileTab } from "./BusinessProfileTab";
+import { GranolaImportsButton } from "./GranolaImportsButton";
 import type { FeatureSpec, ProblemCluster, DecisionOutput } from "@/lib/interviews/types";
 import { toLiveInsightsClusterTitle } from "@/lib/interviews/liveInsightsTitle";
 import type { InterviewSignalLabel, InterviewSignalMetrics } from "@/lib/interviews/interviewSignal";
@@ -77,8 +77,6 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-
-type Tab = "interviews" | "script" | "businessProfile";
 
 type Props = {
   project: Project;
@@ -151,7 +149,6 @@ export function ProjectPageClient({
   decisionFeatures,
 }: Props) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>("interviews");
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const confidencePct = Math.round((latestDecision?.confidence_score ?? 0) * 100);
@@ -182,33 +179,7 @@ export function ProjectPageClient({
   return (
     <div className="min-h-screen bg-background">
       <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
-        <aside className="border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
-          <div className="mb-3 flex items-center gap-2 rounded-xl border border-border/60 bg-background px-2.5 py-2">
-            <Image src="/KroweIcon.png" alt="Krowe icon" width={22} height={22} className="h-[22px] w-[22px] rounded-sm" />
-            <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-foreground">Krowe</p>
-              <p className="truncate text-[10px] text-muted-foreground">Project workspace</p>
-            </div>
-          </div>
-          <nav aria-label="Workspace nav" className="space-y-1.5">
-            <Link href="/interviews" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
-              <span className="material-symbols-outlined text-base" aria-hidden>home</span>
-              Home
-            </Link>
-            <Link href="/interviews/projects" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
-              <span className="material-symbols-outlined text-base" aria-hidden>folder_open</span>
-              Projects
-            </Link>
-            <div className="flex items-center gap-2 rounded-lg bg-interview-brand-tint/70 px-2.5 py-2 text-sm font-medium text-interview-brand">
-              <span className="material-symbols-outlined text-base" aria-hidden>workspaces</span>
-              Active Workspace
-            </div>
-            <Link href={`/interviews/${projectId}/add`} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
-              <span className="material-symbols-outlined text-base" aria-hidden>add_circle</span>
-              Add Interview
-            </Link>
-          </nav>
-        </aside>
+        <InterviewsSidebar projectId={projectId} />
 
         <section className="p-3 sm:p-4">
           <header className="mb-3 flex items-center justify-between border-b border-border/60 pb-3">
@@ -233,8 +204,7 @@ export function ProjectPageClient({
                 <StatusBadge status={project.status} />
               </div>
               <p className="mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-                Strategic intelligence and synthesis for this workspace. Switch tabs to review transcripts
-                or your interview script.
+                Strategic intelligence and synthesis for this workspace.
               </p>
               <div className="mt-3 flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[14px] text-muted-foreground">groups</span>
@@ -251,70 +221,7 @@ export function ProjectPageClient({
             </div>
           </div>
 
-          {/* Tab bar */}
-          <div className="flex items-center gap-2 border-b border-border/60 bg-card">
-          <div className="flex gap-0">
-            {(["interviews", "script", "businessProfile"] as Tab[]).map((tab) => {
-              const labels: Record<Tab, string> = {
-                interviews: "Interviews",
-                script: "Interview Script",
-                businessProfile: "Business Profile",
-              };
-              const icons: Record<Tab, string> = {
-                interviews: "chat_bubble_outline",
-                script: "description",
-                businessProfile: "apartment",
-              };
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 -mb-px ${
-                    activeTab === tab
-                      ? "border-interview-brand text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                  }`}
-                >
-                  <span className={`material-symbols-outlined text-[15px] leading-none ${activeTab === tab ? "text-interview-brand" : ""}`}>
-                    {icons[tab]}
-                  </span>
-                  {labels[tab]}
-                </button>
-              );
-            })}
-          </div>
-          <div className="ml-auto flex flex-col items-end gap-1 py-2">
-            {project.status === "ready" ? (
-              <Link
-                href={`/interviews/${projectId}/decision`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-interview-brand-end text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[14px] leading-none">insights</span>
-                View Decision
-              </Link>
-            ) : (
-              <button
-                disabled
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 text-xs font-medium text-muted-foreground bg-muted/40 cursor-not-allowed"
-              >
-                <span className="material-symbols-outlined text-[14px] leading-none opacity-50">lock</span>
-                View Decision
-              </button>
-            )}
-            {project.status === "processing" ? (
-              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
-                Analysis in progress…
-              </p>
-            ) : project.status !== "ready" ? (
-              <p className="text-[10px] text-muted-foreground">Run analysis to unlock</p>
-            ) : null}
-          </div>
-          </div>
-
-          {/* Interviews tab — constrained */}
-          {activeTab === "interviews" && (
-            <main className="mt-8 space-y-8 pb-16">
+          <main className="mt-8 space-y-8 pb-16">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="serif-text text-lg sm:text-xl font-bold text-foreground tracking-tight">
               Interviews
@@ -325,6 +232,7 @@ export function ProjectPageClient({
                 interviewCount={project.interview_count}
                 projectStatus={project.status}
               />
+              <GranolaImportsButton />
               <Link
                 href={`/interviews/${projectId}/add`}
                 className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors"
@@ -577,20 +485,6 @@ export function ProjectPageClient({
           </div>
 
             </main>
-          )}
-
-          {/* Script tab — full width */}
-          {activeTab === "script" && (
-            <div className="mt-6 flex min-h-0 flex-1 flex-col">
-              <InterviewScriptTab projectId={projectId} projectName={project.name} />
-            </div>
-          )}
-
-          {activeTab === "businessProfile" && (
-            <div className="mt-6">
-              <BusinessProfileTab projectId={projectId} />
-            </div>
-          )}
         </section>
       </div>
     </div>

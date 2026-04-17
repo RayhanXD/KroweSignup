@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import { AllProblemsButton } from "./AllProblemsButton";
-import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
+import type { AnalysisResponse, AnalysisResult } from "@/lib/analysis/hypothesisVsReality";
 import type {
   ProblemCluster,
   FeatureSpec,
@@ -37,7 +37,7 @@ type Props = {
   sortedFeatures: FeatureSpec[];
   confidencePct: number;
   interviewsSortedIds: string[];
-  persistedVerdict: AnalysisResponse["decision"] | null;
+  persistedAnalysis: AnalysisResult | null;
 };
 
 const DECISION_LABELS: Record<AnalysisResponse["decision"], string> = {
@@ -279,11 +279,15 @@ export function DecisionPageClient({
   sortedFeatures,
   confidencePct,
   interviewsSortedIds,
-  persistedVerdict,
+  persistedAnalysis,
 }: Props) {
   const router = useRouter();
-  const [analysisState, setAnalysisState] = useState<"loading" | "error" | "ready">("loading");
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(null);
+  const [analysisState, setAnalysisState] = useState<"loading" | "error" | "ready">(
+    persistedAnalysis ? "ready" : "loading"
+  );
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(
+    persistedAnalysis ? (persistedAnalysis as AnalysisResponse) : null
+  );
   const [analysisError, setAnalysisError] = useState("");
   const requestIdRef = useRef(0);
 
@@ -381,13 +385,36 @@ export function DecisionPageClient({
   };
 
   useEffect(() => {
-    setAnalysisResult(null);
-    setAnalysisError("");
-    setAnalysisState("loading");
-
     const controller = new AbortController();
     const requestId = ++requestIdRef.current;
-    fetchAnalysis({ signal: controller.signal, requestId });
+
+    if (!persistedAnalysis) {
+      setAnalysisResult(null);
+      setAnalysisError("");
+      setAnalysisState("loading");
+    }
+
+    fetch(`/api/interviews/analysis/${projectId}`, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
+        }
+        return res.json() as Promise<AnalysisResponse>;
+      })
+      .then((data) => {
+        if (controller.signal.aborted || requestId !== requestIdRef.current) return;
+        setAnalysisResult(data);
+        setAnalysisState("ready");
+      })
+      .catch((err) => {
+        if (controller.signal.aborted || requestId !== requestIdRef.current) return;
+        if (!persistedAnalysis) {
+          setAnalysisError(err instanceof Error ? err.message : "Unknown error");
+          setAnalysisState("error");
+        }
+      });
+
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
@@ -490,7 +517,31 @@ export function DecisionPageClient({
       );
     }
 
-    if (!analysisResult?.context) return null;
+    if (!analysisResult?.context) {
+      return (
+        <div className="space-y-6">
+          {[0, 1, 2].map((card) => (
+            <div key={card} className="dr-panel dr-panel-rounded overflow-hidden">
+              <div className="border-b border-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] px-5 py-3">
+                <SkeletonLine className="h-3 w-32" />
+              </div>
+              <div className="grid grid-cols-1 divide-y divide-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] md:grid-cols-2 md:divide-x md:divide-y-0">
+                <div className="space-y-2 p-8">
+                  <SkeletonLine className="mb-3 h-3 w-24" />
+                  <SkeletonLine />
+                  <SkeletonLine className="h-4 w-4/5" />
+                </div>
+                <div className="space-y-2 p-8">
+                  <SkeletonLine className="mb-3 h-3 w-24" />
+                  <SkeletonLine />
+                  <SkeletonLine className="h-4 w-4/5" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
 
     const { breakdown, context } = analysisResult;
 
@@ -666,7 +717,7 @@ export function DecisionPageClient({
     );
   };
 
-  const verdictLabel = persistedVerdict ? DECISION_LABELS[persistedVerdict] : "Ready";
+  const verdictLabel = analysisResult?.decision ? DECISION_LABELS[analysisResult.decision] : "Ready";
 
   return (
     <main className="decision-report font-sans relative min-h-screen overflow-hidden bg-background">

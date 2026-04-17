@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
-import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import LogoutButton from "../LogoutButton";
 import InterviewsShell from "../_components/InterviewsShell";
 import { ImportsClient } from "./ImportsClient";
@@ -37,10 +36,6 @@ type Connection = {
 };
 
 export default async function InterviewImportsPage() {
-  if (!FEATURE_FLAGS.granolaImports) {
-    redirect("/interviews");
-  }
-
   const supabase = await createInterviewAuthClient();
   const {
     data: { user },

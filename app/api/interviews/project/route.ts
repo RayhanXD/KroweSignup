@@ -20,6 +20,21 @@ export async function POST(req: Request) {
   let sessionId: string | null = isAdmin ? ((body.sessionId ?? "").trim() || null) : null;
 
   if (!isAdmin) {
+    const { count } = await supabase
+      .from("interview_projects")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("archived_at", null);
+
+    if ((count ?? 0) >= 1) {
+      return NextResponse.json(
+        { error: "You already have a project. Archive it before creating a new one." },
+        { status: 409 }
+      );
+    }
+  }
+
+  if (!isAdmin) {
     const { data: session } = await supabase
       .from("signup_sessions")
       .select("id")
