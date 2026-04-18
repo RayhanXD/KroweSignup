@@ -31,6 +31,8 @@ export type AnalysisResult = {
     problemMatch: {
       status: "strong_match" | "partial_match" | "mismatch";
       reasoning: string;
+      hypothesisSummary?: string;
+      realitySummary?: string;
     };
     featureRelevance: {
       relevant: string[];
@@ -40,6 +42,8 @@ export type AnalysisResult = {
     customerAlignment: {
       status: "aligned" | "partially_aligned" | "misaligned";
       reasoning: string;
+      hypothesisSummary?: string;
+      realitySummary?: string;
     };
     insightStrength: "weak" | "moderate" | "strong";
   };
@@ -157,7 +161,7 @@ export async function analyzeHypothesisVsReality(
       {
         role: "system",
         content:
-          "You are an expert product decision analyst. Return structured JSON only. For breakdown.problemMatch.reasoning, write 1–2 sentences max (under 30 words). Be direct and terse.",
+          "You are an expert product decision analyst. Return structured JSON only. Be direct and terse. For reasoning fields: 1–2 sentences max, under 30 words. For hypothesisSummary and realitySummary fields: ≤15 words each, plain declarative sentence, no filler.",
       },
       { role: "user", content: userPrompt },
     ],
@@ -183,8 +187,10 @@ export async function analyzeHypothesisVsReality(
                       enum: ["strong_match", "partial_match", "mismatch"],
                     },
                     reasoning: { type: "string" },
+                    hypothesisSummary: { type: "string" },
+                    realitySummary: { type: "string" },
                   },
-                  required: ["status", "reasoning"],
+                  required: ["status", "reasoning", "hypothesisSummary", "realitySummary"],
                 },
                 featureRelevance: {
                   type: "object",
@@ -205,8 +211,10 @@ export async function analyzeHypothesisVsReality(
                       enum: ["aligned", "partially_aligned", "misaligned"],
                     },
                     reasoning: { type: "string" },
+                    hypothesisSummary: { type: "string" },
+                    realitySummary: { type: "string" },
                   },
-                  required: ["status", "reasoning"],
+                  required: ["status", "reasoning", "hypothesisSummary", "realitySummary"],
                 },
                 insightStrength: {
                   type: "string",

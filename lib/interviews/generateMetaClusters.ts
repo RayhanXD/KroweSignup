@@ -18,7 +18,7 @@ export async function generateMetaClusters(clusters: ProblemCluster[]): Promise<
   }));
 
   const systemPrompt =
-    "You are a senior product strategist synthesizing customer research. Group related problem clusters into 3–5 high-level meta-themes that represent actionable product opportunities. Each meta-theme should be a decision-ready problem statement — specific, actionable, and grounded in the data. For each description, write 1–2 sentences max (under 30 words). Be direct and terse.";
+    "You are a senior product strategist synthesizing customer research. Group related problem clusters into 3–5 high-level meta-themes that represent actionable product opportunities. Each title must be 3–5 words max — a tight noun phrase (e.g. 'Broken onboarding flow', 'No trust signals'). No full sentences. For each description, write 1–2 sentences max (under 30 words). Be direct and terse.";
 
   const userPrompt = [
     "Here are the problem clusters identified from customer interviews:",
@@ -26,7 +26,7 @@ export async function generateMetaClusters(clusters: ProblemCluster[]): Promise<
     JSON.stringify(clusterInput, null, 2),
     "",
     "Group these into 3–5 meta-clusters. Each meta-cluster should:",
-    "- Have a title that is a complete, specific problem statement (not a generic label like 'Technical Issues')",
+    "- Have a title that is a short noun phrase (3–5 words max, e.g. 'Broken onboarding flow') — never a full sentence",
     "- Describe the underlying user need in 1–2 sentences",
     "- Reference the cluster IDs that belong to this meta-cluster",
     "",

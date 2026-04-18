@@ -1,324 +1,374 @@
-/* Scoped styles for interview decision report page — “Why this decision” design system */
+/* Decision Report — light mode palette (reference mockups) */
 
 .decision-report {
+  --dr-page: #f9f9f9;
   --dr-surface: #ffffff;
-  /* Titles: neutral (page foreground), not brown */
-  --dr-heading: var(--foreground);
-  --dr-body: #4a4a4a;
-  --dr-body-muted: color-mix(in srgb, #4a4a4a 72%, transparent);
-  /* Left rules: soft orange tint (matches --primary) */
-  --dr-rule: color-mix(in srgb, var(--primary) 28%, #fffefc);
-  /* Bullets, confidence, accents: page orange */
-  --dr-bullet: var(--primary);
-  --dr-orb-border: color-mix(in srgb, var(--primary) 22%, #ffffff);
-  --dr-orb-ring-track: color-mix(in srgb, var(--dr-rule) 88%, #ffffff);
-  --dr-orb-ring-fill: var(--primary);
-  --dr-label-muted: color-mix(in srgb, #4a4a4a 65%, transparent);
+  --dr-heading: #000000;
+  --dr-body: #333333;
+  --dr-body-muted: #757575;
+  --dr-rule: #ededed;
+  --dr-rule-accent: rgba(255, 122, 0, 0.35);
+  --dr-bullet: #ff7a00;
+  --dr-orange-dark: #a04000;
+  --dr-card-shadow: 0 4px 20px -2px rgb(0 0 0 / 0.05), 0 2px 8px -2px rgb(0 0 0 / 0.03);
   --dr-build-green: #166534;
   --dr-build-yellow: #a16207;
   --dr-build-orange: #c2410c;
   --dr-edge-signal: #dc2626;
-  --dr-flow-step-1: #0f766e;
-  --dr-flow-step-2: #0284c7;
-  --dr-flow-step-3: #6366f1;
-}
-
-/* Flat panels (replaces glass): white + left accent */
-.decision-report .dr-panel {
-  background: var(--dr-surface);
-  border-left: 3px solid var(--dr-rule);
-  padding: 1.25rem 1.25rem 1.25rem 1.75rem;
-}
-
-.decision-report .dr-panel-rounded {
-  border-radius: 0 0.75rem 0.75rem 0;
-}
-
-.decision-report .dr-quote-card {
-  padding: 1.25rem 1.25rem 1.25rem 1.75rem;
-  border-left: 3px solid var(--dr-rule);
-  background: var(--dr-surface);
-  border-top: 1px solid color-mix(in srgb, var(--dr-rule) 65%, transparent);
-  border-right: 1px solid color-mix(in srgb, var(--dr-rule) 65%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--dr-rule) 65%, transparent);
-  transition: border-left-color 0.2s ease;
-}
-
-.decision-report .dr-quote-card:hover {
-  border-left-color: color-mix(in srgb, var(--dr-bullet) 55%, var(--dr-rule));
-}
-
-.decision-report .dr-quote-icon {
-  color: color-mix(in srgb, var(--dr-bullet) 42%, transparent);
-}
-
-.decision-report .dr-body-text {
+  background-color: var(--dr-page);
   color: var(--dr-body);
 }
 
-/* Orange accents on serif headlines (must follow .font-headline in cascade) */
-.decision-report .font-headline.dr-bullet-text {
-  color: var(--primary);
-}
-
-/* “What interviews support” column: narrative body color, not brand orange */
-.decision-report .font-headline.dr-interviews-support-content {
-  color: var(--dr-body);
-}
-
-/* Success metrics values only — dark green */
-.decision-report .font-headline.dr-success-metric-value {
-  color: #14532d;
-}
-
-.decision-report .dr-eyebrow {
-  color: var(--dr-label-muted);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-/* Back-compat: glass → flat surface, no blur */
-.decision-report .glass-panel {
+/* Base card */
+.decision-report .dr-card {
   background: var(--dr-surface);
-  border: 1px solid color-mix(in srgb, var(--dr-rule) 90%, var(--border));
-  border-left: 3px solid var(--dr-rule);
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  border: 1px solid var(--dr-rule);
+  border-radius: 16px;
+  box-shadow: var(--dr-card-shadow);
+  transition: all 0.2s;
 }
 
-.decision-report .signal-glow {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dr-bullet) 22%, transparent);
-}
-
-/* Verdict orb — brand orange (matches --primary / page accents) */
-.decision-report .decision-core-orb {
-  background: radial-gradient(
-    circle at 30% 28%,
-    color-mix(in srgb, var(--primary) 94%, white) 0%,
-    var(--primary) 50%,
-    color-mix(in srgb, var(--primary) 72%, rgb(55 28 8)) 100%
-  );
-  border: 1px solid color-mix(in srgb, var(--primary) 58%, rgb(45 22 6));
-  color: var(--primary-foreground);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.28),
-    0 12px 36px -10px color-mix(in srgb, var(--primary) 45%, rgb(0 0 0 / 0.4));
-}
-
-.decision-report .decision-core-orb .font-headline {
-  color: var(--primary-foreground);
-}
-
-.decision-report .decision-core-orb .font-label {
-  color: color-mix(in srgb, var(--primary-foreground) 82%, transparent);
-}
-
-.decision-report .decision-ring-track {
-  color: var(--dr-orb-ring-track);
-}
-
-.decision-report .decision-ring-progress {
-  color: var(--dr-orb-ring-fill);
-}
-
-/* Section titles & editorial display — serif, matches interview shell */
+/* Typography */
 .decision-report .font-headline {
-  font-family: var(--font-serif-family);
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--dr-heading);
 }
 
 .decision-report .font-label {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
   font-weight: 600;
   letter-spacing: 0.06em;
-  color: var(--dr-label-muted);
-}
-
-.decision-report .laser-line {
-  box-shadow: none;
-}
-
-.decision-report .confidence-ring {
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-}
-
-/* Impact bars — neutral track, primary orange fill */
-.decision-report .dr-impact-fill {
-  background-color: color-mix(in srgb, var(--primary) 88%, #ffffff);
-}
-
-.decision-report .dr-impact-fill-soft {
-  background-color: color-mix(in srgb, var(--primary) 55%, #ffffff);
-}
-
-.decision-report .dr-impact-fill-muted {
-  background-color: color-mix(in srgb, var(--dr-body) 35%, transparent);
-}
-
-/* “Why this decision” */
-.decision-report .why-decision-panel {
-  background: var(--dr-surface);
-  border-left: 3px solid var(--dr-rule);
-}
-
-.decision-report .why-decision-panel h2 {
-  color: var(--dr-heading);
-}
-
-.decision-report .why-decision-item {
-  color: var(--dr-body);
-}
-
-.decision-report .why-decision-bullet {
-  background-color: var(--dr-bullet);
-}
-
-.decision-report .why-decision-empty {
   color: var(--dr-body-muted);
 }
 
-.decision-report .dr-next-bullet {
-  background-color: var(--dr-bullet);
+.decision-report .dr-eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dr-body-muted);
+  margin: 0;
 }
 
+.decision-report .dr-body-text {
+  color: var(--dr-body);
+}
+
+/* Verdict ring (conic-gradient) */
+.decision-report .dr-verdict-inner {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* Rationale numbered items */
+.decision-report .dr-rationale-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--dr-rule);
+  background: #fff;
+  align-items: flex-start;
+}
+
+.decision-report .dr-rationale-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffede0;
+  color: #a04000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* Verdict tags row */
+.decision-report .dr-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.decision-report .dr-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.decision-report .dr-tag--warm {
+  background: #fff3e8;
+  color: #a04000;
+}
+
+.decision-report .dr-tag--neutral {
+  background: #f0f0f0;
+  color: #444444;
+}
+
+.decision-report .dr-tag--complete {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.decision-report .dr-tag-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex-shrink: 0;
+}
+
+/* Rationale numbered cards */
+.decision-report .dr-rationale-card {
+  display: flex;
+  gap: 18px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--dr-rule);
+  background: #fff;
+  align-items: flex-start;
+}
+
+.decision-report .dr-rationale-card-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffede0;
+  color: #a04000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.decision-report .dr-rationale-card-body {
+  flex: 1;
+}
+
+.decision-report .dr-rationale-card-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0 0 4px 0;
+  color: #111111;
+}
+
+.decision-report .dr-rationale-card-desc {
+  font-size: 13px;
+  color: #666666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Quote cards */
+.decision-report .dr-quote-card {
+  background: #fff;
+  border: 1px solid var(--dr-rule);
+  border-left: 3px solid #e5e5e5;
+  border-radius: 14px;
+  padding: 18px 18px 18px 20px;
+  transition: border-left-color 0.2s ease;
+}
+
+.decision-report .dr-quote-card:hover {
+  border-left-color: #ff7a00;
+}
+
+.decision-report .dr-quote-card.dr-quote-brand {
+  background: linear-gradient(160deg, #fff5ec 0%, #ffe8d0 100%);
+  border-left: 4px solid #ff7a00;
+  border-top: 1px solid rgba(255, 122, 0, 0.3);
+  box-shadow: 0 8px 28px -4px rgba(255, 122, 0, 0.18), 0 2px 8px -2px rgba(255, 122, 0, 0.1);
+  transform: translateY(-3px);
+}
+
+.decision-report .dr-quote-icon {
+  color: #a3a3a3;
+  font-size: 18px;
+}
+
+.decision-report .dr-quote-card.dr-quote-brand .dr-quote-icon {
+  color: #ff7a00;
+  font-size: 22px;
+}
+
+/* Panel (legacy / hypothesis section) */
+.decision-report .dr-panel {
+  background: var(--dr-surface);
+  border: 1px solid var(--dr-rule);
+  border-radius: 16px;
+  box-shadow: var(--dr-card-shadow);
+  padding: 20px;
+}
+
+.decision-report .dr-panel-rounded {
+  border-radius: 12px;
+}
+
+/* Hypothesis vs reality grid */
+.decision-report .dr-hvr-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.decision-report .dr-hvr-panel {
+  border: 1px solid var(--dr-rule);
+  border-radius: 14px;
+  padding: 20px;
+  background: #fff;
+}
+
+.decision-report .dr-hvr-panel--fit {
+  background: rgba(230, 247, 237, 0.65);
+  border-color: rgba(29, 128, 69, 0.25);
+}
+
+.decision-report .dr-hvr-panel--partial {
+  background: rgba(255, 244, 214, 0.7);
+  border-color: rgba(160, 122, 0, 0.25);
+}
+
+.decision-report .dr-hvr-panel--mismatch {
+  background: rgba(255, 228, 230, 0.6);
+  border-color: rgba(185, 28, 28, 0.25);
+}
+
+/* Build list */
 .decision-report .dr-build-card {
-  border-left-width: 3px;
-  border-left-style: solid;
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid var(--dr-rule);
+  transition: background 0.15s;
 }
 
-.decision-report .dr-build-card.dr-build-tier-green {
-  border-left-color: color-mix(in srgb, var(--dr-build-green) 42%, var(--dr-rule));
+.decision-report .dr-build-card:hover {
+  background: #ffffff;
 }
 
-.decision-report .dr-build-card.dr-build-tier-green:hover {
-  border-left-color: var(--dr-build-green);
+/* Priority pills */
+.decision-report .dr-priority-p0 {
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  height: fit-content;
+  white-space: nowrap;
 }
 
-.decision-report .dr-build-card.dr-build-tier-green .dr-build-icon {
-  color: var(--dr-build-green);
+.decision-report .dr-priority-p1 {
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  height: fit-content;
+  white-space: nowrap;
 }
 
-.decision-report .dr-build-card.dr-build-tier-yellow {
-  border-left-color: color-mix(in srgb, var(--dr-build-yellow) 45%, var(--dr-rule));
-}
-
-.decision-report .dr-build-card.dr-build-tier-yellow:hover {
-  border-left-color: var(--dr-build-yellow);
-}
-
-.decision-report .dr-build-card.dr-build-tier-yellow .dr-build-icon {
-  color: var(--dr-build-yellow);
-}
-
-.decision-report .dr-build-card.dr-build-tier-orange {
-  border-left-color: color-mix(in srgb, var(--dr-build-orange) 50%, var(--dr-rule));
-}
-
-.decision-report .dr-build-card.dr-build-tier-orange:hover {
-  border-left-color: var(--dr-build-orange);
-}
-
-.decision-report .dr-build-card.dr-build-tier-orange .dr-build-icon {
-  color: var(--dr-build-orange);
-}
-
-.decision-report .dr-edge-signal-icon {
-  color: var(--dr-edge-signal);
-}
-
-.decision-report .dr-flow-timeline {
-  border-left-color: color-mix(in srgb, var(--dr-flow-step-2) 45%, var(--dr-rule));
+.decision-report .dr-priority-p2 {
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  height: fit-content;
+  white-space: nowrap;
 }
 
 .decision-report .dr-flow-node {
   box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
 }
 
-.decision-report .dr-flow-node.dr-flow-step-1 {
-  background-color: var(--dr-flow-step-1);
+/* Build tier icons */
+.decision-report .dr-build-tier-green .dr-build-icon { color: var(--dr-build-green); }
+.decision-report .dr-build-tier-yellow .dr-build-icon { color: var(--dr-build-yellow); }
+.decision-report .dr-build-tier-orange .dr-build-icon { color: var(--dr-build-orange); }
+
+/* Impact bars */
+.decision-report .dr-impact-fill { background-color: color-mix(in srgb, var(--dr-bullet) 88%, #fff); }
+.decision-report .dr-impact-fill-soft { background-color: color-mix(in srgb, var(--dr-bullet) 55%, #fff); }
+.decision-report .dr-impact-fill-muted { background-color: rgba(82, 82, 91, 0.35); }
+
+/* Edge case warning */
+.decision-report .dr-edge-signal-icon { color: var(--dr-edge-signal); }
+
+/* By the numbers tile grid */
+.decision-report .dr-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
-.decision-report .dr-flow-node.dr-flow-step-2 {
-  background-color: var(--dr-flow-step-2);
+.decision-report .dr-btn-tile {
+  border: 1px solid #ededed;
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: #ffffff;
 }
 
-.decision-report .dr-flow-node.dr-flow-step-3 {
-  background-color: var(--dr-flow-step-3);
+.decision-report .dr-btn-value {
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  margin: 6px 0;
+  color: #000000;
 }
 
-@media (prefers-color-scheme: dark) {
-  .decision-report {
-    --dr-surface: var(--card);
-    --dr-heading: var(--foreground);
-    --dr-body: color-mix(in srgb, #4a4a4a 82%, var(--foreground));
-    --dr-body-muted: color-mix(in srgb, #4a4a4a 55%, var(--muted-foreground));
-    --dr-rule: color-mix(in srgb, var(--primary) 42%, var(--border));
-    --dr-orb-border: var(--border);
-    --dr-orb-ring-track: color-mix(in srgb, var(--border) 80%, transparent);
-    --dr-label-muted: var(--muted-foreground);
-    --dr-build-green: #22c55e;
-    --dr-build-yellow: #facc15;
-    --dr-build-orange: #fb923c;
-    --dr-edge-signal: #f87171;
-    --dr-flow-step-1: #14b8a6;
-    --dr-flow-step-2: #38bdf8;
-    --dr-flow-step-3: #818cf8;
-  }
+.decision-report .dr-btn-value-accent { color: #ff7a00; }
 
-  .decision-report .glass-panel {
-    border-color: var(--border);
-    border-left-color: color-mix(in srgb, var(--primary) 38%, var(--border));
-  }
+.decision-report .dr-btn-caption {
+  font-size: 12px;
+  color: #666666;
+  margin: 0;
+}
 
-  .decision-report .why-decision-panel {
-    background: var(--dr-surface);
-    border-left-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-  }
+/* Status badges */
+.decision-report .bg-success-soft { background: #e6f7ed; }
+.decision-report .text-success { color: #1d8045; }
+.decision-report .border-success\/40 { border-color: rgba(29, 128, 69, 0.35); }
+.decision-report .bg-warning-soft { background: #ffedd5; }
+.decision-report .text-warning { color: #9a3412; }
+.decision-report .border-warning\/40 { border-color: rgba(154, 52, 18, 0.35); }
+.decision-report .bg-danger-soft { background: #ffe4e6; }
+.decision-report .text-danger { color: #b91c1c; }
+.decision-report .border-danger\/40 { border-color: rgba(185, 28, 28, 0.35); }
 
-  .decision-report .why-decision-panel h2 {
-    color: var(--dr-heading);
-  }
-
-  .decision-report .why-decision-item {
-    color: var(--dr-body);
-  }
-
-  .decision-report .dr-quote-card {
-    border-top-color: var(--border);
-    border-right-color: var(--border);
-    border-bottom-color: var(--border);
-  }
-
-  .decision-report .decision-core-orb {
-    background: radial-gradient(
-      circle at 30% 28%,
-      color-mix(in srgb, var(--primary) 88%, rgb(24 20 18)) 0%,
-      color-mix(in srgb, var(--primary) 58%, rgb(18 14 12)) 55%,
-      color-mix(in srgb, var(--primary) 42%, rgb(12 10 9)) 100%
-    );
-    border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.12),
-      0 10px 32px -10px rgb(0 0 0 / 0.55);
-  }
-
-  .decision-report .decision-core-orb .font-headline,
-  .decision-report .decision-core-orb .font-label {
-    color: var(--primary-foreground);
-  }
-
-  .decision-report .decision-core-orb .font-label {
-    color: color-mix(in srgb, var(--primary-foreground) 78%, transparent);
-  }
-
-  .decision-report .font-headline.dr-success-metric-value {
-    color: #166534;
-  }
+/* Legacy back-compat */
+.decision-report .glass-panel {
+  background: var(--dr-surface);
+  border: 1px solid var(--dr-rule);
+  box-shadow: var(--dr-card-shadow);
 }

@@ -12,7 +12,6 @@ import type {
   FeatureSpec,
   UserFlow,
   EdgeCase,
-  SuccessMetric,
   DecisionOutput,
   MetaCluster,
 } from "@/lib/interviews/types";
@@ -24,6 +23,19 @@ type DecisionWithId = Omit<DecisionOutput, "project_id"> & {
   updated_at: string;
 };
 
+type ByTheNumbers = {
+  interviewCount: number;
+  highSignalCount: number;
+  avgMinutes: number;
+  minMinutes: number | null;
+  maxMinutes: number | null;
+  themeCount: number;
+  dominantThemeCount: number;
+  confidencePct: number;
+};
+
+type TimelineEvent = { at: string; label: string };
+
 type Props = {
   projectId: string;
   project: { id: string; name: string };
@@ -33,11 +45,13 @@ type Props = {
   metaClusters: MetaCluster[];
   userFlows: UserFlow[];
   edgeCases: EdgeCase[];
-  successMetrics: SuccessMetric[];
+  byTheNumbers: ByTheNumbers;
   sortedFeatures: FeatureSpec[];
   confidencePct: number;
   interviewsSortedIds: string[];
   persistedAnalysis: AnalysisResponse | null;
+  synthesisDays: number | null;
+  timelineEvents: TimelineEvent[];
 };
 
 const DECISION_LABELS: Record<AnalysisResponse["decision"], string> = {
@@ -45,6 +59,14 @@ const DECISION_LABELS: Record<AnalysisResponse["decision"], string> = {
   refine: "Refine",
   pivot: "Pivot",
   rethink: "Rethink",
+};
+
+const DECISION_COLORS: Record<string, string> = {
+  Proceed: "#a04000",
+  Refine: "#9a3412",
+  Pivot: "#b91c1c",
+  Rethink: "#7c3aed",
+  Ready: "#000000",
 };
 
 const MATCH_STATUS_STYLES: Record<string, string> = {
@@ -83,30 +105,44 @@ const PRIORITY_ICONS: Record<FeatureSpec["priority"], string> = {
   "nice-to-have": "shield",
 };
 
+const PRIORITY_CLASS: Record<FeatureSpec["priority"], string> = {
+  "must-have": "dr-priority-p0",
+  "should-have": "dr-priority-p1",
+  "nice-to-have": "dr-priority-p2",
+};
+
+const PRIORITY_LABEL: Record<FeatureSpec["priority"], string> = {
+  "must-have": "P0",
+  "should-have": "P1",
+  "nice-to-have": "P2",
+};
+
+function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 function getBuildTierClass(index: number): string {
   if (index <= 1) return "dr-build-tier-green";
   if (index <= 3) return "dr-build-tier-yellow";
   return "dr-build-tier-orange";
 }
 
-function getFlowStepClass(index: number): string {
-  if (index <= 0) return "dr-flow-step-1";
-  if (index === 1) return "dr-flow-step-2";
-  return "dr-flow-step-3";
-}
-
-const RING_R = 148;
-const RING_C = 2 * Math.PI * RING_R;
-
-function ringOffsetForPercent(pct: number) {
-  const p = Math.min(100, Math.max(0, pct));
-  return RING_C * (1 - p / 100);
-}
-
 function deriveSignalLabel(score: number): "Strong" | "Moderate" | "Weak" {
   if (score >= 0.65) return "Strong";
   if (score >= 0.35) return "Moderate";
   return "Weak";
+}
+
+function parseRationaleItem(s: string, fallbackIndex: number): { title: string; body: string } {
+  const emIdx = s.indexOf(" \u2014 ");
+  if (emIdx > 0) return { title: s.slice(0, emIdx).trim(), body: s.slice(emIdx + 3).trim() };
+  const colonIdx = s.indexOf(": ");
+  if (colonIdx > 0 && colonIdx < 40) return { title: s.slice(0, colonIdx).trim(), body: s.slice(colonIdx + 2).trim() };
+  const words = s.split(" ");
+  if (words.length > 6) {
+    return { title: words.slice(0, 4).join(" "), body: words.slice(4).join(" ") };
+  }
+  return { title: `Point ${fallbackIndex + 1}`, body: s };
 }
 
 function sanitizeReasoningString(s: string): string {
@@ -118,7 +154,6 @@ function sanitizeReasoningString(s: string): string {
     .trim();
 }
 
-/** DB / pipeline may store reasoning as string[] or a single string (legacy paths). */
 function reasoningToStringParts(reasoning: unknown): string[] {
   if (reasoning == null) return [];
   if (Array.isArray(reasoning)) {
@@ -134,7 +169,7 @@ function reasoningToStringParts(reasoning: unknown): string[] {
           return parsed.filter((item): item is string => typeof item === "string");
         }
       } catch {
-        // fall through to treat as plain string
+        // fall through
       }
     }
     return [t];
@@ -159,10 +194,7 @@ function getReasoningDisplayItems(
 function formatDecisionTimestamp(iso: string) {
   try {
     const d = new Date(iso);
-    return d.toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+    return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
   } catch {
     return iso;
   }
@@ -174,11 +206,17 @@ function SkeletonLine({ className }: { className?: string }) {
 
 function StatusBadge({ label, className }: { label: string; className: string }) {
   return (
-    <span
-      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${className}`}
-    >
+    <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${className}`}>
       {label}
     </span>
+  );
+}
+
+function Eyebrow({ children, color }: { children: ReactNode; color?: string }) {
+  return (
+    <p className="dr-eyebrow" style={color ? { color } : undefined}>
+      {children}
+    </p>
   );
 }
 
@@ -203,7 +241,7 @@ function ImpactDistribution({ bars, loading }: { bars: ImpactBar[]; loading: boo
   const barClass = (tone: ImpactBar["tone"]) => {
     if (tone === "tertiary") return "dr-impact-fill-muted";
     if (tone === "primarySoft") return "dr-impact-fill-soft";
-    return "dr-impact-fill laser-line";
+    return "dr-impact-fill";
   };
 
   return (
@@ -215,9 +253,7 @@ function ImpactDistribution({ bars, loading }: { bars: ImpactBar[]; loading: boo
           </span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
             <div
-              className={`h-full rounded-full transition-all ${barClass(b.tone)} ${
-                b.tone === "tertiary" || b.tone === "primary" ? "laser-line" : ""
-              }`}
+              className={`h-full rounded-full transition-all ${barClass(b.tone)}`}
               style={{ width: `${Math.min(100, b.pct)}%` }}
             />
           </div>
@@ -227,30 +263,60 @@ function ImpactDistribution({ bars, loading }: { bars: ImpactBar[]; loading: boo
   );
 }
 
+function Tile({
+  eyebrow,
+  value,
+  caption,
+  valueAccent,
+}: {
+  eyebrow: string;
+  value: string;
+  caption: string;
+  valueAccent?: boolean;
+}) {
+  return (
+    <div className="dr-btn-tile">
+      <p className="dr-eyebrow">{eyebrow}</p>
+      <p className={`dr-btn-value${valueAccent ? " dr-btn-value-accent" : ""}`}>{value}</p>
+      <p className="dr-btn-caption">{caption}</p>
+    </div>
+  );
+}
+
 function VoiceQuoteCard({
   quote,
   interviewLabel,
   rankLabel,
   isParaphrased,
+  isBrand,
 }: {
   quote: ProblemCluster["supporting_quotes"][number];
   interviewLabel: string;
   rankLabel?: string;
   isParaphrased?: boolean;
+  isBrand?: boolean;
 }) {
   return (
-    <div className="dr-quote-card dr-panel-rounded">
-      <span className="dr-quote-icon material-symbols-outlined mb-4 block">format_quote</span>
+    <div className={`dr-quote-card ${isBrand ? "dr-quote-brand" : ""}`}>
+      <span className="dr-quote-icon material-symbols-outlined mb-3 block">format_quote</span>
       {rankLabel && (
-        <span className="font-label mb-2 block text-[10px] font-semibold uppercase tracking-wide">
-          {rankLabel}
-        </span>
+        <p className="dr-eyebrow mb-2" style={isBrand ? { color: "#ff7a00" } : undefined}>{rankLabel}</p>
       )}
       <p className="dr-body-text text-sm leading-relaxed">
         &ldquo;{quote.text}&rdquo;
       </p>
-      <div className="mt-4 flex items-center gap-3 border-t border-[color:color-mix(in_srgb,var(--dr-rule)_75%,transparent)] pt-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-card">
+      <div className="mt-4 flex items-center gap-2 border-t pt-3" style={{ borderColor: "#ededed" }}>
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            background: "#f2f2f2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <span className="font-label text-[10px]">#</span>
         </div>
         <span className="font-label text-[10px] font-bold uppercase tracking-widest">
@@ -258,7 +324,7 @@ function VoiceQuoteCard({
         </span>
       </div>
       {isParaphrased && (
-        <span className="dr-body-text mt-2 block text-[10px] uppercase tracking-wide opacity-80">
+        <span className="dr-body-text mt-1 block text-[10px] uppercase tracking-wide opacity-80">
           Paraphrased summary
         </span>
       )}
@@ -275,11 +341,13 @@ export function DecisionPageClient({
   metaClusters,
   userFlows,
   edgeCases,
-  successMetrics,
+  byTheNumbers,
   sortedFeatures,
   confidencePct,
   interviewsSortedIds,
   persistedAnalysis,
+  synthesisDays,
+  timelineEvents,
 }: Props) {
   const router = useRouter();
   const [analysisState, setAnalysisState] = useState<"loading" | "error" | "ready">(
@@ -314,8 +382,7 @@ export function DecisionPageClient({
 
     if (analysisState === "ready" && analysisResult?.signalMetrics) {
       const m = analysisResult.signalMetrics;
-      const reach =
-        m.interviewCount > 0 ? (m.uniqueInterviewees / m.interviewCount) * 100 : 0;
+      const reach = m.interviewCount > 0 ? (m.uniqueInterviewees / m.interviewCount) * 100 : 0;
       return [
         { label: "Reach", pct: reach, tone: "tertiary" as const },
         { label: "Consistency", pct: m.consistencyScore * 100, tone: "primarySoft" as const },
@@ -324,21 +391,9 @@ export function DecisionPageClient({
     }
 
     return [
-      {
-        label: "Reach",
-        pct: Math.min(100, (topCluster.frequency / 10) * 100),
-        tone: "tertiary",
-      },
-      {
-        label: "Consistency",
-        pct: topCluster.consistency_score * 100,
-        tone: "primarySoft",
-      },
-      {
-        label: "Intensity",
-        pct: (topCluster.avg_intensity / 5) * 100,
-        tone: "primary",
-      },
+      { label: "Reach", pct: Math.min(100, (topCluster.frequency / 10) * 100), tone: "tertiary" },
+      { label: "Consistency", pct: topCluster.consistency_score * 100, tone: "primarySoft" },
+      { label: "Intensity", pct: (topCluster.avg_intensity / 5) * 100, tone: "primary" },
     ];
   }, [topCluster, analysisState, analysisResult]);
 
@@ -346,14 +401,6 @@ export function DecisionPageClient({
     () => [...metaClusters].sort((a, b) => b.score - a.score).slice(0, 3),
     [metaClusters]
   );
-
-  const flowTimeline = useMemo(() => {
-    const flow = userFlows[0];
-    if (!flow?.steps?.length) return { title: "", steps: [] as string[] };
-    return { title: flow.title, steps: flow.steps.slice(0, 3) };
-  }, [userFlows]);
-
-  const topSuccessMetrics = useMemo(() => successMetrics.slice(0, 4), [successMetrics]);
 
   const fetchAnalysis = (opts?: { signal?: AbortSignal; requestId?: number }) => {
     const requestId = opts?.requestId ?? ++requestIdRef.current;
@@ -383,7 +430,6 @@ export function DecisionPageClient({
   };
 
   useEffect(() => {
-    // Server already provided complete analysis data (with context + signalMetrics) — skip fetch.
     if (persistedAnalysis) return;
 
     const controller = new AbortController();
@@ -423,9 +469,7 @@ export function DecisionPageClient({
   };
 
   const signalCardBody = () => {
-    if (analysisState === "loading") {
-      return <SkeletonLine className="h-16 w-full" />;
-    }
+    if (analysisState === "loading") return <SkeletonLine className="h-16 w-full" />;
     if (analysisState === "error") {
       return (
         <p className="dr-body-text text-sm leading-relaxed">
@@ -470,11 +514,12 @@ export function DecisionPageClient({
       return (
         <div className="space-y-6">
           {[0, 1, 2].map((card) => (
-            <div key={card} className="dr-panel dr-panel-rounded overflow-hidden">
-              <div className="border-b border-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] px-5 py-3">
+            <div key={card} className="dr-card overflow-hidden">
+              <div className="border-b px-5 py-3" style={{ borderColor: "#ededed" }}>
                 <SkeletonLine className="h-3 w-32" />
               </div>
-              <div className="grid grid-cols-1 divide-y divide-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] md:grid-cols-2 md:divide-x md:divide-y-0">
+              <div className="grid grid-cols-1 divide-y md:grid-cols-2 md:divide-x md:divide-y-0"
+                style={{ borderColor: "#ededed" }}>
                 <div className="space-y-2 p-8">
                   <SkeletonLine className="mb-3 h-3 w-24" />
                   <SkeletonLine />
@@ -494,18 +539,19 @@ export function DecisionPageClient({
 
     if (analysisState === "error") {
       return (
-        <div className="dr-panel dr-panel-rounded flex flex-col gap-3 p-6">
+        <div className="dr-card flex flex-col gap-3 p-6">
           <p className="text-sm text-danger">
             {analysisError === "No onboarding data linked"
               ? "No onboarding data linked to this project."
               : "Hypothesis comparison unavailable. Your interview-backed sections below are still valid."}
           </p>
-          <p className="text-xs text-muted-foreground">{analysisError}</p>
+          <p className="text-xs dr-body-text">{analysisError}</p>
           <div>
             <button
               type="button"
               onClick={handleRetry}
-              className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+              style={{ background: "#ff7a00" }}
             >
               Retry
             </button>
@@ -518,21 +564,14 @@ export function DecisionPageClient({
       return (
         <div className="space-y-6">
           {[0, 1, 2].map((card) => (
-            <div key={card} className="dr-panel dr-panel-rounded overflow-hidden">
-              <div className="border-b border-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] px-5 py-3">
+            <div key={card} className="dr-card overflow-hidden">
+              <div className="border-b px-5 py-3" style={{ borderColor: "#ededed" }}>
                 <SkeletonLine className="h-3 w-32" />
               </div>
-              <div className="grid grid-cols-1 divide-y divide-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] md:grid-cols-2 md:divide-x md:divide-y-0">
-                <div className="space-y-2 p-8">
-                  <SkeletonLine className="mb-3 h-3 w-24" />
-                  <SkeletonLine />
-                  <SkeletonLine className="h-4 w-4/5" />
-                </div>
-                <div className="space-y-2 p-8">
-                  <SkeletonLine className="mb-3 h-3 w-24" />
-                  <SkeletonLine />
-                  <SkeletonLine className="h-4 w-4/5" />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x"
+                style={{ borderColor: "#ededed" }}>
+                <div className="space-y-2 p-8"><SkeletonLine /><SkeletonLine className="h-4 w-4/5" /></div>
+                <div className="space-y-2 p-8"><SkeletonLine /><SkeletonLine className="h-4 w-4/5" /></div>
               </div>
             </div>
           ))}
@@ -542,70 +581,94 @@ export function DecisionPageClient({
 
     const { breakdown, context } = analysisResult;
 
-    const rowShell = (
-      title: string,
-      left: ReactNode,
-      right: ReactNode,
-      icon: string,
-      badge?: ReactNode
-    ) => (
-      <div>
-        <div className="mb-2 pl-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em]">
-              {title}
-            </span>
+    const firstSentence = (text: string) => text.split(/(?<=[.!?])\s/)[0] ?? text;
+
+    const HvRRow = ({
+      title,
+      badge,
+      hypothesis,
+      reality,
+      status,
+    }: {
+      title: string;
+      badge?: ReactNode;
+      hypothesis: ReactNode;
+      reality: ReactNode;
+      status: "fit" | "partial" | "mismatch" | "neutral";
+    }) => {
+      const iconConfig = {
+        fit:      { bg: "#e6f7ed", color: "#1d8045", icon: "check" },
+        partial:  { bg: "#fff4d6", color: "#a07a00", icon: "remove" },
+        mismatch: { bg: "#ffe4e6", color: "#b91c1c", icon: "close" },
+        neutral:  { bg: "#f2f2f2", color: "#757575", icon: "analytics" },
+      }[status];
+
+      const realityEyebrowColor = {
+        fit: "#1d8045",
+        partial: "#a07a00",
+        mismatch: "#b91c1c",
+        neutral: undefined as string | undefined,
+      }[status];
+
+      const realityPanelClass =
+        status === "fit" ? "dr-hvr-panel dr-hvr-panel--fit"
+        : status === "partial" ? "dr-hvr-panel dr-hvr-panel--partial"
+        : status === "mismatch" ? "dr-hvr-panel dr-hvr-panel--mismatch"
+        : "dr-hvr-panel";
+
+      return (
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2 px-1 mb-3">
+            <Eyebrow>{title}</Eyebrow>
             {badge}
           </div>
-        </div>
-        <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-[color:color-mix(in_srgb,var(--dr-rule)_85%,transparent)] bg-[color:color-mix(in_srgb,var(--dr-rule)_55%,transparent)] md:grid-cols-2">
-          <div className="bg-[var(--dr-surface)] p-8 md:p-10">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em]">
-                Your hypothesis
-              </span>
+          <div className="dr-hvr-grid">
+            <div className="dr-hvr-panel">
+              <Eyebrow>Your hypothesis</Eyebrow>
+              <div className="mt-3 text-[15px] font-medium leading-relaxed dr-body-text">
+                {hypothesis}
+              </div>
             </div>
-            <div className="font-headline text-xl font-medium italic leading-relaxed">
-              {left}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  background: iconConfig.bg,
+                  color: iconConfig.color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                  {iconConfig.icon}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="bg-[var(--dr-surface)] p-8 md:p-10">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="material-symbols-outlined text-[color:var(--dr-bullet)]">{icon}</span>
-              <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em]">
+            <div className={realityPanelClass}>
+              <Eyebrow color={realityEyebrowColor}>
                 What interviews support
-              </span>
-            </div>
-            <div className="font-headline dr-interviews-support-content text-xl font-medium leading-relaxed">
-              {right}
+              </Eyebrow>
+              <div className="mt-3 text-[15px] font-medium leading-relaxed dr-body-text">
+                {reality}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    };
 
     const problemRight = (
-      <div className="space-y-3 not-italic">
-        {context.topProblem ? (
-          <p className="dr-body-text text-xl font-medium leading-relaxed">{context.topProblem}</p>
-        ) : null}
-        {context.topQuotes.map((quote, index) => (
-          <p
-            key={index}
-            className="dr-body-text border-l-2 border-[color:var(--dr-rule)] pl-3 text-base italic"
-          >
-            &ldquo;{quote.text}&rdquo;
-          </p>
-        ))}
-        {!context.topProblem && context.topQuotes.length === 0 && (
-          <p className="dr-body-text text-base">No interview data</p>
-        )}
-      </div>
+      <p className="dr-body-text text-[15px] font-medium leading-relaxed not-italic">
+        {breakdown.problemMatch.realitySummary || firstSentence(context.topProblem) || "—"}
+      </p>
     );
 
     const customerRight = (
-      <p className="dr-body-text text-xl font-medium leading-relaxed not-italic">
-        {context.customerInsight || "—"}
+      <p className="dr-body-text text-[15px] font-medium leading-relaxed not-italic">
+        {breakdown.customerAlignment.realitySummary || firstSentence(context.customerInsight) || "—"}
       </p>
     );
 
@@ -618,13 +681,11 @@ export function DecisionPageClient({
           {breakdown.featureRelevance.relevant.length > 0 ? (
             <ul className="space-y-1">
               {breakdown.featureRelevance.relevant.map((feature, index) => (
-                <li key={index} className="dr-body-text text-base">
-                  {feature}
-                </li>
+                <li key={index} className="dr-body-text text-sm">{feature}</li>
               ))}
             </ul>
           ) : (
-            <p className="dr-body-text text-sm">None listed</p>
+            <p className="dr-body-text text-xs">None listed</p>
           )}
         </div>
         <div>
@@ -634,13 +695,11 @@ export function DecisionPageClient({
           {breakdown.featureRelevance.missing.length > 0 ? (
             <ul className="space-y-1">
               {breakdown.featureRelevance.missing.map((feature, index) => (
-                <li key={index} className="dr-body-text text-base">
-                  {feature}
-                </li>
+                <li key={index} className="dr-body-text text-sm">{feature}</li>
               ))}
             </ul>
           ) : (
-            <p className="dr-body-text text-sm">None listed</p>
+            <p className="dr-body-text text-xs">None listed</p>
           )}
         </div>
         <div>
@@ -650,267 +709,338 @@ export function DecisionPageClient({
           {breakdown.featureRelevance.unnecessary.length > 0 ? (
             <ul className="space-y-1">
               {breakdown.featureRelevance.unnecessary.map((feature, index) => (
-                <li key={index} className="dr-body-text text-base">
-                  {feature}
-                </li>
+                <li key={index} className="dr-body-text text-sm">{feature}</li>
               ))}
             </ul>
           ) : (
-            <p className="dr-body-text text-sm">None listed</p>
+            <p className="dr-body-text text-xs">None listed</p>
           )}
         </div>
       </div>
     );
 
+    const problemFitStatus: "fit" | "partial" | "mismatch" =
+      breakdown.problemMatch.status === "strong_match" ? "fit"
+      : breakdown.problemMatch.status === "partial_match" ? "partial"
+      : "mismatch";
+
+    const customerFitStatus: "fit" | "partial" | "mismatch" =
+      breakdown.customerAlignment.status === "aligned" ? "fit"
+      : breakdown.customerAlignment.status === "partially_aligned" ? "partial"
+      : "mismatch";
+
+    const { relevant, missing, unnecessary } = breakdown.featureRelevance;
+    const solutionScore = relevant.length - missing.length - unnecessary.length;
+    const solutionFitStatus: "fit" | "partial" | "mismatch" =
+      solutionScore >= 2 && relevant.length >= 2 ? "fit"
+      : solutionScore >= 0 || relevant.length >= 1 ? "partial"
+      : "mismatch";
+
     return (
-      <div className="space-y-6">
-        {rowShell(
-          "Problem fit",
-          <span>{context.founderProblem || "—"}</span>,
-          problemRight,
-          "analytics",
-          <StatusBadge
-            label={MATCH_STATUS_LABELS[breakdown.problemMatch.status]}
-            className={MATCH_STATUS_STYLES[breakdown.problemMatch.status]}
-          />
-        )}
-        {breakdown.problemMatch.reasoning && (
-          <p className="dr-body-text px-1 text-xs">{breakdown.problemMatch.reasoning}</p>
-        )}
-
-        {rowShell(
-          "Customer fit",
-          <span>{context.founderCustomer || "—"}</span>,
-          customerRight,
-          "groups",
-          <StatusBadge
-            label={ALIGNMENT_STATUS_LABELS[breakdown.customerAlignment.status]}
-            className={ALIGNMENT_STATUS_STYLES[breakdown.customerAlignment.status]}
-          />
-        )}
-        {breakdown.customerAlignment.reasoning && (
-          <p className="dr-body-text px-1 text-xs">{breakdown.customerAlignment.reasoning}</p>
-        )}
-
-        {rowShell(
-          "Solution fit",
-          <div className="not-italic">
-            {context.founderFeatures.length > 0 ? (
-              <ul className="list-inside list-disc space-y-1">
-                {context.founderFeatures.map((feature, index) => (
-                  <li key={index} className="font-headline text-xl font-medium">
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <span className="text-xl">No features listed</span>
-            )}
-          </div>,
-          solutionRight,
-          "lightbulb"
-        )}
+      <div className="space-y-8">
+        <HvRRow
+          title="Problem fit"
+          badge={
+            <StatusBadge
+              label={MATCH_STATUS_LABELS[breakdown.problemMatch.status]}
+              className={MATCH_STATUS_STYLES[breakdown.problemMatch.status]}
+            />
+          }
+          hypothesis={
+            <span>
+              {breakdown.problemMatch.hypothesisSummary || firstSentence(context.founderProblem) || "—"}
+            </span>
+          }
+          reality={problemRight}
+          status={problemFitStatus}
+        />
+        <HvRRow
+          title="Customer fit"
+          badge={
+            <StatusBadge
+              label={ALIGNMENT_STATUS_LABELS[breakdown.customerAlignment.status]}
+              className={ALIGNMENT_STATUS_STYLES[breakdown.customerAlignment.status]}
+            />
+          }
+          hypothesis={
+            <span>
+              {breakdown.customerAlignment.hypothesisSummary || firstSentence(context.founderCustomer) || "—"}
+            </span>
+          }
+          reality={customerRight}
+          status={customerFitStatus}
+        />
+        <HvRRow
+          title="Solution fit"
+          hypothesis={
+            <div>
+              {context.founderFeatures.length > 0 ? (
+                <ul className="list-inside list-disc space-y-1">
+                  {context.founderFeatures.map((feature, index) => (
+                    <li key={index} className="text-[15px] font-medium dr-body-text">{feature}</li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="dr-body-text text-sm">No features listed</span>
+              )}
+            </div>
+          }
+          reality={solutionRight}
+          status={solutionFitStatus}
+        />
       </div>
     );
   };
 
   const verdictLabel = analysisResult?.decision ? DECISION_LABELS[analysisResult.decision] : "Ready";
+  const verdictColor = DECISION_COLORS[verdictLabel] ?? "#000000";
+  const ringArc = `conic-gradient(#ff7a00 0 ${ringPercent}%, #f0f0f0 ${ringPercent}% 100%)`;
 
   return (
-    <main className="decision-report font-sans relative min-h-screen overflow-hidden bg-background">
+    <main className="decision-report font-sans relative min-h-screen bg-[#f9f9f9]">
       <div className="relative z-10 mx-auto max-w-5xl px-6 py-8">
-        <div className="mb-10 flex flex-col gap-4 border-b border-[color:color-mix(in_srgb,var(--dr-rule)_90%,transparent)] pb-8 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="mb-2 flex flex-wrap items-center gap-3">
-              <Link
-                href={`/interviews/${projectId}`}
-                className="dr-body-text text-xs hover:underline"
+
+        {/* ── Header ── */}
+        <header className="mb-8 pb-6 border-b" style={{ borderColor: "#ededed" }}>
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <Link href={`/interviews/${projectId}`} className="dr-body-text text-xs hover:underline">
+              ← Back to project
+            </Link>
+            <span className="dr-body-text text-xs opacity-40">·</span>
+            <div
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
+              style={{ border: "1px solid #ededed", background: "#f2f2f2" }}
+            >
+              <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
+              <span className="font-label text-[9px] uppercase tracking-[0.2em]">Krowe report</span>
+            </div>
+            <span className="dr-body-text text-xs opacity-40">·</span>
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push("/auth/signin");
+              }}
+              className="dr-body-text text-xs hover:underline"
+            >
+              Log out
+            </button>
+          </div>
+          <h1 className="font-headline text-xl font-bold">{project.name}</h1>
+          <p className="dr-body-text mt-1 text-sm">Interview decision report</p>
+        </header>
+
+        {/* ── Verdict hero card ── */}
+        <section className="mb-10">
+          <div
+            className="dr-card p-8"
+            style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 32, alignItems: "center" }}
+          >
+            {/* Conic-gradient confidence ring */}
+            <div
+              style={{
+                position: "relative",
+                width: 180,
+                height: 180,
+                borderRadius: "50%",
+                background: ringArc,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "inset 0 1px 0 rgb(255 255 255 / 0.35), 0 12px 36px -10px rgba(255, 122, 0, 0.22)",
+                flexShrink: 0,
+              }}
+            >
+              <div
+                className="dr-verdict-inner"
+                style={{ width: 144, height: 144 }}
               >
-                Back to project
-              </Link>
-              <span className="dr-body-text text-xs opacity-40">·</span>
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] bg-[color:color-mix(in_srgb,var(--dr-surface)_88%,transparent)] px-2.5 py-1">
-                <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
-                <span className="font-label text-[9px] uppercase tracking-[0.2em]">
-                  Krowe report
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "#757575",
+                  }}
+                >
+                  Confidence
+                </span>
+                {analysisState === "loading" ? (
+                  <SkeletonLine className="mt-1 h-10 w-16" />
+                ) : (
+                  <span
+                    className="font-headline"
+                    style={{ fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 2 }}
+                  >
+                    {Math.round(displayConfidencePct)}
+                  </span>
+                )}
+                <span style={{ fontSize: 11, color: "#757575", marginTop: 2 }}>
+                  {displayConfidencePct >= 65 ? "high" : "moderate"}
                 </span>
               </div>
-              <span className="dr-body-text text-xs opacity-40">·</span>
-              <button
-                type="button"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  router.push("/auth/signin");
-                }}
-                className="dr-body-text text-xs hover:underline"
+            </div>
+
+            {/* Verdict + reasoning */}
+            <div>
+              <Eyebrow>Verdict</Eyebrow>
+              <h1
+                className="font-headline"
+                style={{ fontSize: 48, lineHeight: 1, color: verdictColor, margin: "6px 0 16px 0" }}
               >
-                Log out
-              </button>
-            </div>
-            <h1 className="font-headline text-xl font-bold">{project.name}</h1>
-            <p className="dr-body-text mt-1 text-sm">Interview decision report</p>
-          </div>
-        </div>
-
-        {/* Verdict */}
-        <section className="mb-16">
-          <div className="flex flex-col items-center gap-14 md:flex-row md:items-start md:gap-16 lg:gap-20">
-            {/* Left: orb */}
-            <div className="shrink-0 flex flex-col items-center">
-              <div className="relative flex h-64 w-64 items-center justify-center">
-                <svg className="absolute inset-0 h-full w-full p-2 opacity-[0.35]" viewBox="0 0 320 320">
-                  <circle
-                    className="decision-ring-track"
-                    cx="160"
-                    cy="160"
-                    r={RING_R}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                </svg>
-                <svg className="absolute inset-0 h-full w-full p-2" viewBox="0 0 320 320">
-                  <circle
-                    className="decision-ring-progress confidence-ring"
-                    cx="160"
-                    cy="160"
-                    r={RING_R}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeWidth="4"
-                    strokeDasharray={RING_C}
-                    strokeDashoffset={ringOffsetForPercent(ringPercent)}
-                    style={{ transition: "stroke-dashoffset 0.6s ease-out" }}
-                  />
-                </svg>
-                <div className="decision-core-orb relative z-10 flex h-52 w-52 flex-col items-center justify-center rounded-full">
-                  <span className="font-label mb-1 text-[10px] font-bold uppercase tracking-[0.35em]">
-                    Verdict
-                  </span>
-                  <h2 className="font-headline text-4xl font-bold tracking-tight md:text-5xl">
-                    {verdictLabel}
-                  </h2>
-                </div>
-                <div className="absolute -top-4 right-0 text-right">
-                  <span className="font-label mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
-                    Confidence
-                  </span>
-                  {analysisState === "loading" ? (
-                    <SkeletonLine className="ml-auto h-8 w-20" />
-                  ) : (
-                    <span className="font-headline dr-bullet-text text-2xl font-bold">
-                      {displayConfidencePct.toFixed(1)}%
-                    </span>
-                  )}
-                </div>
-                <div className="absolute -bottom-4 left-0 text-left">
-                  <span className="font-label mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--dr-bullet)]">
-                    Report status
-                  </span>
-                  <span className="font-label text-xs uppercase tracking-widest">
-                    Analysis complete · Final
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: why this decision */}
-            <div className="flex flex-1 flex-col gap-4">
-              <section className="why-decision-panel rounded-r-xl p-6 pl-8 text-left md:ml-24 lg:ml-32 xl:ml-40 2xl:ml-44">
-                <h2 className="font-headline mb-5 text-xl leading-tight md:text-[1.35rem]">
-                  Why this decision
-                </h2>
-                {reasoningDisplayItems.length > 0 ? (
-                  <ul className="why-decision-list space-y-4">
-                    {reasoningDisplayItems.map((item, i) => (
-                      <li key={i} className="why-decision-item flex gap-3 text-[15px] leading-relaxed">
-                        <span
-                          className="why-decision-bullet mt-[0.45em] h-1.5 w-1.5 shrink-0 rounded-full"
-                          aria-hidden
-                        />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="why-decision-empty text-[15px] leading-relaxed">—</p>
-                )}
-              </section>
+                {verdictLabel}
+              </h1>
 
               {analysisState === "loading" && (
-                <div className="space-y-2 text-left">
+                <div className="space-y-2">
                   <SkeletonLine />
                   <SkeletonLine className="w-5/6" />
+                  <SkeletonLine className="w-4/6" />
                 </div>
               )}
+
               {analysisState === "error" && (
                 <p className="dr-body-text text-sm">
-                  AI recommendations are unavailable. The reasoning above is from your generated
-                  decision; rerun analysis after linking onboarding if needed.
+                  AI recommendations unavailable. Reasoning above is from your generated decision.
                 </p>
+              )}
+
+              {(analysisState === "ready" || reasoningDisplayItems.length > 0) && (
+                <>
+                  <p style={{ margin: "0 0 14px 0", fontSize: 14, color: "#666666", lineHeight: 1.6 }}>
+                    {reasoningDisplayItems.join(" ")}
+                  </p>
+                  <div className="dr-tags-row">
+                    <span className="dr-tag dr-tag--warm">{project.name}</span>
+                    {interviewsSortedIds.length > 0 && (
+                      <span className="dr-tag dr-tag--neutral">{interviewsSortedIds.length} interviews</span>
+                    )}
+                    {synthesisDays != null && synthesisDays > 0 && (
+                      <span className="dr-tag dr-tag--neutral">{synthesisDays} days of synthesis</span>
+                    )}
+                    <span className="dr-tag dr-tag--complete">
+                      <span className="dr-tag-dot" />
+                      Report complete
+                    </span>
+                  </div>
+                </>
               )}
             </div>
           </div>
 
-          {/* Next steps — full width below */}
+          {/* Rationale */}
           {analysisState === "ready" && analysisResult?.recommendation?.length ? (
-            <div className="dr-panel dr-panel-rounded mt-16 text-left">
-              <p className="font-label mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-                Next steps
-              </p>
-              <ul className="space-y-3">
-                {analysisResult.recommendation.map((rec, index) => (
-                  <li key={index} className="flex items-start gap-3 text-sm">
-                    <span
-                      className="dr-next-bullet mt-[0.45em] h-1.5 w-1.5 shrink-0 rounded-full"
-                      aria-hidden
-                    />
-                    <span className="dr-body-text leading-relaxed">{rec}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="mt-8">
+              <Eyebrow>What to do next</Eyebrow>
+              <h2
+                className="font-headline"
+                style={{ fontSize: 28, fontWeight: 700, margin: "8px 0 20px" }}
+              >
+                Next Steps
+              </h2>
+              <div className="space-y-3">
+                {analysisResult.recommendation.map((rec, index) => {
+                  const { title, body } = parseRationaleItem(rec, index);
+                  return (
+                    <div key={index} className="dr-rationale-card">
+                      <span className="dr-rationale-card-num">{index + 1}</span>
+                      <div className="dr-rationale-card-body">
+                        <p className="dr-rationale-card-title">{title}</p>
+                        <p className="dr-rationale-card-desc">{body}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
         </section>
 
-        {/* Top problem + landscape */}
-        <div className="mb-14 grid grid-cols-1 gap-8 md:grid-cols-12">
-          <div className="md:col-span-7">
-            <span className="font-label mb-4 block text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--dr-bullet)]">
-              Primary friction
-            </span>
-            <h3 className="font-headline mb-6 text-2xl md:text-3xl">Top problem</h3>
+        {/* ── Top problem + Landscape ── */}
+        <section className="mb-10">
+          <Eyebrow color="#a04000">Primary friction</Eyebrow>
+          <div className="mt-4">
             {topCluster ? (
-              <div className="space-y-6">
-                <div className="dr-panel dr-panel-rounded relative overflow-hidden">
-                  <h4 className="font-label mb-3 text-xs font-bold uppercase tracking-widest text-[color:var(--dr-bullet)]">
-                    {topCluster.category ? `${topCluster.category} · ` : ""}
-                    Interview signal
-                  </h4>
-                  <p className="font-label mb-1 text-[10px] font-bold uppercase tracking-[0.2em]">
-                    #1 Top Problem
-                  </p>
-                  <p className="font-headline text-lg font-semibold leading-snug">
-                    {topCluster.canonical_problem}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">{signalBadge()}</div>
-                  <div className="relative mt-4 text-sm">{signalCardBody()}</div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between px-2">
-                    <span className="font-label text-[10px] uppercase tracking-wide">
-                      Evidence mix
-                    </span>
-                    <span className="font-label text-[10px] font-bold text-[color:var(--dr-bullet)]">
-                      {analysisState === "ready" ? "Live" : analysisState === "loading" ? "…" : "Partial"}
-                    </span>
+              <div className="dr-card overflow-hidden">
+                <div
+                  className="grid grid-cols-1 md:grid-cols-[3fr_2fr]"
+                  style={{ divideColor: "#ededed" }}
+                >
+                  {/* Left: problem signal */}
+                  <div className="border-b p-6 md:border-b-0 md:border-r" style={{ borderColor: "#ededed" }}>
+                    <Eyebrow color="#a04000">
+                      {topCluster.category ? `${topCluster.category} · ` : ""}Interview signal
+                    </Eyebrow>
+                    <p className="font-headline mt-3 text-xl font-semibold leading-snug">
+                      {topCluster.canonical_problem}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {signalBadge()}
+                      {topCluster.consistency_score > 0 && (
+                        <StatusBadge
+                          label={`${Math.round(topCluster.consistency_score * 100)}% coverage`}
+                          className="border-[#f5d3a0] bg-[#fff8ec] text-[#a04000]"
+                        />
+                      )}
+                    </div>
+                    <div className="mt-3 text-sm">{signalCardBody()}</div>
                   </div>
-                  <ImpactDistribution
-                    bars={impactBars ?? []}
-                    loading={analysisState === "loading" || impactBars === null}
-                  />
+
+                  {/* Right: evidence mix + problem landscape */}
+                  <div className="flex flex-col gap-5 p-6">
+                    {/* Evidence mix */}
+                    <div>
+                      <div className="mb-3 flex items-center justify-between">
+                        <Eyebrow>Evidence mix</Eyebrow>
+                        <span className="font-label flex items-center gap-1.5 text-[10px] font-bold" style={{ color: "#ff7a00" }}>
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#ff7a00]" />
+                          {analysisState === "ready" ? "Live" : analysisState === "loading" ? "…" : "Partial"}
+                        </span>
+                      </div>
+                      <ImpactDistribution
+                        bars={impactBars ?? []}
+                        loading={analysisState === "loading" || impactBars === null}
+                      />
+                    </div>
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: "#ededed" }} />
+
+                    {/* Problem landscape */}
+                    <div>
+                      <Eyebrow>Problem landscape</Eyebrow>
+                      {landscapeItems.length > 0 ? (
+                        <div className="mt-4 space-y-4">
+                          {landscapeItems.map((mc, i) => (
+                            <div key={mc.id} className="flex gap-3">
+                              <span
+                                className="font-headline shrink-0 text-lg font-bold leading-none"
+                                style={{ color: "#ff7a00" }}
+                              >
+                                {String(i + 1).padStart(2, "0")}
+                              </span>
+                              <div>
+                                <h5 className="font-label line-clamp-1 text-[10px] font-bold uppercase tracking-tight" style={{ color: "#000000" }}>
+                                  {mc.title}
+                                </h5>
+                                <p className="dr-body-text mt-0.5 line-clamp-2 text-xs leading-relaxed">
+                                  {mc.description}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="dr-body-text mt-3 text-xs">No grouped themes yet.</p>
+                      )}
+                      {allClusters.length > 0 && (
+                        <div className="mt-4 flex justify-end">
+                          <AllProblemsButton allClusters={allClusters} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -919,67 +1049,35 @@ export function DecisionPageClient({
               </p>
             )}
           </div>
+        </section>
 
-          <div className="dr-panel md:col-span-5 dr-panel-rounded">
-            <span className="font-label mb-6 block text-[10px] font-bold uppercase tracking-[0.2em]">
-              Problem landscape
-            </span>
-            {landscapeItems.length > 0 ? (
-              <div className="space-y-8">
-                {landscapeItems.map((mc, i) => (
-                  <div key={mc.id} className="flex gap-4">
-                    <span className="font-headline dr-bullet-text text-2xl font-bold">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h5 className="font-headline mb-1 text-sm font-bold uppercase tracking-tight">
-                        {mc.title}
-                      </h5>
-                      <p className="dr-body-text line-clamp-3 text-xs leading-relaxed">{mc.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="dr-body-text text-sm">No grouped themes yet.</p>
-            )}
-            {allClusters.length > 0 && (
-              <div className="mt-6 flex justify-end">
-                <AllProblemsButton allClusters={allClusters} />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Voice of the customer */}
+        {/* ── Voice of the customer ── */}
         {topCluster && (
-          <section className="mb-14">
+          <section className="mb-10">
             <div className="mb-6 text-center">
-              <h3 className="font-headline text-2xl md:text-3xl">Voice of the customer</h3>
+              <h3 className="font-headline text-2xl">Voice of the customer</h3>
             </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               {(() => {
-                const rankLabels = ["Weakest evidence", "Moderate evidence", "Strongest evidence"];
-                const quotes = [...topCluster.supporting_quotes.slice(0, 3)].reverse();
+                const rankLabels = ["Strongest evidence", "Moderate evidence", "Weakest evidence"];
+                const quotes = [...topCluster.supporting_quotes.slice(0, 3)];
                 return [0, 1, 2].map((index) => {
                   const quote = quotes[index];
                   if (!quote) {
                     return (
                       <div
                         key={index}
-                        className="flex min-h-[140px] flex-col items-center justify-center rounded-xl border border-dashed border-[color:color-mix(in_srgb,var(--dr-rule)_90%,transparent)] bg-muted p-8"
+                        className="flex min-h-[140px] flex-col items-center justify-center rounded-xl border border-dashed p-8"
+                        style={{ borderColor: "#ededed", background: "#f9f9f9" }}
                       >
-                        <span className="font-label mb-1 text-[10px] font-semibold uppercase tracking-wide">
-                          {rankLabels[index]}
-                        </span>
-                        <span className="dr-body-text text-xs">No quote</span>
+                        <Eyebrow>{rankLabels[index]}</Eyebrow>
+                        <span className="dr-body-text mt-2 text-xs">No quote</span>
                       </div>
                     );
                   }
                   const interviewIndex = interviewsSortedIds.indexOf(quote.interview_id);
                   const interviewLabel =
                     interviewIndex >= 0 ? `Interview ${interviewIndex + 1}` : "Interview";
-
                   return (
                     <VoiceQuoteCard
                       key={`${quote.interview_id}-${index}`}
@@ -987,6 +1085,7 @@ export function DecisionPageClient({
                       interviewLabel={interviewLabel}
                       rankLabel={rankLabels[index]}
                       isParaphrased={!quote.verbatim_text}
+                      isBrand={index === 0}
                     />
                   );
                 });
@@ -995,146 +1094,134 @@ export function DecisionPageClient({
           </section>
         )}
 
-        {/* Hypothesis vs reality */}
-        <section className="mb-14">
-          <div className="mb-6 text-center">
-            <h3 className="font-headline text-2xl md:text-3xl">Hypothesis vs reality</h3>
-            <p className="dr-body-text mt-2 text-sm">
-              How your onboarding assumptions compare to what people said in interviews.
-            </p>
+        {/* ── Hypothesis vs reality ── */}
+        <section className="mb-10">
+          <div className="mb-6">
+            <Eyebrow>Hypothesis vs reality</Eyebrow>
+            <h3 className="font-headline mt-2 text-3xl font-bold">What we got right — and wrong</h3>
           </div>
           {renderHypothesisSection()}
         </section>
 
-        {/* What to build + flows */}
-        <div className="mb-14 grid grid-cols-1 items-start gap-8 md:grid-cols-12">
-          <div className="md:col-span-8">
-            <h3 className="font-headline mb-8 text-2xl md:text-3xl">What to build</h3>
-            {sortedFeatures.length > 0 ? (
-              <div className="space-y-4">
-                {sortedFeatures.map((feature, index) => (
-                  <div
-                    key={`${feature.name}-${index}`}
-                    className={`dr-panel dr-panel-rounded dr-build-card ${getBuildTierClass(index)} group flex cursor-default items-center justify-between transition-colors`}
+        {/* ── What to build ── */}
+        <div className="mb-10">
+          <h3 className="font-headline mb-6 text-2xl">What to build</h3>
+          {sortedFeatures.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {sortedFeatures.map((feature, index) => (
+                <div
+                  key={`${feature.name}-${index}`}
+                  className={`dr-build-card ${getBuildTierClass(index)}`}
+                >
+                  <span className={PRIORITY_CLASS[feature.priority]}>
+                    {PRIORITY_LABEL[feature.priority]}
+                  </span>
+                  <span
+                    className={`material-symbols-outlined dr-build-icon transition-transform`}
+                    aria-hidden
                   >
-                    <div className="flex flex-1 items-center gap-4 pr-2">
-                      <span
-                        className="material-symbols-outlined dr-build-icon transition-transform group-hover:scale-110"
-                        aria-hidden
-                      >
-                        {PRIORITY_ICONS[feature.priority]}
-                      </span>
-                      <div className="text-left">
-                        <h4 className="font-headline text-sm font-bold uppercase tracking-wide">
-                          {feature.name}
-                        </h4>
-                        <p className="dr-body-text text-xs">{feature.description}</p>
-                      </div>
-                    </div>
-                    <span className="material-symbols-outlined opacity-30" aria-hidden>
-                      chevron_right
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="dr-body-text text-sm">No feature specs in this decision.</p>
-            )}
-          </div>
-
-          <div className="md:col-span-4">
-            <h3 className="font-headline mb-8 text-2xl md:text-3xl">User flows</h3>
-            {flowTimeline.steps.length > 0 ? (
-              <div>
-                {flowTimeline.title && (
-                  <p className="font-label mb-4 text-[10px] font-bold uppercase tracking-widest">
-                    {flowTimeline.title}
-                  </p>
-                )}
-                <div className="dr-flow-timeline relative space-y-12 border-l py-4 pl-8">
-                  {flowTimeline.steps.map((step, i) => (
-                    <div key={i} className="relative">
-                      <div className={`dr-flow-node absolute -left-[37px] top-0 h-2 w-2 rounded-full ${getFlowStepClass(i)}`} />
-                      <h5 className="font-label mb-2 text-[10px] font-bold uppercase tracking-widest">
-                        Step {i + 1}
-                      </h5>
-                      <p className="dr-body-text text-xs leading-relaxed">{step}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="dr-body-text text-sm">No user flows in this decision.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Edge cases + metrics */}
-        <div className="mb-10 grid grid-cols-1 gap-12 md:grid-cols-2">
-          <div>
-            <h3 className="font-headline mb-8 text-2xl md:text-3xl">Edge cases</h3>
-            {edgeCases.length > 0 ? (
-              <div className="dr-panel dr-panel-rounded">
-                <ul className="space-y-4">
-                  {edgeCases.map((edge, index) => (
-                    <li key={index} className="flex gap-4">
-                      <span className="material-symbols-outlined dr-edge-signal-icon shrink-0 text-sm">
-                        warning
-                      </span>
-                      <div>
-                        <p className="dr-body-text text-sm">{edge.scenario}</p>
-                        {edge.mitigation && (
-                          <p className="dr-body-text mt-1 text-xs opacity-90">{edge.mitigation}</p>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <p className="dr-body-text text-sm">None listed.</p>
-            )}
-          </div>
-
-          <div>
-            <h3 className="font-headline mb-8 text-2xl md:text-3xl">Success metrics</h3>
-            {topSuccessMetrics.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {topSuccessMetrics.map((metric, index) => (
-                  <div
-                    key={index}
-                    className="dr-panel dr-panel-rounded text-center"
-                  >
-                    <p className="font-label mb-2 text-[10px] font-bold uppercase tracking-widest">
-                      {metric.metric}
+                    {PRIORITY_ICONS[feature.priority]}
+                  </span>
+                  <div className="flex-1">
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#000000" }}>
+                      {feature.name}
                     </p>
-                    <span className="font-headline dr-success-metric-value text-xl font-bold md:text-2xl">
-                      {metric.target}
-                    </span>
-                    {metric.rationale && (
-                      <p className="dr-body-text mt-2 text-left text-[11px] leading-snug">
-                        {metric.rationale}
-                      </p>
-                    )}
+                    <p className="dr-body-text" style={{ margin: "2px 0 0 0", fontSize: 12.5 }}>
+                      {feature.description}
+                    </p>
+                  </div>
+                  <span className="material-symbols-outlined" style={{ color: "#a3a3a3", fontSize: 18 }} aria-hidden>
+                    chevron_right
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="dr-body-text text-sm">No feature specs in this decision.</p>
+          )}
+        </div>
+
+        {/* ── Timeline + By the numbers ── */}
+        <div className="mb-10 grid grid-cols-1 gap-10 md:grid-cols-2">
+          <div>
+            <Eyebrow>Timeline</Eyebrow>
+            <h3 className="font-headline mb-5 mt-1 text-2xl">
+              {synthesisDays != null && synthesisDays > 0
+                ? `${synthesisDays} days of synthesis`
+                : "Synthesis timeline"}
+            </h3>
+            <div className="dr-card p-5">
+              <div
+                className="relative space-y-6 border-l py-2 pl-7"
+                style={{ borderColor: "#e5e5e5" }}
+              >
+                {timelineEvents.map((event, i) => (
+                  <div key={i} className="relative flex items-start gap-4">
+                    <div
+                      className="dr-flow-node absolute -left-[33px] top-1.5 h-2.5 w-2.5 rounded-full"
+                      style={{ background: "var(--dr-bullet)" }}
+                    />
+                    <p
+                      className="font-label w-14 shrink-0 text-[10px] font-bold uppercase tracking-widest"
+                      style={{ color: "var(--dr-body-muted)" }}
+                    >
+                      {formatShortDate(event.at)}
+                    </p>
+                    <p className="dr-body-text text-sm leading-relaxed">{event.label}</p>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="dr-body-text text-sm">None listed.</p>
-            )}
+            </div>
+          </div>
+
+          <div>
+            <Eyebrow>Metrics</Eyebrow>
+            <h3 className="font-headline mb-5 mt-1 text-2xl">By the numbers</h3>
+            <div className="dr-card p-5">
+              <div className="dr-btn-grid">
+                <Tile
+                  eyebrow="Interviews"
+                  value={String(byTheNumbers.interviewCount)}
+                  caption={`${byTheNumbers.highSignalCount} high signal`}
+                />
+                <Tile
+                  eyebrow="Avg length"
+                  value={byTheNumbers.avgMinutes > 0 ? `${byTheNumbers.avgMinutes}m` : "—"}
+                  caption={
+                    byTheNumbers.minMinutes != null
+                      ? `min ${byTheNumbers.minMinutes} · max ${byTheNumbers.maxMinutes}`
+                      : "No transcripts"
+                  }
+                />
+                <Tile
+                  eyebrow="Themes"
+                  value={String(byTheNumbers.themeCount)}
+                  caption={`${byTheNumbers.dominantThemeCount} dominant`}
+                  valueAccent
+                />
+                <Tile
+                  eyebrow="Confidence"
+                  value={`${Math.round(byTheNumbers.confidencePct)}%`}
+                  caption="above 65 threshold"
+                  valueAccent
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="mt-20 h-px w-full bg-gradient-to-r from-transparent via-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] to-transparent opacity-80" />
-        <footer className="flex flex-col gap-4 py-12 md:flex-row md:items-center md:justify-between">
+        {/* ── Footer ── */}
+        <div
+          className="mt-16 h-px w-full"
+          style={{ background: "linear-gradient(to right, transparent, #ededed, transparent)" }}
+        />
+        <footer className="flex flex-col gap-3 py-10 md:flex-row md:items-center md:justify-between">
           <span className="font-label text-[9px] uppercase tracking-[0.3em]">
             Krowe · Interview decision · {projectId}
           </span>
-          <div className="flex flex-wrap gap-4">
-            <span className="font-label text-[9px] uppercase tracking-[0.3em]">
-              Updated {formatDecisionTimestamp(decision.updated_at)}
-            </span>
-          </div>
+          <span className="font-label text-[9px] uppercase tracking-[0.3em]">
+            Updated {formatDecisionTimestamp(decision.updated_at)}
+          </span>
         </footer>
       </div>
     </main>
