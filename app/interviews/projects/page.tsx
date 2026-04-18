@@ -4,6 +4,7 @@ import { ProjectsManagerClient, type DashboardProject } from "./ProjectsManagerC
 import LogoutButton from "../LogoutButton";
 import InterviewsShell from "../_components/InterviewsShell";
 import DashboardPageHeader from "../_components/DashboardPageHeader";
+import ProjectsHeroBanner from "../_components/ProjectsHeroBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,7 @@ export default async function ProjectsPage() {
             </>
           }
         />
+        <ProjectsHeroBanner />
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
             <p className="text-xs text-muted-foreground">Active projects</p>
@@ -97,7 +99,9 @@ export default async function ProjectsPage() {
             <p className="mt-1 text-xs text-muted-foreground">Collecting or processing</p>
           </article>
         </section>
-        <ProjectsManagerClient initialProjects={projects} isAdmin={isAdmin} />
+        <div id="projects-list">
+          <ProjectsManagerClient initialProjects={projects} isAdmin={isAdmin} />
+        </div>
       </div>
     </InterviewsShell>
   );

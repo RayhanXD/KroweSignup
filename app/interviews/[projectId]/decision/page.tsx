@@ -280,7 +280,7 @@ export default async function DecisionPage({
   }
 
   return (
-    <InterviewsShell activeNav="decision" projectId={projectId} topbarTitle="Decision">
+    <InterviewsShell activeNav="decision" projectId={projectId} topbarTitle="Decision" noPadding>
       <DecisionPageClient
         projectId={projectId}
         project={project}

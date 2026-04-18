@@ -145,6 +145,15 @@ function parseRationaleItem(s: string, fallbackIndex: number): { title: string; 
   return { title: `Point ${fallbackIndex + 1}`, body: s };
 }
 
+type FeatureWithReason = { name: string; reason: string };
+
+function normalizeFeatureEntry(
+  item: string | { name?: string; reason?: string }
+): FeatureWithReason {
+  if (typeof item === "string") return { name: item, reason: "" };
+  return { name: item.name ?? "", reason: item.reason ?? "" };
+}
+
 function sanitizeReasoningString(s: string): string {
   return s
     .trim()
@@ -672,52 +681,6 @@ export function DecisionPageClient({
       </p>
     );
 
-    const solutionRight = (
-      <div className="space-y-4 not-italic">
-        <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-success">
-            Aligns with plan
-          </p>
-          {breakdown.featureRelevance.relevant.length > 0 ? (
-            <ul className="space-y-1">
-              {breakdown.featureRelevance.relevant.map((feature, index) => (
-                <li key={index} className="dr-body-text text-sm">{feature}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="dr-body-text text-xs">None listed</p>
-          )}
-        </div>
-        <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-warning">
-            Gaps to address
-          </p>
-          {breakdown.featureRelevance.missing.length > 0 ? (
-            <ul className="space-y-1">
-              {breakdown.featureRelevance.missing.map((feature, index) => (
-                <li key={index} className="dr-body-text text-sm">{feature}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="dr-body-text text-xs">None listed</p>
-          )}
-        </div>
-        <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-danger">
-            Deprioritize
-          </p>
-          {breakdown.featureRelevance.unnecessary.length > 0 ? (
-            <ul className="space-y-1">
-              {breakdown.featureRelevance.unnecessary.map((feature, index) => (
-                <li key={index} className="dr-body-text text-sm">{feature}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="dr-body-text text-xs">None listed</p>
-          )}
-        </div>
-      </div>
-    );
 
     const problemFitStatus: "fit" | "partial" | "mismatch" =
       breakdown.problemMatch.status === "strong_match" ? "fit"
@@ -729,7 +692,11 @@ export function DecisionPageClient({
       : breakdown.customerAlignment.status === "partially_aligned" ? "partial"
       : "mismatch";
 
-    const { relevant, missing, unnecessary } = breakdown.featureRelevance;
+    const relevantNorm = (breakdown.featureRelevance.relevant as Array<string | FeatureWithReason>).map(normalizeFeatureEntry);
+    const unnecessaryNorm = (breakdown.featureRelevance.unnecessary as Array<string | FeatureWithReason>).map(normalizeFeatureEntry);
+    const { missing } = breakdown.featureRelevance;
+    const relevant = relevantNorm.map((e) => e.name);
+    const unnecessary = unnecessaryNorm.map((e) => e.name);
     const solutionScore = relevant.length - missing.length - unnecessary.length;
     const solutionFitStatus: "fit" | "partial" | "mismatch" =
       solutionScore >= 2 && relevant.length >= 2 ? "fit"
@@ -770,24 +737,116 @@ export function DecisionPageClient({
           reality={customerRight}
           status={customerFitStatus}
         />
-        <HvRRow
-          title="Solution fit"
-          hypothesis={
-            <div>
-              {context.founderFeatures.length > 0 ? (
-                <ul className="list-inside list-disc space-y-1">
-                  {context.founderFeatures.map((feature, index) => (
-                    <li key={index} className="text-[15px] font-medium dr-body-text">{feature}</li>
+        {/* ── Solution Fit (redesigned) ── */}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2 px-1 mb-3">
+            <Eyebrow>Solution fit</Eyebrow>
+            <span className={`dr-sf-coverage-badge dr-sf-coverage-badge--${
+              solutionFitStatus === "fit" ? "fit"
+              : solutionFitStatus === "mismatch" ? "mismatch"
+              : "partial"
+            }`}>
+              {solutionFitStatus === "fit" ? "Fit"
+                : solutionFitStatus === "mismatch" ? "Mismatch"
+                : "Partial coverage"}
+            </span>
+          </div>
+
+          <div className="dr-sf-card">
+            {/* Summary tiles */}
+            <div className="dr-sf-tiles">
+              <div className="dr-sf-tile">
+                <span className="dr-sf-tile-num" style={{ color: "#1d8045" }}>{relevant.length}</span>
+                <p className="dr-eyebrow mt-1">Supported</p>
+                <p className="dr-btn-caption">Interviews validate this feature</p>
+              </div>
+              <div className="dr-sf-tile dr-sf-tile--mid">
+                <span className="dr-sf-tile-num" style={{ color: "var(--dr-bullet)" }}>{missing.length}</span>
+                <p className="dr-eyebrow mt-1">Gaps added</p>
+                <p className="dr-btn-caption">Missing from plan, raised by users</p>
+              </div>
+              <div className="dr-sf-tile">
+                <span className="dr-sf-tile-num" style={{ color: "#757575" }}>{unnecessary.length}</span>
+                <p className="dr-eyebrow mt-1">Deprioritize</p>
+                <p className="dr-btn-caption">Weak signal or low pain</p>
+              </div>
+            </div>
+
+            {/* Feature → interviews table */}
+            {context.founderFeatures.length > 0 ? (
+              <>
+                <div className="dr-sf-table-header">
+                  Your feature → What interviews said
+                </div>
+                {context.founderFeatures.map((feature, idx) => {
+                  const norm = (s: string) => s.toLowerCase().trim();
+                  const matches = (a: string, b: string) => {
+                    const na = norm(a), nb = norm(b);
+                    return na === nb || na.includes(nb) || nb.includes(na);
+                  };
+                  const kind = relevant.some(r => matches(r, feature)) ? "supported"
+                    : unnecessary.some(u => matches(u, feature)) ? "deprioritize"
+                    : "gap";
+                  return (
+                    <div key={idx} className={`dr-sf-row${kind === "deprioritize" ? " dr-sf-row--deprioritize" : ""}`}>
+                      <div className="dr-sf-row-icon">
+                        {kind === "supported" && (
+                          <span style={{ width: 28, height: 28, borderRadius: "50%", background: "#e6f7ed", color: "#1d8045", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check</span>
+                          </span>
+                        )}
+                        {kind === "gap" && (
+                          <span style={{ width: 28, height: 28, borderRadius: "50%", background: "#fff8ec", color: "var(--dr-bullet)", border: "1.5px solid #f5d3a0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
+                          </span>
+                        )}
+                        {kind === "deprioritize" && (
+                          <span style={{ width: 28, height: 28, borderRadius: "50%", background: "#f2f2f2", color: "#757575", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>remove</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="dr-sf-row-label">{feature}</div>
+                      <div className="dr-sf-row-right">
+                        <span className={`dr-sf-pill dr-sf-pill--${kind}`}>
+                          {kind === "supported" ? "Supported"
+                            : kind === "deprioritize" ? "Deprioritize"
+                            : "Gap"}
+                        </span>
+                        {kind === "supported" && (() => {
+                          const entry = relevantNorm.find((e) => matches(e.name, feature));
+                          const reason = entry?.reason || "Interviews confirm this is a real pain point users want solved.";
+                          return <p className="dr-sf-row-reason">{reason}</p>;
+                        })()}
+                        {kind === "deprioritize" && (() => {
+                          const entry = unnecessaryNorm.find((e) => matches(e.name, feature));
+                          const reason = entry?.reason || "Low signal — users didn\u2019t raise this or found workarounds easily.";
+                          return <p className="dr-sf-row-reason">{reason}</p>;
+                        })()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <p className="px-6 py-4 dr-body-text text-sm">No features listed</p>
+            )}
+
+            {/* Added from interviews footer */}
+            {missing.length > 0 && (
+              <div className="dr-sf-footer">
+                <div className="dr-sf-footer-header">
+                  + Added from interviews · Not in your plan
+                </div>
+                <ul className="dr-sf-footer-list">
+                  {missing.map((item, idx) => (
+                    <li key={idx}>{item}</li>
                   ))}
                 </ul>
-              ) : (
-                <span className="dr-body-text text-sm">No features listed</span>
-              )}
-            </div>
-          }
-          reality={solutionRight}
-          status={solutionFitStatus}
-        />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   };

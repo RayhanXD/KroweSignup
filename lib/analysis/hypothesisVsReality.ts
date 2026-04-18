@@ -35,9 +35,9 @@ export type AnalysisResult = {
       realitySummary?: string;
     };
     featureRelevance: {
-      relevant: string[];
+      relevant: Array<{ name: string; reason: string }>;
       missing: string[];
-      unnecessary: string[];
+      unnecessary: Array<{ name: string; reason: string }>;
     };
     customerAlignment: {
       status: "aligned" | "partially_aligned" | "misaligned";
@@ -161,7 +161,7 @@ export async function analyzeHypothesisVsReality(
       {
         role: "system",
         content:
-          "You are an expert product decision analyst. Return structured JSON only. Be direct and terse. For reasoning fields: 1–2 sentences max, under 30 words. For hypothesisSummary and realitySummary fields: ≤15 words each, plain declarative sentence, no filler.",
+          "You are an expert product decision analyst. Return structured JSON only. Be direct and terse. For reasoning fields: 1–2 sentences max, under 30 words. For hypothesisSummary and realitySummary fields: ≤15 words each, plain declarative sentence, no filler. For each item in featureRelevance.relevant and featureRelevance.unnecessary, write a feature-specific reason grounded in the interview quotes/problems — 1 sentence, ≤20 words, no filler. Do not reuse the same sentence across features.",
       },
       { role: "user", content: userPrompt },
     ],
@@ -196,9 +196,31 @@ export async function analyzeHypothesisVsReality(
                   type: "object",
                   additionalProperties: false,
                   properties: {
-                    relevant: { type: "array", items: { type: "string" } },
+                    relevant: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        additionalProperties: false,
+                        properties: {
+                          name: { type: "string" },
+                          reason: { type: "string" },
+                        },
+                        required: ["name", "reason"],
+                      },
+                    },
                     missing: { type: "array", items: { type: "string" } },
-                    unnecessary: { type: "array", items: { type: "string" } },
+                    unnecessary: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        additionalProperties: false,
+                        properties: {
+                          name: { type: "string" },
+                          reason: { type: "string" },
+                        },
+                        required: ["name", "reason"],
+                      },
+                    },
                   },
                   required: ["relevant", "missing", "unnecessary"],
                 },
