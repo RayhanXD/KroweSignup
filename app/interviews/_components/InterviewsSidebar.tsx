@@ -25,9 +25,7 @@ type NavItem = {
 };
 
 const manageNavItems: NavItem[] = [
-  { key: "interviews", href: "/interviews", label: "Interviews", icon: "forum" },
   { key: "imports", href: "/interviews/imports", label: "Granola imports", icon: "download" },
-  { key: "script", href: "/interviews/script", label: "Interview Script", icon: "description" },
 ];
 
 function navClass(active: boolean): string {
@@ -109,18 +107,6 @@ export default async function InterviewsSidebar({
                 workspaces
               </span>
               Projects
-            </Link>
-            <Link href="/interviews" className={navClass(activeNav === "intel")}>
-              <span className="material-symbols-outlined text-base" aria-hidden>
-                dashboard
-              </span>
-              Overview
-            </Link>
-            <Link href="/interviews/imports" className={navClass(activeNav === "imports")}>
-              <span className="material-symbols-outlined text-base" aria-hidden>
-                cloud_upload
-              </span>
-              Imports
             </Link>
             <Link href="/interviews/usage?range=24h" className={navClass(activeNav === "usage")}>
               <span className="material-symbols-outlined text-base" aria-hidden>
