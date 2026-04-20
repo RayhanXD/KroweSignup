@@ -7,12 +7,14 @@ type Props = {
   projectId: string;
   interviewCount: number;
   projectStatus: string;
+  onAnalysisStart?: () => void;
 };
 
 export function RunAnalysisButton({
   projectId,
   interviewCount,
   projectStatus,
+  onAnalysisStart,
 }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState(projectStatus);
@@ -60,6 +62,7 @@ export function RunAnalysisButton({
       }
       if (data.status === "processing") {
         setStatus("processing");
+        onAnalysisStart?.();
       }
     } catch {
       setError("Network error while starting analysis.");

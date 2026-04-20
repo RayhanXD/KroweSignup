@@ -4,6 +4,7 @@ import { getUserPrimaryProjectId } from "@/lib/interviews/getUserPrimaryProjectI
 
 export type SidebarNavKey =
   | "projects"
+  | "interviews"
   | "intel"
   | "feedback"
   | "workspace"
@@ -16,6 +17,19 @@ export type SidebarNavKey =
   | "addInterview"
   | "interview";
 
+type NavItem = {
+  key: SidebarNavKey;
+  href: string;
+  label: string;
+  icon: string;
+};
+
+const manageNavItems: NavItem[] = [
+  { key: "interviews", href: "/interviews", label: "Interviews", icon: "forum" },
+  { key: "imports", href: "/interviews/imports", label: "Granola imports", icon: "download" },
+  { key: "script", href: "/interviews/script", label: "Interview Script", icon: "description" },
+];
+
 function navClass(active: boolean): string {
   if (active) {
     return "flex items-center gap-2 rounded-lg bg-interview-brand-tint/70 px-2.5 py-2 text-sm font-medium text-interview-brand";
@@ -26,15 +40,17 @@ function navClass(active: boolean): string {
 
 export default async function InterviewsSidebar({
   activeNav,
-  projectId: routeProjectId,
+  projectId,
+  granolaCount,
 }: {
   activeNav?: SidebarNavKey;
   /** When set, user is under `/interviews/[projectId]/…`; scoped links and “All projects” use this id. */
   projectId?: string;
+  granolaCount?: number;
 }) {
   const primaryProjectId = await getUserPrimaryProjectId();
-  const linkProjectId = routeProjectId ?? primaryProjectId;
-  const inProjectRoute = Boolean(routeProjectId);
+  const linkProjectId = projectId ?? primaryProjectId;
+  const inProjectRoute = Boolean(projectId);
 
   return (
     <aside className="sticky top-0 flex h-screen flex-col overflow-y-auto border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
@@ -54,7 +70,7 @@ export default async function InterviewsSidebar({
         </div>
       </Link>
 
-      {inProjectRoute && routeProjectId && (
+      {inProjectRoute && projectId && (
         <Link
           href="/interviews/projects"
           className={`${navClass(false)} mb-3 text-sm`}
@@ -72,7 +88,23 @@ export default async function InterviewsSidebar({
             Platform
           </p>
           <div className="space-y-1">
-            <Link href="/interviews/projects" className={navClass(activeNav === "projects")}>
+            {manageNavItems.map((item) => (
+              <Link key={item.key} href={item.href} className={navClass(activeNav === item.key)}>
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  {item.icon}
+                </span>
+                <span className="flex-1">{item.label}</span>
+                {item.key === "imports" && granolaCount != null && granolaCount > 0 && (
+                  <span className="ml-auto rounded-full bg-interview-brand-tint px-1.5 py-0.5 text-[10px] font-bold text-interview-brand">
+                    {granolaCount}
+                  </span>
+                )}
+              </Link>
+            ))}
+            <Link
+              href={projectId ? `/interviews/${projectId}/business-profile` : "/interviews/projects"}
+              className={navClass(activeNav === "businessProfile")}
+            >
               <span className="material-symbols-outlined text-base" aria-hidden>
                 workspaces
               </span>
