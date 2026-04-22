@@ -14,9 +14,6 @@ type FeedbackBody = {
   projectId?: unknown;
   details?: {
     whatHappened?: unknown;
-    expectedOutcome?: unknown;
-    businessImpact?: unknown;
-    frequency?: unknown;
     wouldRecommend?: unknown;
   };
 };
@@ -35,32 +32,15 @@ function toRating(value: unknown): number | null {
 function toDetails(value: FeedbackBody["details"]): FeedbackDetails | null {
   const details = value ?? {};
   const whatHappened = toNonEmptyString(details.whatHappened);
-  const expectedOutcome = toNonEmptyString(details.expectedOutcome);
-  const businessImpact = toNonEmptyString(details.businessImpact);
-  const frequency = toNonEmptyString(details.frequency) as FeedbackDetails["frequency"];
-  const wouldRecommend = toNonEmptyString(
-    details.wouldRecommend
-  ) as FeedbackDetails["wouldRecommend"];
+  const rawRecommend = toNonEmptyString(details.wouldRecommend);
+  const validRecommendAnswers = ["yes", "not_yet"] as const;
+  const wouldRecommend = (validRecommendAnswers as readonly string[]).includes(rawRecommend)
+    ? (rawRecommend as "yes" | "not_yet")
+    : null;
 
-  const validFrequencies: FeedbackDetails["frequency"][] = [
-    "every_time",
-    "often",
-    "sometimes",
-    "rare_once",
-  ];
-  const validRecommendAnswers: FeedbackDetails["wouldRecommend"][] = ["yes", "not_yet"];
+  if (!whatHappened) return null;
 
-  if (!whatHappened || !expectedOutcome || !businessImpact) return null;
-  if (!validFrequencies.includes(frequency)) return null;
-  if (!validRecommendAnswers.includes(wouldRecommend)) return null;
-
-  return {
-    whatHappened,
-    expectedOutcome,
-    businessImpact,
-    frequency,
-    wouldRecommend,
-  };
+  return { whatHappened, wouldRecommend };
 }
 
 async function sendWebhookWithRetry(payload: ReturnType<typeof buildRetoolFeedbackPayload>) {
@@ -116,12 +96,6 @@ export async function POST(req: Request) {
   if (!category) {
     return NextResponse.json({ error: "Category is required" }, { status: 400 });
   }
-  if (!message || message.length < 20) {
-    return NextResponse.json(
-      { error: "Message must be at least 20 characters" },
-      { status: 400 }
-    );
-  }
   if (!pagePath) {
     return NextResponse.json({ error: "Missing page path context" }, { status: 400 });
   }
@@ -130,7 +104,7 @@ export async function POST(req: Request) {
   }
   if (!details) {
     return NextResponse.json(
-      { error: "All specific feedback questions are required" },
+      { error: "Please describe what happened" },
       { status: 400 }
     );
   }

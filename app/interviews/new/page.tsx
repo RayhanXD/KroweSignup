@@ -30,7 +30,7 @@ export default async function NewProjectPage() {
   }
 
   return (
-    <InterviewsShell activeNav="projects" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+    <InterviewsShell activeNav="projects" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />} allowWithoutProject>
       <div className="space-y-5">
         <DashboardPageHeader
           title="Create Project"

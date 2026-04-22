@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
-export async function createInterviewAuthClient() {
+export const createInterviewAuthClient = cache(async function createInterviewAuthClient() {
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,4 +22,4 @@ export async function createInterviewAuthClient() {
       },
     }
   );
-}
+});

@@ -16,8 +16,11 @@ export default function LogoutButton() {
         await supabase.auth.signOut();
         router.push("/auth/signin");
       }}
-      className="text-sm text-muted-foreground hover:underline"
+      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
     >
+      <span className="material-symbols-outlined text-base" aria-hidden>
+        logout
+      </span>
       Log out
     </button>
   );

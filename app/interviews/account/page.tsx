@@ -2,15 +2,17 @@ import Link from "next/link";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import Image from "next/image";
 import InterviewsShell from "../_components/InterviewsShell";
-import LogoutButton from "../LogoutButton";
+import UsageSection, { parseRange } from "./_sections/UsageSection";
+import LogsSection from "./_sections/LogsSection";
 
 type AccountPageProps = {
   searchParams: Promise<{
     tab?: string;
+    range?: string;
   }>;
 };
 
-const TABS = ["profile", "security", "billing"] as const;
+const TABS = ["profile", "security", "billing", "usage", "logs"] as const;
 
 function getActiveTab(tab: string | undefined): (typeof TABS)[number] {
   if (tab && TABS.includes(tab as (typeof TABS)[number])) {
@@ -22,6 +24,7 @@ function getActiveTab(tab: string | undefined): (typeof TABS)[number] {
 export default async function AccountPage({ searchParams }: AccountPageProps) {
   const params = await searchParams;
   const activeTab = getActiveTab(params.tab);
+  const range = parseRange(params.range);
   const supabase = await createInterviewAuthClient();
   const {
     data: { user },
@@ -33,17 +36,6 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   return (
     <InterviewsShell
       topbarTitle="Account"
-      topbarActions={
-        <div className="flex items-center gap-3">
-          <Link
-            href="/interviews/projects"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
-          >
-            All projects
-          </Link>
-          <LogoutButton />
-        </div>
-      }
     >
       <div className="mx-auto w-full max-w-5xl">
         <header className="mb-4">
@@ -88,6 +80,26 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
               }`}
             >
               Billing
+            </Link>
+            <Link
+              href="/interviews/account?tab=usage&range=24h"
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                activeTab === "usage"
+                  ? "bg-interview-brand-tint font-medium text-interview-brand"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              }`}
+            >
+              Usage
+            </Link>
+            <Link
+              href="/interviews/account?tab=logs"
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                activeTab === "logs"
+                  ? "bg-interview-brand-tint font-medium text-interview-brand"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              }`}
+            >
+              Logs
             </Link>
           </div>
         </section>
@@ -157,6 +169,10 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
               </Link>
             </div>
           )}
+
+          {activeTab === "usage" && <UsageSection range={range} />}
+
+          {activeTab === "logs" && <LogsSection />}
         </section>
       </div>
     </InterviewsShell>

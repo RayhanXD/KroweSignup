@@ -1,9 +1,6 @@
 export type FeedbackDetails = {
   whatHappened: string;
-  expectedOutcome: string;
-  businessImpact: string;
-  frequency: "every_time" | "often" | "sometimes" | "rare_once";
-  wouldRecommend: "yes" | "not_yet";
+  wouldRecommend: "yes" | "not_yet" | null;
 };
 
 export type RetoolFeedbackPayload = {

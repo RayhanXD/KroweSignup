@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getUserPrimaryProjectId } from "@/lib/interviews/getUserPrimaryProjectId";
+import LogoutButton from "@/app/interviews/LogoutButton";
 
 export type SidebarNavKey =
   | "projects"
@@ -11,8 +11,6 @@ export type SidebarNavKey =
   | "script"
   | "businessProfile"
   | "decision"
-  | "usage"
-  | "logs"
   | "imports"
   | "addInterview"
   | "interview";
@@ -36,18 +34,19 @@ function navClass(active: boolean): string {
   return "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interview-brand/35";
 }
 
-export default async function InterviewsSidebar({
+export default function InterviewsSidebar({
   activeNav,
   projectId,
   granolaCount,
+  interviewCount,
 }: {
   activeNav?: SidebarNavKey;
   /** When set, user is under `/interviews/[projectId]/…`; scoped links and “All projects” use this id. */
   projectId?: string;
   granolaCount?: number;
+  interviewCount?: number;
 }) {
-  const primaryProjectId = await getUserPrimaryProjectId();
-  const linkProjectId = projectId ?? primaryProjectId;
+  const linkProjectId = projectId;
   const inProjectRoute = Boolean(projectId);
 
   return (
@@ -68,19 +67,78 @@ export default async function InterviewsSidebar({
         </div>
       </Link>
 
-      {inProjectRoute && projectId && (
-        <Link
-          href="/interviews/projects"
-          className={`${navClass(false)} mb-3 text-sm`}
-        >
-          <span className="material-symbols-outlined text-base" aria-hidden>
-            chevron_left
-          </span>
-          All projects
-        </Link>
-      )}
+<nav aria-label="Primary" className="flex flex-1 flex-col space-y-3">
+        <div>
+          <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            Workspace
+          </p>
+          <div className="space-y-1">
+            <Link
+              href="/interviews/projects"
+              className={navClass(activeNav === "projects")}
+            >
+              <span className="material-symbols-outlined text-base" aria-hidden>
+                workspaces
+              </span>
+              Home
+            </Link>
+            {linkProjectId && (
+              <>
+                <Link
+                  href={`/interviews/${linkProjectId}`}
+                  className={navClass(activeNav === "workspace" || activeNav === "interview")}
+                >
+                  <span className="material-symbols-outlined text-base" aria-hidden>
+                    forum
+                  </span>
+                  <span className="flex-1">Interviews</span>
+                  {interviewCount != null && interviewCount > 0 && (
+                    <span className="ml-auto rounded-full bg-interview-brand-tint px-1.5 py-0.5 text-[10px] font-bold text-interview-brand">
+                      {interviewCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href={`/interviews/${linkProjectId}/script`}
+                  className={navClass(activeNav === "script")}
+                >
+                  <span className="material-symbols-outlined text-base" aria-hidden>
+                    description
+                  </span>
+                  Interview Script
+                </Link>
+                <Link
+                  href={`/interviews/${linkProjectId}/business-profile`}
+                  className={navClass(activeNav === "businessProfile")}
+                >
+                  <span className="material-symbols-outlined text-base" aria-hidden>
+                    apartment
+                  </span>
+                  Business Profile
+                </Link>
+                <Link
+                  href={`/interviews/${linkProjectId}/decision`}
+                  className={navClass(activeNav === "decision")}
+                >
+                  <span className="material-symbols-outlined text-base" aria-hidden>
+                    analytics
+                  </span>
+                  Decision
+                </Link>
+                <Link
+                  href={`/interviews/${linkProjectId}/add`}
+                  className={navClass(activeNav === "addInterview")}
+                >
+                  <span className="material-symbols-outlined text-base" aria-hidden>
+                    add_circle
+                  </span>
+                  Add interview
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
 
-      <nav aria-label="Primary" className="flex flex-1 flex-col space-y-3">
         <div>
           <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             Platform
@@ -92,34 +150,13 @@ export default async function InterviewsSidebar({
                   {item.icon}
                 </span>
                 <span className="flex-1">{item.label}</span>
-                {item.key === "imports" && granolaCount != null && granolaCount > 0 && (
+                {item.key === "imports" && granolaCount != null && (
                   <span className="ml-auto rounded-full bg-interview-brand-tint px-1.5 py-0.5 text-[10px] font-bold text-interview-brand">
                     {granolaCount}
                   </span>
                 )}
               </Link>
             ))}
-            <Link
-              href={projectId ? `/interviews/${projectId}/business-profile` : "/interviews/projects"}
-              className={navClass(activeNav === "businessProfile")}
-            >
-              <span className="material-symbols-outlined text-base" aria-hidden>
-                workspaces
-              </span>
-              Projects
-            </Link>
-            <Link href="/interviews/usage?range=24h" className={navClass(activeNav === "usage")}>
-              <span className="material-symbols-outlined text-base" aria-hidden>
-                insights
-              </span>
-              Usage
-            </Link>
-            <Link href="/interviews/logs" className={navClass(activeNav === "logs")}>
-              <span className="material-symbols-outlined text-base" aria-hidden>
-                inventory_2
-              </span>
-              Logs
-            </Link>
             <Link href="/interviews/feedback" className={navClass(activeNav === "feedback")}>
               <span className="material-symbols-outlined text-base" aria-hidden>
                 feedback
@@ -128,61 +165,6 @@ export default async function InterviewsSidebar({
             </Link>
           </div>
         </div>
-
-        {linkProjectId && (
-          <div>
-            <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Workspace
-            </p>
-            <div className="space-y-1">
-              <Link
-                href={`/interviews/${linkProjectId}`}
-                className={navClass(activeNav === "workspace" || activeNav === "interview")}
-              >
-                <span className="material-symbols-outlined text-base" aria-hidden>
-                  forum
-                </span>
-                Interviews
-              </Link>
-              <Link
-                href={`/interviews/${linkProjectId}/script`}
-                className={navClass(activeNav === "script")}
-              >
-                <span className="material-symbols-outlined text-base" aria-hidden>
-                  description
-                </span>
-                Interview Script
-              </Link>
-              <Link
-                href={`/interviews/${linkProjectId}/business-profile`}
-                className={navClass(activeNav === "businessProfile")}
-              >
-                <span className="material-symbols-outlined text-base" aria-hidden>
-                  apartment
-                </span>
-                Business Profile
-              </Link>
-              <Link
-                href={`/interviews/${linkProjectId}/decision`}
-                className={navClass(activeNav === "decision")}
-              >
-                <span className="material-symbols-outlined text-base" aria-hidden>
-                  analytics
-                </span>
-                Decision
-              </Link>
-              <Link
-                href={`/interviews/${linkProjectId}/add`}
-                className={navClass(activeNav === "addInterview")}
-              >
-                <span className="material-symbols-outlined text-base" aria-hidden>
-                  add_circle
-                </span>
-                Add interview
-              </Link>
-            </div>
-          </div>
-        )}
       </nav>
 
       <div className="mt-auto pt-4">
@@ -191,32 +173,15 @@ export default async function InterviewsSidebar({
         </p>
         <div className="space-y-1 rounded-xl border border-border/60 bg-background p-2">
           <Link
-            href="/interviews/account?tab=profile"
+            href="/interviews/account"
             className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
           >
             <span className="material-symbols-outlined text-base" aria-hidden>
-              person
+              settings
             </span>
-            Edit profile
+            Settings
           </Link>
-          <Link
-            href="/interviews/account?tab=security"
-            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-          >
-            <span className="material-symbols-outlined text-base" aria-hidden>
-              lock
-            </span>
-            Security
-          </Link>
-          <Link
-            href="/interviews/account?tab=billing"
-            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-          >
-            <span className="material-symbols-outlined text-base" aria-hidden>
-              credit_card
-            </span>
-            Billing
-          </Link>
+          <LogoutButton />
         </div>
       </div>
     </aside>

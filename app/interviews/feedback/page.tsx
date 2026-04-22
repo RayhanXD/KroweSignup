@@ -45,7 +45,7 @@ export default async function FeedbackPage() {
         <DashboardPageHeader
           eyebrow="Feedback"
           title="Help us sharpen Krowe"
-          description="Give precise, high-signal feedback. We save every submission to a dedicated feedback table and route instant notifications to the team."
+          description="Tell us what's working and what's getting in the way."
           actions={
             <Link
               href="/interviews"
@@ -55,24 +55,6 @@ export default async function FeedbackPage() {
             </Link>
           }
         />
-
-        <section className="overflow-hidden rounded-xl border border-border/60 bg-[radial-gradient(circle_at_20%_0%,color-mix(in_srgb,var(--interview-brand-tint)_55%,white)_0%,transparent_44%),linear-gradient(180deg,white,white)] px-4 py-4">
-          <p className="text-xs text-muted-foreground">
-            Your response powers product decisions. We ask a few focused questions now so your later
-            requests can be triaged faster and with less back-and-forth.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-            <span className="rounded-full bg-interview-brand-tint px-2.5 py-1 font-semibold text-interview-brand">
-              Stored in `product_feedback`
-            </span>
-            <span className="rounded-full border border-border/60 bg-card px-2.5 py-1 font-semibold text-muted-foreground">
-              Retool webhook notification
-            </span>
-            <span className="rounded-full border border-border/60 bg-card px-2.5 py-1 font-semibold text-muted-foreground">
-              Team + submitter emails
-            </span>
-          </div>
-        </section>
 
         <FeedbackForm projects={projects} />
       </div>

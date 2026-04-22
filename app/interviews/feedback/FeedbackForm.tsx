@@ -11,7 +11,6 @@ type Props = {
   projects: ProjectOption[];
 };
 
-type Frequency = "every_time" | "often" | "sometimes" | "rare_once";
 type RecommendAnswer = "yes" | "not_yet";
 
 const CATEGORY_OPTIONS = [
@@ -23,13 +22,6 @@ const CATEGORY_OPTIONS = [
   "Other",
 ] as const;
 
-const FREQUENCY_OPTIONS: { value: Frequency; label: string }[] = [
-  { value: "every_time", label: "Every time" },
-  { value: "often", label: "Often" },
-  { value: "sometimes", label: "Sometimes" },
-  { value: "rare_once", label: "Rare / once" },
-];
-
 const RECOMMEND_OPTIONS: { value: RecommendAnswer; label: string }[] = [
   { value: "yes", label: "Yes, I would recommend it today" },
   { value: "not_yet", label: "Not yet, it needs improvement first" },
@@ -40,9 +32,6 @@ export default function FeedbackForm({ projects }: Props) {
   const [rating, setRating] = useState<number | null>(null);
   const [projectId, setProjectId] = useState<string>("");
   const [whatHappened, setWhatHappened] = useState("");
-  const [expectedOutcome, setExpectedOutcome] = useState("");
-  const [businessImpact, setBusinessImpact] = useState("");
-  const [frequency, setFrequency] = useState<Frequency | "">("");
   const [wouldRecommend, setWouldRecommend] = useState<RecommendAnswer | "">("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,29 +39,14 @@ export default function FeedbackForm({ projects }: Props) {
   const [success, setSuccess] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
-  const messageLength = message.trim().length;
   const canSubmit = useMemo(
     () =>
       Boolean(
         category &&
           rating !== null &&
-          whatHappened.trim() &&
-          expectedOutcome.trim() &&
-          businessImpact.trim() &&
-          frequency &&
-          wouldRecommend &&
-          messageLength >= 20
+          whatHappened.trim()
       ),
-    [
-      businessImpact,
-      category,
-      expectedOutcome,
-      frequency,
-      messageLength,
-      rating,
-      whatHappened,
-      wouldRecommend,
-    ]
+    [category, rating, whatHappened]
   );
 
   async function onSubmit(e: FormEvent) {
@@ -81,7 +55,7 @@ export default function FeedbackForm({ projects }: Props) {
     setWarning(null);
     setSuccess(null);
 
-    if (!canSubmit || rating === null || !frequency || !wouldRecommend) {
+    if (!canSubmit || rating === null) {
       setError("Please complete every required field before submitting feedback.");
       return;
     }
@@ -99,10 +73,7 @@ export default function FeedbackForm({ projects }: Props) {
           projectId: projectId || null,
           details: {
             whatHappened: whatHappened.trim(),
-            expectedOutcome: expectedOutcome.trim(),
-            businessImpact: businessImpact.trim(),
-            frequency,
-            wouldRecommend,
+            wouldRecommend: wouldRecommend || null,
           },
         }),
       });
@@ -124,9 +95,6 @@ export default function FeedbackForm({ projects }: Props) {
       setRating(null);
       setProjectId("");
       setWhatHappened("");
-      setExpectedOutcome("");
-      setBusinessImpact("");
-      setFrequency("");
       setWouldRecommend("");
       setMessage("");
     } catch {
@@ -139,16 +107,6 @@ export default function FeedbackForm({ projects }: Props) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <section className="overflow-hidden rounded-xl border border-border/60 bg-card">
-        <div className="border-b border-border/60 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--interview-brand-tint)_60%,white),white)] px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Feedback Signal
-          </p>
-          <h3 className="mt-1 text-lg font-semibold text-foreground">Tell us what needs to improve</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            We log every response to a dedicated feedback table and route alerts instantly.
-          </p>
-        </div>
-
         <div className="grid gap-4 px-4 py-4 md:grid-cols-2">
           <div>
             <label htmlFor="category" className="mb-1.5 block text-sm font-medium text-foreground">
@@ -241,98 +199,40 @@ export default function FeedbackForm({ projects }: Props) {
           </div>
 
           <div>
-            <label htmlFor="expectedOutcome" className="mb-1.5 block text-sm font-medium text-foreground">
-              What did you expect instead? <span className="text-danger">*</span>
+            <label htmlFor="wouldRecommend" className="mb-1.5 block text-sm font-medium text-foreground">
+              Would you recommend Krowe today?{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </label>
-            <textarea
-              id="expectedOutcome"
-              value={expectedOutcome}
-              onChange={(e) => setExpectedOutcome(e.target.value)}
-              rows={3}
-              required
+            <select
+              id="wouldRecommend"
+              value={wouldRecommend}
+              onChange={(e) => setWouldRecommend(e.target.value as RecommendAnswer)}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
-              placeholder="Share the result or behavior you wanted."
-            />
-          </div>
-
-          <div>
-            <label htmlFor="businessImpact" className="mb-1.5 block text-sm font-medium text-foreground">
-              Business impact <span className="text-danger">*</span>
-            </label>
-            <textarea
-              id="businessImpact"
-              value={businessImpact}
-              onChange={(e) => setBusinessImpact(e.target.value)}
-              rows={3}
-              required
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
-              placeholder="How does this affect your decision speed, confidence, or team workflow?"
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label htmlFor="frequency" className="mb-1.5 block text-sm font-medium text-foreground">
-                How often does this happen? <span className="text-danger">*</span>
-              </label>
-              <select
-                id="frequency"
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value as Frequency)}
-                required
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
-              >
-                <option value="">Select frequency</option>
-                {FREQUENCY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="wouldRecommend" className="mb-1.5 block text-sm font-medium text-foreground">
-                Would you recommend Krowe today? <span className="text-danger">*</span>
-              </label>
-              <select
-                id="wouldRecommend"
-                value={wouldRecommend}
-                onChange={(e) => setWouldRecommend(e.target.value as RecommendAnswer)}
-                required
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
-              >
-                <option value="">Select answer</option>
-                {RECOMMEND_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            >
+              <option value="">Select answer</option>
+              {RECOMMEND_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </section>
 
       <section className="rounded-xl border border-border/60 bg-card px-4 py-4">
         <label htmlFor="message" className="mb-1.5 block text-sm font-medium text-foreground">
-          Additional notes for the team <span className="text-danger">*</span>
+          Additional notes for the team{" "}
+          <span className="text-muted-foreground">(optional)</span>
         </label>
         <textarea
           id="message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={5}
-          required
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
           placeholder="Anything else we should know?"
         />
-        <div className="mt-1.5 flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Minimum 20 characters required</span>
-          <span className={messageLength >= 20 ? "text-interview-brand" : "text-muted-foreground"}>
-            {messageLength}/20+
-          </span>
-        </div>
       </section>
 
       {error && (
@@ -359,9 +259,6 @@ export default function FeedbackForm({ projects }: Props) {
         >
           {loading ? "Submitting feedback..." : "Submit feedback"}
         </button>
-        <p className="text-xs text-muted-foreground">
-          Submission is stored in Supabase first, then routed to Retool email automation.
-        </p>
       </div>
     </form>
   );

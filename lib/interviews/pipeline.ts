@@ -12,6 +12,7 @@ import { categorizeClusterGroups } from "./categorizeClusterGroups";
 import { generateMetaClusters } from "./generateMetaClusters";
 import { extractMethodsAlternatives } from "./extractMethodsAlternatives";
 import { classifyCompetitors } from "./classifyCompetitors";
+import { generateInterviewTags } from "./generateInterviewTags";
 import {
   businessProfileContextLines,
   parseBusinessProfile,
@@ -245,19 +246,23 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     await Promise.allSettled(
       interviewsToProcess.map(async (interview) => {
         try {
-          const structured = await structureInterview(interview.raw_text);
-          const methodsAndAlternatives = await extractMethodsAlternatives(
-            interview.raw_text,
-            earlyFounderIdea || earlyFounderProblem
-              ? { idea: earlyFounderIdea ?? undefined, problem: earlyFounderProblem ?? undefined }
-              : undefined
-          );
+          const [structured, methodsAndAlternatives] = await Promise.all([
+            structureInterview(interview.raw_text),
+            extractMethodsAlternatives(
+              interview.raw_text,
+              earlyFounderIdea || earlyFounderProblem
+                ? { idea: earlyFounderIdea ?? undefined, problem: earlyFounderProblem ?? undefined }
+                : undefined
+            ),
+          ]);
+          const tags = await generateInterviewTags(structured, businessProfileContext.join("\n") || undefined);
           await supabase
             .from("interviews")
             .update({
               structured_segments: structured,
               competitors_used: methodsAndAlternatives.competitors_used,
               alternatives_used: methodsAndAlternatives.alternatives_used,
+              tags,
               status: "structured",
             })
             .eq("id", interview.id);

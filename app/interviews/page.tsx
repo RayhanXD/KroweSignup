@@ -205,19 +205,19 @@ export default async function InterviewsPage() {
                   <h3 className="text-sm font-medium text-foreground">Home</h3>
                   <div className="flex items-center gap-1.5">
                     <Link
-                      href="/interviews/usage?range=24h"
+                      href="/interviews/account?tab=usage&range=24h"
                       className="rounded-md border border-border/70 bg-muted/40 px-2 py-1 text-[11px] font-medium text-foreground"
                     >
                       24h
                     </Link>
                     <Link
-                      href="/interviews/usage?range=7d"
+                      href="/interviews/account?tab=usage&range=7d"
                       className="rounded-md border border-border/70 px-2 py-1 text-[11px] font-medium text-muted-foreground"
                     >
                       7d
                     </Link>
                     <Link
-                      href="/interviews/usage?range=30d"
+                      href="/interviews/account?tab=usage&range=30d"
                       className="rounded-md border border-border/70 px-2 py-1 text-[11px] font-medium text-muted-foreground"
                     >
                       30d

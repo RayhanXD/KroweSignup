@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import { runLivePreview } from "@/lib/interviews/livePreview";
 
 export async function POST(req: Request) {
   const supabase = await createInterviewAuthClient();
@@ -44,6 +45,12 @@ export async function POST(req: Request) {
       })
       .eq("id", projectId);
   }
+
+  after(() => {
+    runLivePreview(projectId).catch((e) =>
+      console.error("[livePreview] post-submit failed", projectId, e)
+    );
+  });
 
   return NextResponse.json({ interviewId: interview.id });
 }

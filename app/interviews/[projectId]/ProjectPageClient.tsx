@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RunAnalysisButton } from "./RunAnalysisButton";
@@ -19,10 +19,12 @@ type Interview = {
   created_at: string;
   interviewee_name: string | null;
   interviewee_context: string | null;
+  tags: string[] | null;
   high_signal: boolean;
   signal_label: InterviewSignalLabel;
   signal_metrics: InterviewSignalMetrics;
   source: "granola" | "manual";
+  top_problem: { problem_text: string | null; quote: string | null } | null;
 };
 
 type Project = {
@@ -198,6 +200,51 @@ export function ProjectPageClient({
     return () => clearInterval(iv);
   }, [rawConf]);
 
+  const previewRequestedRef = useRef(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Kick off preview POST once, then poll router.refresh() every 5s (max 90s)
+  // until problem_clusters rows appear. 18s was too short for the pipeline.
+  useEffect(() => {
+    if (allClusters.length > 0) return;
+    if (interviews.length === 0) return;
+    if (previewRequestedRef.current) return;
+    previewRequestedRef.current = true;
+
+    fetch("/api/interviews/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId }),
+    }).catch(() => {});
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 18; // 18 * 5s = 90s cap
+    pollIntervalRef.current = setInterval(() => {
+      attempts += 1;
+      router.refresh();
+      if (attempts >= MAX_ATTEMPTS && pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    }, 5_000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Stop polling as soon as clusters land.
+  useEffect(() => {
+    if (allClusters.length > 0 && pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, [allClusters.length]);
+
   const counts = useMemo(() => ({
     all: interviews.length,
     granola: interviews.filter((i) => i.source === "granola").length,
@@ -216,7 +263,6 @@ export function ProjectPageClient({
   const rankedClusters = useMemo(() => allClusters.slice(0, 6), [allClusters]);
   const suggestedFeatures = useMemo(() => decisionFeatures.slice(0, 3), [decisionFeatures]);
   const topQuotes = topCluster?.supporting_quotes ?? [];
-  const decisionLabel = deriveDecisionLabel(latestDecision?.status);
   const verdictLabel = deriveVerdictLabel(latestDecisionVerdict, latestDecision?.status);
   const verdictClass = deriveVerdictClass(latestDecisionVerdict);
 
@@ -240,7 +286,7 @@ export function ProjectPageClient({
       <div className="border border-border/60 bg-card shadow-soft min-h-screen">
         <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
 
-          <InterviewsSidebar activeNav="interviews" projectId={projectId} granolaCount={granolaCount} />
+          <InterviewsSidebar activeNav="interviews" projectId={projectId} granolaCount={granolaCount} interviewCount={interviews.length} />
 
           <section className="flex min-h-screen flex-col">
 
@@ -334,11 +380,7 @@ export function ProjectPageClient({
                   <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-soft">
                     <div className="flex items-center gap-4 mb-3">
                       <ConfRing pct={animatedConf} />
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Decision</p>
-                          <p className="text-sm font-bold text-interview-brand">{decisionLabel}</p>
-                        </div>
+                      <div className="flex-1">
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Verdict</p>
                           <p className={`text-sm font-bold ${verdictClass}`}>{verdictLabel}</p>
@@ -460,15 +502,15 @@ export function ProjectPageClient({
                     </div>
                   ) : (
                     filtered.map((interview, i) => {
-                      const quote =
-                        topQuotes[i]?.verbatim_text ??
-                        topQuotes[i]?.text ??
-                        "No direct quote linked yet.";
+                      const topProblem = interview.top_problem;
+                      const isPending = interview.status === "pending";
                       const problemSnippet =
-                        topCluster?.canonical_problem ?? "No clustered pain identified yet.";
-                      const tags = interview.interviewee_context
-                        ? [interview.interviewee_context.split(" ").slice(0, 2).join("-").toLowerCase()]
-                        : [];
+                        topProblem?.problem_text ??
+                        (isPending ? "Processing…" : "No key problem extracted yet.");
+                      const quote =
+                        topProblem?.quote ??
+                        (isPending ? "Processing…" : "No direct quote extracted yet.");
+                      const tags = interview.tags ?? [];
 
                       return (
                         <div
@@ -555,21 +597,12 @@ export function ProjectPageClient({
                           <div className="flex items-center gap-2 px-5 py-2.5 mt-1 border-t border-border/40">
                             <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
                               {tags.map((tag) => (
-                                <span key={tag} className="flex items-center gap-0.5 rounded-md bg-muted/50 px-1.5 py-0.5 text-[10px] text-muted-foreground shrink-0">
-                                  <span className="material-symbols-outlined text-[11px]">tag</span>
-                                  {tag}
+                                <span key={tag} className="rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shrink-0">
+                                  #{tag}
                                 </span>
                               ))}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <Link
-                                href={`/interviews/${projectId}/${interview.id}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-[11px]">article</span>
-                                Transcript
-                              </Link>
                               <Link
                                 href={`/interviews/${projectId}/${interview.id}`}
                                 onClick={(e) => e.stopPropagation()}
@@ -611,7 +644,7 @@ export function ProjectPageClient({
               </div>
 
               {/* Live Insights Rail */}
-              <div className="bg-live-insights-bg p-4 sm:p-5 space-y-5 rounded-xl">
+              <div className="bg-live-insights-bg p-4 sm:p-5 space-y-5 rounded-xl self-start">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="flex items-center gap-1.5 text-sm font-semibold text-live-insights-foreground">
@@ -641,73 +674,7 @@ export function ProjectPageClient({
                     />
                   </div>
                   <div className="mt-1.5 text-[10px] text-live-insights-muted">
-                    n = {interviews.length} interviews
-                  </div>
-                </div>
-
-                {/* Problem clusters */}
-                <div>
-                  <div className="mb-3 flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-live-insights-muted">Problem clusters</span>
-                    <span className="rounded-full border border-live-insights-border px-1.5 py-0.5 text-[10px] font-bold text-live-insights-muted">
-                      {rankedClusters.length}
-                    </span>
-                  </div>
-                  <div className="space-y-2.5">
-                    {rankedClusters.length > 0 ? (
-                      rankedClusters.map((cluster, idx) => {
-                        const bar = Math.min(100, Math.round(cluster.score * 100));
-                        const hot = idx < 2;
-                        return (
-                          <div key={cluster.id} className="flex items-center gap-2">
-                            <span className={`w-5 shrink-0 text-[10px] font-bold ${hot ? "text-interview-brand" : "text-live-insights-muted"}`}>
-                              {String(idx + 1).padStart(2, "0")}
-                            </span>
-                            <span
-                              className={`flex-1 truncate text-[11px] ${hot ? "text-live-insights-foreground font-medium" : "text-live-insights-muted"}`}
-                              title={cluster.canonical_problem}
-                            >
-                              {toLiveInsightsClusterTitle(cluster.canonical_problem)}
-                            </span>
-                            <div className="w-14 h-1 rounded-full overflow-hidden shrink-0 bg-live-insights-track">
-                              <div
-                                className={`h-full rounded-full ${hot ? "bg-interview-brand" : "bg-live-insights-bar-inactive"}`}
-                                style={{ width: `${bar}%` }}
-                              />
-                            </div>
-                            <span className="w-4 shrink-0 text-right text-[10px] text-live-insights-muted">
-                              {cluster.frequency ?? "—"}
-                            </span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-[11px] text-live-insights-muted">No clusters yet.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Emerging patterns */}
-                <div>
-                  <span className="mb-2.5 block text-[10px] font-bold uppercase tracking-widest text-live-insights-muted">
-                    Emerging patterns
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(rankedClusters.map((c) => c.category).filter(Boolean) as string[]).slice(0, 4).map((pattern, idx) => (
-                      <span
-                        key={`${pattern}-${idx}`}
-                        className={`rounded-md border px-2 py-1 text-[10px] font-medium ${
-                          idx === 0
-                            ? "border-interview-brand/35 bg-interview-brand/20 text-interview-brand"
-                            : "border-live-insights-border bg-live-insights-surface text-live-insights-muted"
-                        }`}
-                      >
-                        {pattern}
-                      </span>
-                    ))}
-                    {rankedClusters.length === 0 && (
-                      <span className="text-[10px] text-live-insights-muted">No patterns yet</span>
-                    )}
+                    {interviews.length} interviews
                   </div>
                 </div>
 
