@@ -23,11 +23,11 @@
   --danger-soft: #fee2e2;
   --surface-subtle: #fafafa;
   --track: var(--border);
-  /* Interviews UI accent (list, project shell, founder console); signup --primary unchanged */
-  --interview-brand: #ff6a4d;
-  --interview-brand-end: #ff5733;
-  --interview-brand-tint: #ffeae5;
-  --interview-brand-glow: color-mix(in srgb, var(--interview-brand) 35%, transparent);
+  /* Interviews UI accent — remapped to canonical Krowe primary */
+  --interview-brand: var(--primary);
+  --interview-brand-end: var(--primary-hover);
+  --interview-brand-tint: var(--primary-soft);
+  --interview-brand-glow: color-mix(in srgb, var(--primary) 35%, transparent);
   /* Editorial serif — referenced by @theme --font-serif and .serif-text */
   --font-serif-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
 
@@ -49,7 +49,7 @@
   --stagger-step: 85ms;
 
   /* Krowe design system (kroweDesign) — shared tokens */
-  --primary-accent: var(--interview-brand);
+  --primary-accent: #ff6a4d;
   --shadow-tint: color-mix(in oklch, var(--primary) 8%, oklch(10% 0 0));
   --shadow-1: 0 1px 3px 0 color-mix(in srgb, var(--shadow-tint) 10%, transparent),
     0 1px 2px -1px color-mix(in srgb, var(--shadow-tint) 10%, transparent);

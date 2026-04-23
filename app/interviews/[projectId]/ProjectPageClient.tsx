@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 import { ContentHeader } from "@/app/components/krowe/ContentHeader";
 import { KroweLinkButton } from "@/app/components/krowe/KroweLinkButton";
+import { EmberGlyph } from "@/app/components/krowe/EmberGlyph";
 import { ProjectStatusPill } from "@/app/components/krowe/ProjectStatusPill";
 import { InterviewsPageWidth } from "@/app/interviews/_components/InterviewsPageWidth";
 import { KROWE_EASE } from "@/lib/motion/kroweEase";
@@ -298,7 +299,7 @@ export function ProjectPageClient({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="border border-border/60 bg-card shadow-soft min-h-screen">
+      <div className="border border-border/60 bg-card shadow-[var(--shadow-1)] min-h-screen">
         <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
 
           <InterviewsSidebar activeNav="interviews" projectId={projectId} granolaCount={granolaCount} interviewCount={interviews.length} />
@@ -314,25 +315,27 @@ export function ProjectPageClient({
                     { label: project.name },
                   ]}
                   title={project.name}
-                  description="Your customer signal, in one place."
                   actions={
                     <>
                       <button
                         onClick={() => setDrawerOpen(true)}
-                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
                       >
                         <span className="material-symbols-outlined text-[14px]">cloud_sync</span>
                         Granola
                         {granolaCount > 0 && (
-                          <span className="rounded-full bg-interview-brand-tint px-1.5 py-0.5 text-[10px] font-bold text-interview-brand">
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
                             {granolaCount}
                           </span>
                         )}
                       </button>
-                      <KroweLinkButton href={`/interviews/${projectId}/add`} variant="secondary">
-                        <span className="material-symbols-outlined text-[14px]">add</span>
+                      <Link
+                        href={`/interviews/${projectId}/add`}
+                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">add</span>
                         <span className="hidden sm:block">Add interview</span>
-                      </KroweLinkButton>
+                      </Link>
                       <RunAnalysisButton
                         projectId={projectId}
                         interviewCount={project.interview_count}
@@ -357,14 +360,11 @@ export function ProjectPageClient({
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      <span className="material-symbols-outlined text-[13px] text-interview-brand">forum</span>
+                      <EmberGlyph size={13} />
                       Interviews
                       <span className="text-border">·</span>
                       <ProjectStatusPill status={project.status} />
                     </div>
-                    <h1 className="font-serif text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl">
-                      Your customer signal, in one place.
-                    </h1>
                     <p className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
                       Uncovering pain, validating signal, and building conviction — one interview at a time.
                     </p>
@@ -400,8 +400,8 @@ export function ProjectPageClient({
                       </div>
                       <div className="flex items-center justify-between border-t border-border/60 pt-2.5 text-[10px] text-muted-foreground">
                         <span>Analyzed {formatTimeAgo(latestDecision?.updated_at)}</span>
-                        <span className="flex items-center gap-1 text-interview-brand font-semibold">
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-interview-brand animate-pulse" />
+                        <span className="flex items-center gap-1 text-success font-semibold">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
                           Live
                         </span>
                       </div>
@@ -430,7 +430,7 @@ export function ProjectPageClient({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setDrawerOpen(true)}
-                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
                       >
                         <span className="material-symbols-outlined text-[13px]">cloud_sync</span>
                         {granolaCount > 0 ? `${granolaCount} new in Granola` : "Granola"}
@@ -438,7 +438,7 @@ export function ProjectPageClient({
                       <button
                         disabled
                         title="Coming soon"
-                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground opacity-50 cursor-not-allowed"
+                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground opacity-50 cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
                       >
                         <span className="material-symbols-outlined text-[13px]">mic</span>
                         Start live
@@ -446,7 +446,7 @@ export function ProjectPageClient({
                       <button
                         disabled
                         title="Coming soon"
-                        className="hidden sm:flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground opacity-50 cursor-not-allowed"
+                        className="hidden sm:flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground opacity-50 cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
                       >
                         <span className="material-symbols-outlined text-[13px]">upload_file</span>
                         Upload
@@ -464,7 +464,7 @@ export function ProjectPageClient({
                           <button
                             key={k}
                             onClick={() => setSourceFilter(k)}
-                            className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                            className={`rounded-md px-2.5 py-1 font-medium transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 ${
                               sourceFilter === k
                                 ? "bg-card text-foreground shadow-sm"
                                 : "text-muted-foreground hover:text-foreground"
@@ -480,9 +480,9 @@ export function ProjectPageClient({
                       <button
                         key={s}
                         onClick={() => setSignalFilter(signalFilter === s ? null : s)}
-                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary ${
                           signalFilter === s
-                            ? "border-interview-brand/50 bg-interview-brand-tint text-interview-brand"
+                            ? "border-primary/50 bg-primary-soft text-primary"
                             : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
                         }`}
                       >
@@ -510,7 +510,7 @@ export function ProjectPageClient({
                         No interviews match this filter.
                         <button
                           onClick={() => { setSourceFilter("all"); setSignalFilter(null); }}
-                          className="mt-2 block mx-auto text-xs text-interview-brand hover:underline"
+                          className="mt-2 block mx-auto text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 rounded"
                         >
                           Clear filters
                         </button>
@@ -556,10 +556,10 @@ export function ProjectPageClient({
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {interview.interviewee_context ?? "No context provided"}
-                                      <span className="mx-1.5 text-border">·</span>
-                                      {formatTimeAgo(interview.created_at)}
+                                    <p className="flex items-center gap-0 overflow-hidden text-xs text-muted-foreground">
+                                      <span className="truncate">{interview.interviewee_context ?? "No context provided"}</span>
+                                      <span className="mx-1.5 shrink-0 text-border">·</span>
+                                      <span className="shrink-0">{formatTimeAgo(interview.created_at)}</span>
                                     </p>
                                   </div>
                                 </div>
@@ -579,7 +579,7 @@ export function ProjectPageClient({
                                       void handleDeleteInterview(interview.id);
                                     }}
                                     disabled={deleteLoadingId === interview.id}
-                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-danger/40 text-danger hover:bg-danger-soft opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-danger/40 text-danger hover:bg-danger-soft opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:opacity-100 focus-visible:ring-4 focus-visible:ring-danger/20"
                                     aria-label="Delete interview"
                                   >
                                     <span className="material-symbols-outlined text-[14px] leading-none">
@@ -621,7 +621,7 @@ export function ProjectPageClient({
                                 <Link
                                   href={`/interviews/${projectId}/${interview.id}`}
                                   onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+                                  className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
                                 >
                                   <span className="material-symbols-outlined text-[11px]">north_east</span>
                                   Open
@@ -635,21 +635,23 @@ export function ProjectPageClient({
 
                     {/* Empty add CTA */}
                     <div className="rounded-[var(--radius-lg)] border border-dashed border-border bg-muted/20 p-5 text-center">
-                      <span className="material-symbols-outlined text-2xl text-muted-foreground/50 mb-2 block">add_circle</span>
+                      <div className="flex justify-center mb-2">
+                        <EmberGlyph size={32} animated />
+                      </div>
                       <p className="text-sm text-muted-foreground mb-3">Add more interviews to strengthen the signal</p>
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         <button
                           onClick={() => setDrawerOpen(true)}
-                          className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background transition-colors"
+                          className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
                         >
                           <span className="material-symbols-outlined text-[13px]">cloud_sync</span>
                           Import from Granola
                         </button>
-                        <button disabled title="Coming soon" className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                        <button disabled title="Coming soon" className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10">
                           <span className="material-symbols-outlined text-[13px]">mic</span>
                           Record live
                         </button>
-                        <button disabled title="Coming soon" className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                        <button disabled title="Coming soon" className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10">
                           <span className="material-symbols-outlined text-[13px]">upload_file</span>
                           Upload transcript
                         </button>

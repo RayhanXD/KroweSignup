@@ -82,7 +82,7 @@ export function RunAnalysisButton({
         <button
           onClick={() => triggerAnalysis(true)}
           disabled={rerunLoading}
-          className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
+          className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
           title="Stop current analysis and rerun from scratch"
         >
           {rerunLoading ? "Restarting..." : "↺ Rerun"}
@@ -97,7 +97,7 @@ export function RunAnalysisButton({
         <button
           onClick={() => triggerAnalysis(true)}
           disabled={rerunLoading || interviewCount < 3}
-          className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
+          className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
           title="Rerun analysis with all interviews"
         >
           {rerunLoading ? "Restarting..." : "↺ Rerun Analysis"}
@@ -112,9 +112,10 @@ export function RunAnalysisButton({
       <button
         onClick={() => triggerAnalysis(false)}
         disabled={interviewCount < 3 || loading}
-        className="px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-primary-hover text-primary-foreground text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
+        className="px-3 py-1.5 rounded-full text-primary-foreground text-xs font-semibold shadow-[var(--shadow-4)] hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
+        style={{ background: "var(--gradient-primary)" }}
       >
-        {loading ? "Starting..." : "Run Analysis"}
+        {loading ? "Running analysis…" : "Run Analysis"}
       </button>
       {error && <p className="text-[10px] text-danger">{error}</p>}
     </div>

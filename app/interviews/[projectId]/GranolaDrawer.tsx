@@ -122,10 +122,10 @@ export function GranolaDrawer({
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[440px] flex-col bg-card border-l border-border/60 shadow-2xl">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[440px] flex-col bg-card border-l border-border/60 shadow-[var(--shadow-3)]">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-border/60 px-5 py-4">
           <div>
@@ -144,7 +144,8 @@ export function GranolaDrawer({
           </div>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted/60 transition-colors"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted/60 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
+            aria-label="Close"
           >
             <span className="material-symbols-outlined text-base">close</span>
           </button>
@@ -171,7 +172,7 @@ export function GranolaDrawer({
             <button
               onClick={syncNow}
               disabled={syncing || !connectionActive}
-              className="flex items-center gap-1 rounded-full border border-border/60 px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-background transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 rounded-full border border-border/60 px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-background transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
             >
               <span className={`material-symbols-outlined text-[13px] ${syncing ? "animate-spin" : ""}`}>
                 refresh
@@ -185,9 +186,9 @@ export function GranolaDrawer({
         <div className="flex border-b border-border/60 px-5">
           <button
             onClick={() => setTab("new")}
-            className={`mr-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+            className={`mr-4 py-2.5 text-xs font-semibold border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 ${
               tab === "new"
-                ? "border-interview-brand text-interview-brand"
+                ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -195,9 +196,9 @@ export function GranolaDrawer({
           </button>
           <button
             onClick={() => setTab("imported")}
-            className={`py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+            className={`py-2.5 text-xs font-semibold border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 ${
               tab === "imported"
-                ? "border-interview-brand text-interview-brand"
+                ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -215,7 +216,7 @@ export function GranolaDrawer({
           {tab === "new" && items.length > 0 && (
             <button
               onClick={toggleAll}
-              className="text-xs font-medium text-foreground hover:text-interview-brand transition-colors"
+              className="text-xs font-medium text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 rounded"
             >
               {selected.size === items.length ? "Deselect all" : "Select all"}
             </button>
@@ -254,7 +255,7 @@ export function GranolaDrawer({
                     <div
                       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[11px] ${
                         isChecked
-                          ? "border-interview-brand bg-interview-brand text-white"
+                          ? "border-primary bg-primary text-primary-foreground"
                           : "border-border bg-background"
                       }`}
                     >
@@ -300,14 +301,15 @@ export function GranolaDrawer({
               <div className="flex gap-2">
                 <button
                   onClick={onClose}
-                  className="rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+                  className="rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={importSelected}
                   disabled={selected.size === 0 || importing}
-                  className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-interview-brand to-interview-brand-end px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
+                  className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-4)] hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
+                  style={{ background: "var(--gradient-primary)" }}
                 >
                   <span className="material-symbols-outlined text-[14px]">download</span>
                   {importing

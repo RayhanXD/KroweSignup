@@ -38,9 +38,18 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude
+.claude/
+.cursor
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 CLAUDE.md
 AGENTS.md
+krowe-desgin-system-prompt.md
+krowe-frontend.md
+krowe-prompt-1-tokens.md
+krowe-prompt-2-components.md
+krowe-prompt-3-surfaces.md
+krowe-prompt-4-showcase-site.md

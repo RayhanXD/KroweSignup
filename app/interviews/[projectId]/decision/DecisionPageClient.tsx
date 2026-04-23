@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ScaleIcon, SparklesIcon } from "lucide-react";
+import { SparklesIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { supabase } from "@/lib/supabaseClient";
 import { ContentHeader } from "@/app/components/krowe/ContentHeader";
@@ -893,21 +893,6 @@ export function DecisionPageClient({
     />
   );
 
-  const verdictCallout = (
-    <div className="noise-surface relative mb-8 overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-gradient-to-r from-primary-soft/85 via-background to-card px-5 py-4 shadow-[var(--shadow-1)] sm:px-7">
-      <div className="relative z-[2] flex flex-wrap items-center gap-3">
-        <ScaleIcon className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-        <p className="text-sm font-medium text-foreground">
-          <span className="text-primary">Verdict surface</span>
-          <span className="text-muted-foreground">
-            {" "}
-            — Editorial density below is intentional: every block maps to a Krowe design-system motif (warm neutrals,
-            one orange accent, serif only at verdict moments).
-          </span>
-        </p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="krowe-blueprint-canvas -mx-3 -mt-3 min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:-mx-4 sm:px-4">
@@ -996,18 +981,6 @@ export function DecisionPageClient({
             </div>
           </div>
         ) : null}
-
-        {reduceMotion ? (
-          verdictCallout
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: overviewBlockDelay, duration: 0.26, ease: KROWE_EASE }}
-          >
-            {verdictCallout}
-          </motion.div>
-        )}
 
         <motion.div
           id="decision-report-main"

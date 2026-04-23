@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import { UsageSectionClient, type UsageProjectRow } from "./UsageSectionClient";
 
 export type Range = "24h" | "7d" | "30d";
 
@@ -14,6 +14,26 @@ function rangeToSince(range: Range): string {
   return new Date(now - hours * 60 * 60 * 1000).toISOString();
 }
 
+const RANGE_LABELS: Record<Range, string> = {
+  "24h": "last 24 hours",
+  "7d": "last 7 days",
+  "30d": "last 30 days",
+};
+
+const VELOCITY = {
+  high: { label: "High velocity", className: "border-success/30 bg-success-soft text-success" },
+  moderate: { label: "Moderate", className: "border-warning/30 bg-warning-soft text-warning" },
+  low: { label: "Low velocity", className: "border-border bg-surface-subtle text-muted-foreground" },
+  none: { label: "No signal", className: "border-danger/30 bg-danger-soft text-danger" },
+} as const;
+
+function velocityKey(pct: number): keyof typeof VELOCITY {
+  if (pct >= 40) return "high";
+  if (pct >= 15) return "moderate";
+  if (pct > 0) return "low";
+  return "none";
+}
+
 export default async function UsageSection({ range }: { range: Range }) {
   const since = rangeToSince(range);
 
@@ -26,11 +46,11 @@ export default async function UsageSection({ range }: { range: Range }) {
 
   const { data: projects } = await supabase
     .from("interview_projects")
-    .select("id, status, interview_count")
+    .select("id, name, status, interview_count")
     .eq("user_id", user.id)
     .is("archived_at", null);
 
-  const projectIds = (projects ?? []).map((project) => project.id);
+  const projectIds = (projects ?? []).map((p) => p.id);
 
   const [interviewsRes, decisionsRes, logsRes] = await Promise.all([
     projectIds.length
@@ -58,57 +78,34 @@ export default async function UsageSection({ range }: { range: Range }) {
   const totalProjects = projects?.length ?? 0;
   const activeProjects =
     projects?.filter((p) => p.status === "collecting" || p.status === "processing").length ?? 0;
-  const totalInterviews = projects?.reduce((sum, p) => sum + p.interview_count, 0) ?? 0;
+  const readyProjects = projects?.filter((p) => p.status === "ready").length ?? 0;
+  const totalInterviews = projects?.reduce((s, p) => s + p.interview_count, 0) ?? 0;
+  const inRange = interviewsRes.count ?? 0;
+  const decisionsInRange = decisionsRes.count ?? 0;
+  const activityInRange = logsRes.count ?? 0;
+  const coveragePct = totalInterviews > 0 ? Math.round((inRange / totalInterviews) * 100) : 0;
+  const velocity = VELOCITY[velocityKey(coveragePct)];
+
+  const allProjects = (projects ?? []) as UsageProjectRow[];
+  const sortedProjects = [...allProjects].sort((a, b) => b.interview_count - a.interview_count);
+  const maxCount = Math.max(1, sortedProjects[0]?.interview_count ?? 1);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-sm font-semibold">Usage</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Monitor project and interview activity trends across key time windows.
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {(["24h", "7d", "30d"] as Range[]).map((item) => (
-          <Link
-            key={item}
-            href={`/interviews/account?tab=usage&range=${item}`}
-            className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-              item === range
-                ? "border-interview-brand/50 bg-interview-brand-tint text-interview-brand"
-                : "border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-            }`}
-          >
-            {item}
-          </Link>
-        ))}
-      </div>
-
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-xl border border-border/60 bg-background px-4 py-4">
-          <p className="text-xs text-muted-foreground">Total projects</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">{totalProjects}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{activeProjects} active</p>
-        </article>
-        <article className="rounded-xl border border-border/60 bg-background px-4 py-4">
-          <p className="text-xs text-muted-foreground">Total interviews</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">{totalInterviews}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Across active projects</p>
-        </article>
-        <article className="rounded-xl border border-border/60 bg-background px-4 py-4">
-          <p className="text-xs text-muted-foreground">Interviews in range</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">{interviewsRes.count ?? 0}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Since {new Date(since).toLocaleDateString()}
-          </p>
-        </article>
-        <article className="rounded-xl border border-border/60 bg-background px-4 py-4">
-          <p className="text-xs text-muted-foreground">Ready decisions in range</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">{decisionsRes.count ?? 0}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{logsRes.count ?? 0} activity events</p>
-        </article>
-      </section>
-    </div>
+    <UsageSectionClient
+      range={range}
+      rangeDescription={RANGE_LABELS[range]}
+      totalProjects={totalProjects}
+      activeProjects={activeProjects}
+      readyProjects={readyProjects}
+      totalInterviews={totalInterviews}
+      inRange={inRange}
+      decisionsInRange={decisionsInRange}
+      activityInRange={activityInRange}
+      coveragePct={coveragePct}
+      velocity={velocity}
+      allProjects={allProjects}
+      sortedProjects={sortedProjects}
+      maxCount={maxCount}
+    />
   );
 }

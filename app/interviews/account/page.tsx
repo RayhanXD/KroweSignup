@@ -36,6 +36,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   return (
     <InterviewsShell
       topbarTitle="Account"
+      activeNav="account"
     >
       <div className="mx-auto w-full max-w-5xl">
         <header className="mb-4">
